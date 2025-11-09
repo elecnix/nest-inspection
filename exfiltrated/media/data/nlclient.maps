@@ -1,0 +1,184 @@
+00008000-004e1000 r-xp 00000000 1f:07 516        /nestlabs/sbin/nlclient
+004e9000-004f3000 rwxp 004d9000 1f:07 516        /nestlabs/sbin/nlclient
+004f3000-0054c000 rwxp 00000000 00:00 0          [heap]
+40003000-40004000 rwxp 00000000 00:00 0 
+40004000-40008000 r-xp 00000000 1f:07 498        /nestlabs/lib/libnlapputils.so
+40008000-4000f000 ---p 00004000 1f:07 498        /nestlabs/lib/libnlapputils.so
+4000f000-40010000 rwxp 00003000 1f:07 498        /nestlabs/lib/libnlapputils.so
+40010000-40011000 rwxp 00000000 00:00 0 
+40016000-40017000 rwxp 00000000 00:00 0 
+40019000-4001a000 rwxp 00000000 00:00 0 
+4001a000-4002e000 r-xp 00000000 1f:07 784        /usr/lib/libboost_signals.so.1.66.0
+4002e000-40035000 ---p 00014000 1f:07 784        /usr/lib/libboost_signals.so.1.66.0
+40035000-40036000 rwxp 00013000 1f:07 784        /usr/lib/libboost_signals.so.1.66.0
+40038000-4003d000 r-xp 00000000 1f:07 780        /usr/lib/libboost_chrono.so.1.66.0
+4003d000-40045000 ---p 00005000 1f:07 780        /usr/lib/libboost_chrono.so.1.66.0
+40045000-40046000 rwxp 00005000 1f:07 780        /usr/lib/libboost_chrono.so.1.66.0
+4004a000-4006a000 r-xp 00000000 1f:07 339        /lib/ld-2.19.so
+4006a000-4006b000 rwxp 00000000 00:00 0 
+4006b000-4006c000 r-xp 00021000 1f:07 339        /lib/ld-2.19.so
+4006c000-4006d000 rwxp 00022000 1f:07 339        /lib/ld-2.19.so
+4006d000-40070000 r-xp 00000000 1f:07 786        /usr/lib/libboost_system.so.1.66.0
+40070000-40077000 ---p 00003000 1f:07 786        /usr/lib/libboost_system.so.1.66.0
+40077000-40078000 rwxp 00002000 1f:07 786        /usr/lib/libboost_system.so.1.66.0
+40078000-40080000 r-xp 00000000 1f:07 499        /nestlabs/lib/libnlcore.so
+40080000-40087000 ---p 00008000 1f:07 499        /nestlabs/lib/libnlcore.so
+40087000-40088000 rwxp 00007000 1f:07 499        /nestlabs/lib/libnlcore.so
+40088000-4008b000 rwxp 00000000 00:00 0 
+4008f000-400a5000 r-xp 00000000 1f:07 782        /usr/lib/libboost_filesystem.so.1.66.0
+400a5000-400ad000 ---p 00016000 1f:07 782        /usr/lib/libboost_filesystem.so.1.66.0
+400ad000-400ae000 rwxp 00016000 1f:07 782        /usr/lib/libboost_filesystem.so.1.66.0
+400ae000-400b0000 rwxp 00000000 00:00 0 
+400b1000-400fc000 r-xp 00000000 1f:07 796        /usr/lib/libcurl.so.4.4.0
+400fc000-40104000 ---p 0004b000 1f:07 796        /usr/lib/libcurl.so.4.4.0
+40104000-40105000 rwxp 0004b000 1f:07 796        /usr/lib/libcurl.so.4.4.0
+40105000-40123000 r-xp 00000000 1f:07 919        /usr/lib/libz.so.1.2.6
+40123000-4012a000 ---p 0001e000 1f:07 919        /usr/lib/libz.so.1.2.6
+4012a000-4012b000 rwxp 0001d000 1f:07 919        /usr/lib/libz.so.1.2.6
+4012b000-4012e000 r-xp 00000000 1f:07 489        /nestlabs/lib/libCFUtilities.so
+4012e000-40135000 ---p 00003000 1f:07 489        /nestlabs/lib/libCFUtilities.so
+40135000-40136000 rwxp 00002000 1f:07 489        /nestlabs/lib/libCFUtilities.so
+40136000-4018c000 r-xp 00000000 1f:07 916        /usr/lib/libxml2.so.2.7.7
+4018c000-40194000 ---p 00056000 1f:07 916        /usr/lib/libxml2.so.2.7.7
+40194000-40195000 rwxp 00056000 1f:07 916        /usr/lib/libxml2.so.2.7.7
+40195000-401a6000 r-xp 00000000 1f:07 491        /nestlabs/lib/libLogUtilities.so
+401a6000-401ae000 ---p 00011000 1f:07 491        /nestlabs/lib/libLogUtilities.so
+401ae000-401af000 rwxp 00011000 1f:07 491        /nestlabs/lib/libLogUtilities.so
+401af000-401b7000 r-xp 00000000 1f:07 844        /usr/lib/libmjson-1.3.so
+401b7000-401be000 ---p 00008000 1f:07 844        /usr/lib/libmjson-1.3.so
+401be000-401bf000 rwxp 00007000 1f:07 844        /usr/lib/libmjson-1.3.so
+401bf000-401e0000 r-xp 00000000 1f:07 886        /usr/lib/libpng14.so.14.3.0
+401e0000-401e7000 ---p 00021000 1f:07 886        /usr/lib/libpng14.so.14.3.0
+401e7000-401e8000 rwxp 00020000 1f:07 886        /usr/lib/libpng14.so.14.3.0
+401e8000-40239000 r-xp 00000000 1f:07 865        /usr/lib/libnspr4.so
+40239000-40241000 ---p 00051000 1f:07 865        /usr/lib/libnspr4.so
+40241000-40243000 rwxp 00051000 1f:07 865        /usr/lib/libnspr4.so
+40243000-40244000 rwxp 00000000 00:00 0 
+40244000-40249000 r-xp 00000000 1f:07 881        /usr/lib/libplc4.so
+40249000-40250000 ---p 00005000 1f:07 881        /usr/lib/libplc4.so
+40250000-40251000 rwxp 00004000 1f:07 881        /usr/lib/libplc4.so
+40251000-40254000 r-xp 00000000 1f:07 882        /usr/lib/libplds4.so
+40254000-4025b000 ---p 00003000 1f:07 882        /usr/lib/libplds4.so
+4025b000-4025c000 rwxp 00002000 1f:07 882        /usr/lib/libplds4.so
+4025c000-4025d000 rwxp 00000000 00:00 0 
+4025d000-40261000 r-xp 00000000 1f:07 494        /nestlabs/lib/libVersion.so
+40261000-40268000 ---p 00004000 1f:07 494        /nestlabs/lib/libVersion.so
+40268000-40269000 rwxp 00003000 1f:07 494        /nestlabs/lib/libVersion.so
+40269000-4026f000 r-xp 00000000 1f:07 505        /nestlabs/lib/libnlpathobserver.so
+4026f000-40276000 ---p 00006000 1f:07 505        /nestlabs/lib/libnlpathobserver.so
+40276000-40277000 rwxp 00005000 1f:07 505        /nestlabs/lib/libnlpathobserver.so
+40277000-402ad000 r-xp 00000000 1f:07 880        /usr/lib/libpcap.so.1.3.0
+402ad000-402b4000 ---p 00036000 1f:07 880        /usr/lib/libpcap.so.1.3.0
+402b4000-402b5000 rwxp 00035000 1f:07 880        /usr/lib/libpcap.so.1.3.0
+402b5000-402b6000 rwxp 00000000 00:00 0 
+402b6000-402f6000 r-xp 00000000 1f:07 495        /nestlabs/lib/libnlappcore.so
+402f6000-402fd000 ---p 00040000 1f:07 495        /nestlabs/lib/libnlappcore.so
+402fd000-402ff000 rwxp 0003f000 1f:07 495        /nestlabs/lib/libnlappcore.so
+402ff000-4030d000 r-xp 00000000 1f:07 508        /nestlabs/lib/libnlwebservice.so
+4030d000-40314000 ---p 0000e000 1f:07 508        /nestlabs/lib/libnlwebservice.so
+40314000-40315000 rwxp 0000d000 1f:07 508        /nestlabs/lib/libnlwebservice.so
+40315000-4043c000 r-xp 00000000 1f:07 368        /lib/libglib-2.0.so.0.4302.0
+4043c000-40444000 ---p 00127000 1f:07 368        /lib/libglib-2.0.so.0.4302.0
+40444000-40445000 rwxp 00127000 1f:07 368        /lib/libglib-2.0.so.0.4302.0
+40445000-404fc000 r-xp 00000000 1f:07 504        /nestlabs/lib/libnlnetworkmanager.so
+404fc000-40503000 ---p 000b7000 1f:07 504        /nestlabs/lib/libnlnetworkmanager.so
+40503000-40507000 rwxp 000b6000 1f:07 504        /nestlabs/lib/libnlnetworkmanager.so
+40507000-40513000 r-xp 00000000 1f:07 506        /nestlabs/lib/libnlsystem.so
+40513000-4051a000 ---p 0000c000 1f:07 506        /nestlabs/lib/libnlsystem.so
+4051a000-4051b000 rwxp 0000b000 1f:07 506        /nestlabs/lib/libnlsystem.so
+4051b000-406aa000 r-xp 00000000 1f:07 793        /usr/lib/libcrypto.so.1.0.0
+406aa000-406b1000 ---p 0018f000 1f:07 793        /usr/lib/libcrypto.so.1.0.0
+406b1000-406c6000 rwxp 0018e000 1f:07 793        /usr/lib/libcrypto.so.1.0.0
+406c6000-406c9000 rwxp 00000000 00:00 0 
+406c9000-4071e000 r-xp 00000000 1f:07 895        /usr/lib/libssl.so.1.0.0
+4071e000-40725000 ---p 00055000 1f:07 895        /usr/lib/libssl.so.1.0.0
+40725000-4072b000 rwxp 00054000 1f:07 895        /usr/lib/libssl.so.1.0.0
+4072b000-40730000 r-xp 00000000 1f:07 492        /nestlabs/lib/libNuovationsUtilities.so
+40730000-40738000 ---p 00005000 1f:07 492        /nestlabs/lib/libNuovationsUtilities.so
+40738000-40739000 rwxp 00005000 1f:07 492        /nestlabs/lib/libNuovationsUtilities.so
+40739000-40839000 r-xp 00000000 1f:07 833        /usr/lib/libicui18n.so.44.1
+40839000-4083e000 rwxp 00100000 1f:07 833        /usr/lib/libicui18n.so.44.1
+4083e000-40973000 r-xp 00000000 1f:07 830        /usr/lib/libicudata.so.44.1
+40973000-4097a000 ---p 00135000 1f:07 830        /usr/lib/libicudata.so.44.1
+4097a000-4097b000 rwxp 00134000 1f:07 830        /usr/lib/libicudata.so.44.1
+4097b000-4097c000 rwxp 00000000 00:00 0 
+4097c000-4098a000 r-xp 00000000 1f:07 497        /nestlabs/lib/libnlappkit.so
+4098a000-40991000 ---p 0000e000 1f:07 497        /nestlabs/lib/libnlappkit.so
+40991000-40992000 rwxp 0000d000 1f:07 497        /nestlabs/lib/libnlappkit.so
+40992000-40993000 rwxp 00000000 00:00 0 
+40993000-40a5a000 r-xp 00000000 1f:07 836        /usr/lib/libicuuc.so.44.1
+40a5a000-40a62000 ---p 000c7000 1f:07 836        /usr/lib/libicuuc.so.44.1
+40a62000-40a68000 rwxp 000c7000 1f:07 836        /usr/lib/libicuuc.so.44.1
+40a68000-40a6c000 rwxp 00000000 00:00 0 
+40a6c000-40c75000 r-xp 00000000 1f:07 889        /usr/lib/libprotobuf.so.11.0.0
+40c75000-40c7d000 ---p 00209000 1f:07 889        /usr/lib/libprotobuf.so.11.0.0
+40c7d000-40c84000 rwxp 00209000 1f:07 889        /usr/lib/libprotobuf.so.11.0.0
+40c84000-40c85000 rwxp 00000000 00:00 0 
+40c85000-40c8f000 r-xp 00000000 1f:07 500        /nestlabs/lib/libnldbus.so
+40c8f000-40c96000 ---p 0000a000 1f:07 500        /nestlabs/lib/libnldbus.so
+40c96000-40c97000 rwxp 00009000 1f:07 500        /nestlabs/lib/libnldbus.so
+40c97000-40d49000 r-xp 00000000 1f:07 777        /usr/lib/libCoreFoundation.so.474.2.17
+40d49000-40d50000 ---p 000b2000 1f:07 777        /usr/lib/libCoreFoundation.so.474.2.17
+40d50000-40d55000 rwxp 000b1000 1f:07 777        /usr/lib/libCoreFoundation.so.474.2.17
+40d55000-40dd4000 r-xp 00000000 1f:07 813        /usr/lib/libfreetype.so.6.12.0
+40dd4000-40ddb000 ---p 0007f000 1f:07 813        /usr/lib/libfreetype.so.6.12.0
+40ddb000-40ddf000 rwxp 0007e000 1f:07 813        /usr/lib/libfreetype.so.6.12.0
+40ddf000-40dee000 r-xp 00000000 1f:07 501        /nestlabs/lib/libnldropbox.so
+40dee000-40df5000 ---p 0000f000 1f:07 501        /nestlabs/lib/libnldropbox.so
+40df5000-40df6000 rwxp 0000e000 1f:07 501        /nestlabs/lib/libnldropbox.so
+40df6000-40dfb000 r-xp 00000000 1f:07 800        /usr/lib/libdaemon.so.0.5.0
+40dfb000-40e02000 ---p 00005000 1f:07 800        /usr/lib/libdaemon.so.0.5.0
+40e02000-40e03000 rwxp 00004000 1f:07 800        /usr/lib/libdaemon.so.0.5.0
+40e03000-40e05000 r-xp 00000000 1f:07 509        /nestlabs/lib/libu-boot.so
+40e05000-40e0d000 ---p 00002000 1f:07 509        /nestlabs/lib/libu-boot.so
+40e0d000-40e0e000 rwxp 00002000 1f:07 509        /nestlabs/lib/libu-boot.so
+40e0e000-40e12000 r-xp 00000000 1f:07 910        /usr/lib/libuuid.so.1.2
+40e12000-40e19000 ---p 00004000 1f:07 910        /usr/lib/libuuid.so.1.2
+40e19000-40e1a000 rwxp 00003000 1f:07 910        /usr/lib/libuuid.so.1.2
+40e1a000-40e7f000 r-xp 00000000 1f:07 357        /lib/libdbus-1.so.3.15.2
+40e7f000-40e87000 ---p 00065000 1f:07 357        /lib/libdbus-1.so.3.15.2
+40e87000-40e88000 rwxp 00065000 1f:07 357        /lib/libdbus-1.so.3.15.2
+40e88000-40e94000 r-xp 00000000 1f:07 405        /lib/libproc-3.2.8.so
+40e94000-40e9c000 ---p 0000c000 1f:07 405        /lib/libproc-3.2.8.so
+40e9c000-40e9d000 rwxp 0000c000 1f:07 405        /lib/libproc-3.2.8.so
+40e9d000-40eb0000 rwxp 00000000 00:00 0 
+40eb0000-40ebf000 r-xp 00000000 1f:07 496        /nestlabs/lib/libnlappdbus.so
+40ebf000-40ec6000 ---p 0000f000 1f:07 496        /nestlabs/lib/libnlappdbus.so
+40ec6000-40ec7000 rwxp 0000e000 1f:07 496        /nestlabs/lib/libnlappdbus.so
+40ec7000-40f8e000 r-xp 00000000 1f:07 898        /usr/lib/libstdc++.so.6.0.18
+40f8e000-40f95000 ---p 000c7000 1f:07 898        /usr/lib/libstdc++.so.6.0.18
+40f95000-40f99000 r-xp 000c6000 1f:07 898        /usr/lib/libstdc++.so.6.0.18
+40f99000-40f9b000 rwxp 000ca000 1f:07 898        /usr/lib/libstdc++.so.6.0.18
+40f9b000-40fa1000 rwxp 00000000 00:00 0 
+40fa1000-4100e000 r-xp 00000000 1f:07 383        /lib/libm-2.19.so
+4100e000-41015000 ---p 0006d000 1f:07 383        /lib/libm-2.19.so
+41015000-41016000 r-xp 0006c000 1f:07 383        /lib/libm-2.19.so
+41016000-41017000 rwxp 0006d000 1f:07 383        /lib/libm-2.19.so
+41017000-4103d000 r-xp 00000000 1f:07 815        /usr/lib/libgcc_s.so.1
+4103d000-41044000 ---p 00026000 1f:07 815        /usr/lib/libgcc_s.so.1
+41044000-41045000 rwxp 00025000 1f:07 815        /usr/lib/libgcc_s.so.1
+41045000-41182000 r-xp 00000000 1f:07 351        /lib/libc-2.19.so
+41182000-41189000 ---p 0013d000 1f:07 351        /lib/libc-2.19.so
+41189000-4118b000 r-xp 0013c000 1f:07 351        /lib/libc-2.19.so
+4118b000-4118c000 rwxp 0013e000 1f:07 351        /lib/libc-2.19.so
+4118c000-4118f000 rwxp 00000000 00:00 0 
+4118f000-41196000 r-xp 00000000 1f:07 411        /lib/librt-2.19.so
+41196000-4119d000 ---p 00007000 1f:07 411        /lib/librt-2.19.so
+4119d000-4119e000 r-xp 00006000 1f:07 411        /lib/librt-2.19.so
+4119e000-4119f000 rwxp 00007000 1f:07 411        /lib/librt-2.19.so
+4119f000-411b5000 r-xp 00000000 1f:07 407        /lib/libpthread-2.19.so
+411b5000-411bc000 ---p 00016000 1f:07 407        /lib/libpthread-2.19.so
+411bc000-411bd000 r-xp 00015000 1f:07 407        /lib/libpthread-2.19.so
+411bd000-411be000 rwxp 00016000 1f:07 407        /lib/libpthread-2.19.so
+411be000-411c0000 rwxp 00000000 00:00 0 
+411c0000-411c4000 r-xp 00000000 1f:07 358        /lib/libdl-2.19.so
+411c4000-411cb000 ---p 00004000 1f:07 358        /lib/libdl-2.19.so
+411cb000-411cc000 r-xp 00003000 1f:07 358        /lib/libdl-2.19.so
+411cc000-411cd000 rwxp 00004000 1f:07 358        /lib/libdl-2.19.so
+411cd000-411d8000 r-xp 00000000 1f:07 905        /usr/lib/libusb-1.0.so.0.0.0
+411d8000-411e0000 ---p 0000b000 1f:07 905        /usr/lib/libusb-1.0.so.0.0.0
+411e0000-411e1000 rwxp 0000b000 1f:07 905        /usr/lib/libusb-1.0.so.0.0.0
+411e1000-411e3000 rwxp 00000000 00:00 0 
+4123c000-4123d000 rwxp 00000000 00:00 0 
+becae000-beccf000 rwxp 00000000 00:00 0          [stack]
+ffff0000-ffff1000 r-xp 00000000 00:00 0          [vectors]

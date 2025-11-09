@@ -1,0 +1,9 @@
+ACTION=="remove", GOTO="tty_end"
+SUBSYSTEM!="tty", GOTO="tty_end"
+
+SUBSYSTEMS=="usb", ENV{ID_MODEL}=="", IMPORT{builtin}="usb_id"
+SUBSYSTEMS=="usb", IMPORT{program}="usb-db"
+SUBSYSTEMS=="usb", ATTRS{idVendor}!="", ATTRS{idProduct}!="", ENV{ID_VENDOR_ID}="$attr{idVendor}", ENV{ID_MODEL_ID}="$attr{idProduct}", ENV{ID_BUS}="usb"
+SUBSYSTEMS=="usb", GOTO="tty_end"
+
+LABEL="tty_end"

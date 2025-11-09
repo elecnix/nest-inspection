@@ -1,0 +1,207 @@
+2025-11-08 02:04:50.849094 02AA01AC481302W4 nlclient[470:netman] (2) connman: updating 20 and removing 0 services to 20 existing services
+2025-11-08 02:04:50.969272 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-15)
+2025-11-08 02:04:50.975223 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:50.995823 02AA01AC481302W4 nlclient[470:contro] (2) controller: Time Changed by 1762567430
+2025-11-08 02:04:51.062351 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:51.313358 02AA01AC481302W4 nlclient[470:contro] (2) client globals: Time shifted by 1762567430
+2025-11-08 02:04:51.480503 02AA01AC481302W4 nlclient[470:contro] (2) thermostat: shifting time variables by (1762567430)
+2025-11-08 02:04:51.530735 02AA01AC481302W4 nlclient[470:contro] (2) thermostat: cycle time timeout shifted to (240) -- from (300) to (1762567730)
+2025-11-08 02:04:51.596988 02AA01AC481302W4 nlclient[470:contro] (2) buildingcharacteristics: shifting time variables by (1762567430)
+2025-11-08 02:04:51.546756 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:51.643772 02AA01AC481302W4 nlclient[470:contro] (4) nlRadiantControl: time shifted to valid time: now (1762567490)
+2025-11-08 02:04:51.747593 02AA01AC481302W4 nlclient[470:client] (2) network watchdog: internal network reset requested 
+2025-11-08 02:04:51.748600 02AA01AC481302W4 nlclient[470:client] (3) network resetter: Requested reset: tech='wifi' reason='Watchdog Timeout' checkup=0
+2025-11-08 02:04:51.750248 02AA01AC481302W4 nlclient[470:client] (2) network resetter: schedule reset queue
+2025-11-08 02:04:51.751438 02AA01AC481302W4 nlclient[470:client] (2) client: should reset network? 0, reason: startup view
+2025-11-08 02:04:51.752262 02AA01AC481302W4 nlclient[470:client] (2) network resetter: Aborted reset 'wifi'
+2025-11-08 02:04:51.753086 02AA01AC481302W4 nlclient[470:client] (4) client: failed to reset network: -20
+2025-11-08 02:04:51.753818 02AA01AC481302W4 nlclient[470:client] (4) network watchdog: failed to reset network: -20
+2025-11-08 02:04:51.754581 02AA01AC481302W4 nlclient[470:client] (2) network resetter: empty queue
+2025-11-08 02:04:51.830661 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 2 vs. max 50
+2025-11-08 02:04:51.837101 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:52.077793 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:04:52.180698 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:52.277683 02AA01AC481302W4 nlclient[470:contro] (2) boiler pid: Shifted mLastBoilerSetPointUpdate by (1762567430), (0) => (1762567430)
+2025-11-08 02:04:52.444156 02AA01AC481302W4 nlclient[470:netman] (2) connman: updating 20 and removing 0 services to 20 existing services
+2025-11-08 02:04:52.954990 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:53.924582 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:54.021658 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:54.093039 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 5 vs. max 50
+2025-11-08 02:04:54.327719 02AA01AC481302W4 nlclient[470:netman] (2) connman: updating 16 and removing 4 services to 20 existing services
+2025-11-08 02:04:54.330252 02AA01AC481302W4 nlclient[470:netman] (4) : Service will be lRemoved
+2025-11-08 02:04:54.424368 02AA01AC481302W4 nlclient[470:netman] (2) : signaling 4 services removed
+2025-11-08 02:04:54.524008 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:54.632834 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:54.905966 02AA01AC481302W4 nlclient[470:fetchs] (3) fetch service: fetch service: timeout for ID 1 at 1762567434 seconds (max=40)
+2025-11-08 02:04:54.925528 02AA01AC481302W4 nlclient[470:fetchs] (3) fetch service: fetch service: id: 1, version="5.9.4-5 (Display-2.8)", url="https://frontdoor.nest.com/entry", errtext="Timeout was reached", nlerr=-16, httpresp=0, reqms=1762567434775 datalen=0 actcnt=0 curlerr="" stopreason="Timed out" lport=0
+2025-11-08 02:04:55.024863 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: suspending https://frontdoor.nest.com (errs=1)
+2025-11-08 02:04:55.038992 02AA01AC481302W4 nlclient[470:fetchs] (2) fetch service: fetch service: Sending 0.0.0.0 to czsniffer
+2025-11-08 02:04:55.040671 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 30s
+2025-11-08 02:04:55.042593 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 6 vs. max 50
+2025-11-08 02:04:55.044455 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: feature czcomms requests wake because of nlWakeupReasonCommsUpdate
+2025-11-08 02:04:55.055808 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: 3 Features blocking sleep: czcomms BackplateController AttemptToSleepClient
+2025-11-08 02:04:55.102011 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:55.219748 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:55.240591 02AA01AC481302W4 nlclient[470:client] (2) network recoverer: service "Gigabell" transitioned to state online, reporting recovery success
+2025-11-08 02:04:55.241660 02AA01AC481302W4 nlclient[470:client] (2) network recoverer: successfully recovered network
+2025-11-08 02:04:55.242362 02AA01AC481302W4 nlclient[470:client] (2) client: successfully recovered network
+2025-11-08 02:04:55.243704 02AA01AC481302W4 nlclient[470:client] (3) client: AttemptToSleep denied - reason: mClientGlobals->IsUserInterfaceActive() mIsInBootAnimation usbconnected 
+2025-11-08 02:04:55.255331 02AA01AC481302W4 nlclient[470:net-ch] (2) net-checkup: ssid="Gigabell" transition state=online
+2025-11-08 02:04:55.286520 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed
+2025-11-08 02:04:55.303610 02AA01AC481302W4 nlclient[470:netman] (2) : signaling state "online" changed
+2025-11-08 02:04:55.386282 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:55.666769 02AA01AC481302W4 nlclient[470:contro] (2) thermostat: RethinkState bypassed: aSensorStateValidity (0), aHVACControlLockedOut (1), aLowerTargetTemperature (-1000.00)
+2025-11-08 02:04:55.702261 02AA01AC481302W4 nlclient[470:contro] (2) Smart Thermostat Manager: next day timeout set to 1762577700
+2025-11-08 02:04:55.703482 02AA01AC481302W4 nlclient[470:contro] (2) Smart Thermostat Manager: next day timeout set to 1762577700
+2025-11-08 02:04:55.998190 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:04:56.145163 02AA01AC481302W4 nlclient[470:netman] (2) connman: updating 16 and removing 0 services to 16 existing services
+2025-11-08 02:04:56.803299 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 29s
+2025-11-08 02:04:56.804642 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 7 vs. max 50
+2025-11-08 02:04:56.971634 02AA01AC481302W4 nlclient[470:client] (2) nlTuneUpClientManager: EvaluateTuneUpState: id = legacy-seasonal-savings-summer-23, state = FINISHED, stopReason = NONE
+2025-11-08 02:04:57.065598 02AA01AC481302W4 nlclient[470:sleepm] (2) heartbeat manager:: client controller missed: 1 threshold: 20 aboveThreshold: 0
+2025-11-08 02:04:57.183823 02AA01AC481302W4 nlclient[470:contro] (2) thermostat: RethinkState bypassed: aSensorStateValidity (0), aHVACControlLockedOut (1), aLowerTargetTemperature (-1000.00)
+2025-11-08 02:04:57.201889 02AA01AC481302W4 nlclient[470:client] (2) client globals: got schedule mode (1) from control
+2025-11-08 02:04:57.203140 02AA01AC481302W4 nlclient[470:client] (3) nlCZBucket: SetTargetTemperature: new = 23.11908, old = 23.91948, aAnimateToTargetAllowed = 1, aBrightenDisplayOnAnimation = 1
+2025-11-08 02:04:57.204300 02AA01AC481302W4 nlclient[470:client] (4) nlCZBucket: target temp set by controller - enqueuing update delay request (shared)
+2025-11-08 02:04:57.205368 02AA01AC481302W4 nlclient[470:client] (3) client: UPDATE delay enabled for 23 secs (max:120)
+2025-11-08 02:04:57.206223 02AA01AC481302W4 nlclient[470:client] (2) client globals: UPDATE delay enabled
+2025-11-08 02:04:57.230301 02AA01AC481302W4 nlclient[470:contro] (2) Smart Thermostat Manager: sent next temperature schedule timeout request for 1762602300
+2025-11-08 02:04:57.231308 02AA01AC481302W4 nlclient[470:contro] (2) Smart Thermostat Manager: scheduled set point change to: 23.119
+2025-11-08 02:04:57.233200 02AA01AC481302W4 nlclient[470:contro] (2) Smart Thermostat Manager: Set next midnight timer request at 1762567497
+2025-11-08 02:04:57.250900 02AA01AC481302W4 nlclient[470:contro] (2) Smart Thermostat Manager: Sent next midnight timeout request for 1762578038
+2025-11-08 02:04:57.580154 02AA01AC481302W4 nlclient[470:contro] (2) Smart Thermostat Manager: ready for auto-away case not considered. oldmode=-1 newmode=-1
+2025-11-08 02:04:57.613205 02AA01AC481302W4 nlclient[470:contro] (4) sunlightcorrection: failed to find current ALS from history object
+2025-11-08 02:04:57.614548 02AA01AC481302W4 nlclient[470:contro] (2) nlCrystalModel: Too few datapoints to construct new data set. Need 20, received 0
+2025-11-08 02:04:57.616104 02AA01AC481302W4 nlclient[470:contro] (2) controller: nlPollBatteryWhileDetached timeout event
+2025-11-08 02:04:57.630875 02AA01AC481302W4 nlclient[470:contro] (2) nlCrystalModel: Updating last history processed time from 1750899110 to 1762581897 for model 0
+2025-11-08 02:04:57.632523 02AA01AC481302W4 nlclient[470:contro] (2) nlCrystalModel: Too few datapoints to construct new data set. Need 20, received 0
+2025-11-08 02:04:57.668106 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-16)
+2025-11-08 02:04:58.814072 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 27s
+2025-11-08 02:04:58.815476 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 9 vs. max 50
+2025-11-08 02:05:00.824875 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 25s
+2025-11-08 02:05:00.826279 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 11 vs. max 50
+2025-11-08 02:05:02.071182 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-17)
+2025-11-08 02:05:02.088486 02AA01AC481302W4 nlclient[470:client] (2) nlMatteoLayer: waiting on backplate and sensor report
+2025-11-08 02:05:02.819046 02AA01AC481302W4 nlclient[470:client] (2) nlLogStackIncreases: client: stack high water mark: 20528 bytes
+2025-11-08 02:05:02.828568 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 23s
+2025-11-08 02:05:02.829666 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 13 vs. max 50
+2025-11-08 02:05:04.831528 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 21s
+2025-11-08 02:05:04.833298 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 15 vs. max 50
+2025-11-08 02:05:06.834793 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 19s
+2025-11-08 02:05:06.836136 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 17 vs. max 50
+2025-11-08 02:05:07.059311 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-18)
+2025-11-08 02:05:08.839554 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 17s
+2025-11-08 02:05:08.840897 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 19 vs. max 50
+2025-11-08 02:05:10.842575 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 15s
+2025-11-08 02:05:10.843857 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 21 vs. max 50
+2025-11-08 02:05:12.055466 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:05:12.060806 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-19)
+2025-11-08 02:05:12.845535 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 13s
+2025-11-08 02:05:12.847214 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 23 vs. max 50
+2025-11-08 02:05:14.848557 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 11s
+2025-11-08 02:05:14.850021 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 25 vs. max 50
+2025-11-08 02:05:16.861923 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 9s
+2025-11-08 02:05:16.863236 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 27 vs. max 50
+2025-11-08 02:05:17.062210 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-20)
+2025-11-08 02:05:18.872513 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 7s
+2025-11-08 02:05:18.874039 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 29 vs. max 50
+2025-11-08 02:05:20.001083 02AA01AC481302W4 nlclient[470:client] (2) client globals: UPDATE delay cancelled
+2025-11-08 02:05:20.001907 02AA01AC481302W4 nlclient[470:client] (4) client: UPDATE delay disabled
+2025-11-08 02:05:20.876633 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 5s
+2025-11-08 02:05:20.877884 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - update pending delta 31 vs. max 3
+2025-11-08 02:05:20.878677 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep update pending override
+2025-11-08 02:05:20.879349 02AA01AC481302W4 nlclient[470:client] (3) czcomms: ReadyToSleep - transition: can sleep
+2025-11-08 02:05:20.880386 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: 2 Features blocking sleep: BackplateController AttemptToSleepClient
+2025-11-08 02:05:22.061661 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-21)
+2025-11-08 02:05:22.880539 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 3s
+2025-11-08 02:05:24.882523 02AA01AC481302W4 nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 1s
+2025-11-08 02:05:26.885025 02AA01AC481302W4 nlclient[470:client] (4) settings: nlConfig::GetUInt64Value failed with -4
+2025-11-08 02:05:26.887222 02AA01AC481302W4 nlclient[470:client] (2) weave_infieldjoining: virtual nlError nlCZFrontdoorFetch::DoImplFetch() base64DeviceDescLength 112 base64DeviceDesc '1QAADgABACUAWiMkAQMkAgglA3V0LAQQMDJBQTAxQUM0ODEzMDJXNDAFCBi0MAAACKlwMAYGGLQwKcj3JwpwqQgAADC0GCwJBzUuOS40LTUpZRg='
+2025-11-08 02:05:26.888474 02AA01AC481302W4 nlclient[470:client] (2) nlCZFetchFrontdoor: request= id: 2, 'reset=false&mac=18b43029c8f7&model=Display%2D2.8&request_id=2&software_version=5.9.4%2D5'
+2025-11-08 02:05:27.065292 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-22)
+2025-11-08 02:05:27.489334 02AA01AC481302W4 nlclient[470:fetchs] (3) fetch service: fetch service: id: 2, version="5.9.4-5 (Display-2.8)", url="https://frontdoor.nest.com/entry", errtext="No error", nlerr=0, httpresp=302, reqms=599 datalen=151 actcnt=2 curlerr="" stopreason="" lport=51460
+2025-11-08 02:05:27.494186 02AA01AC481302W4 nlclient[470:client] (3) nlCZFetchFrontdoor: REGISTER redirect to https://squeakydoor.nest.com/entry
+2025-11-08 02:05:27.495895 02AA01AC481302W4 nlclient[470:client] (4) settings: nlConfig::GetUInt64Value failed with -4
+2025-11-08 02:05:27.497757 02AA01AC481302W4 nlclient[470:client] (2) weave_infieldjoining: virtual nlError nlCZFrontdoorFetch::DoImplFetch() base64DeviceDescLength 112 base64DeviceDesc '1QAADgABACUAWiMkAQMkAgglA3V0LAQQMDJBQTAxQUM0ODEzMDJXNDAFCBi0MAAACKlwMAYGGLQwKcj3JwpwqQgAADC0GCwJBzUuOS40LTUpZRg='
+2025-11-08 02:05:27.499130 02AA01AC481302W4 nlclient[470:client] (2) nlCZFetchFrontdoor: request= id: 3, 'reset=false&mac=18b43029c8f7&model=Display%2D2.8&request_id=3&software_version=5.9.4%2D5'
+2025-11-08 02:05:27.500565 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: feature czcomms requests wake because of nlWakeupReasonCommsUpdate
+2025-11-08 02:05:27.501480 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: 3 Features blocking sleep: czcomms BackplateController AttemptToSleepClient
+2025-11-08 02:05:27.502304 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: 2 Features blocking sleep: BackplateController AttemptToSleepClient
+2025-11-08 02:05:28.572189 02AA01AC481302W4 nlclient[470:fetchs] (3) fetch service: fetch service: id: 3, version="5.9.4-5 (Display-2.8)", url="https://squeakydoor.nest.com/entry", errtext="No error", nlerr=0, httpresp=200, reqms=1067 datalen=300 actcnt=2 curlerr="" stopreason="" lport=57693
+2025-11-08 02:05:28.579483 02AA01AC481302W4 nlclient[470:client] (2) nlCZFetchFrontdoor: virtual nlError nlCZFrontdoorFetch::ParseResponse(nlLONG) nlWeaveUtilities::ParseServiceConfigFromFrontdoorResponse() succeeded
+2025-11-08 02:05:28.580612 02AA01AC481302W4 nlclient[470:client] (2) nlCZFetchFrontdoor: virtual nlError nlCZFrontdoorFetch::ParseResponse(nlLONG) SetWeaveServiceConfig() succeeded
+2025-11-08 02:05:28.581558 02AA01AC481302W4 nlclient[470:client] (2) nlCZFetchFrontdoor: reply=  id: 3, '{"czfe_url":"","server_version":"9.45.0.63171-20251016-edb6514","ping_url":"","passphrase_url":"","pro_info_url":"","transport_url":"","tier_name":"production","weather_url":"https://weather.nest.com/weather/v1?query=","upload_url":"https://logsink.devices.nest.com/upload","direct_transport_url":""}'
+2025-11-08 02:05:28.583389 02AA01AC481302W4 nlclient[470:client] (2) client globals: tag: czfe_url value: 
+2025-11-08 02:05:28.584152 02AA01AC481302W4 nlclient[470:client] (2) client globals: tag: ping_url value: 
+2025-11-08 02:05:28.585037 02AA01AC481302W4 nlclient[470:client] (2) client globals: tag: passphrase_url value: 
+2025-11-08 02:05:28.585770 02AA01AC481302W4 nlclient[470:client] (2) client globals: tag: pro_info_url value: 
+2025-11-08 02:05:28.586502 02AA01AC481302W4 nlclient[470:client] (2) client globals: tag: transport_url value: 
+2025-11-08 02:05:28.587296 02AA01AC481302W4 nlclient[470:client] (2) client globals: tag: weather_url value: https://weather.nest.com/weather/v1?query=
+2025-11-08 02:05:28.588120 02AA01AC481302W4 nlclient[470:client] (2) client globals: tag: upload_url value: https://logsink.devices.nest.com/upload
+2025-11-08 02:05:28.588913 02AA01AC481302W4 nlclient[470:client] (2) client globals: tag: direct_transport_url value: 
+2025-11-08 02:05:28.590347 02AA01AC481302W4 nlclient[470:client] (2) client: clock synchronization is synchronized
+2025-11-08 02:05:28.596787 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: feature czcomms requests wake because of nlWakeupReasonCommsUpdate
+2025-11-08 02:05:28.599381 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-23)
+2025-11-08 02:05:28.612198 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: 3 Features blocking sleep: czcomms BackplateController AttemptToSleepClient
+2025-11-08 02:05:28.616074 02AA01AC481302W4 nlclient[470:contro] (2) nlLogStackIncreases: controller: stack high water mark: 7204 bytes
+2025-11-08 02:05:28.615341 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: 2 Features blocking sleep: BackplateController AttemptToSleepClient
+2025-11-08 02:05:29.091141 02AA01AC481302W4 nlclient[470:fetchs] (3) fetch service: fetch service: id: 4, version="5.9.4-5 (Display-2.8)", url="https://weather.nest.com/weather/v1?query=ipv4", errtext="No error", nlerr=0, httpresp=200, reqms=474 datalen=4843 actcnt=1 curlerr="" stopreason="" lport=48225
+2025-11-08 02:05:29.105667 02AA01AC481302W4 nlclient[470:client] (2) nlTimeZoneParser: JSON time zone:EST file:America/Toronto
+2025-11-08 02:05:29.182327 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: feature LogUploader requests wake because of nlWakeupReasonLogUploading
+2025-11-08 02:05:29.183273 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: 3 Features blocking sleep: BackplateController AttemptToSleepClient LogUploader
+2025-11-08 02:05:29.698868 02AA01AC481302W4 nlclient[470:fetchs] (3) fetch service: fetch service: id: 5, version="5.9.4-5 (Display-2.8)", url="https://logsink.devices.nest.com/upload", errtext="No error", nlerr=0, httpresp=200, reqms=424 datalen=76 actcnt=2 curlerr="" stopreason="" lport=58144
+2025-11-08 02:05:29.705582 02AA01AC481302W4 nlclient[470:client] (3) nlloguploader: successfully uploaded log file '/nestlabs/var/log/nlclient#220920', response: 200
+2025-11-08 02:05:30.211044 02AA01AC481302W4 nlclient[470:fetchs] (3) fetch service: fetch service: id: 6, version="5.9.4-5 (Display-2.8)", url="https://logsink.devices.nest.com/upload", errtext="No error", nlerr=0, httpresp=200, reqms=395 datalen=76 actcnt=2 curlerr="" stopreason="" lport=58145
+2025-11-08 02:05:30.225113 02AA01AC481302W4 nlclient[470:client] (3) nlloguploader: successfully uploaded log file '/nestlabs/var/log/nlevent#180757', response: 200
+2025-11-08 02:05:30.824570 02AA01AC481302W4 nlclient[470:fetchs] (3) fetch service: fetch service: id: 7, version="5.9.4-5 (Display-2.8)", url="https://logsink.devices.nest.com/upload", errtext="No error", nlerr=0, httpresp=200, reqms=416 datalen=77 actcnt=2 curlerr="" stopreason="" lport=58146
+2025-11-08 02:05:30.834518 02AA01AC481302W4 nlclient[470:client] (3) nlloguploader: successfully uploaded log file '/nestlabs/var/log/nlclient#220921', response: 200
+2025-11-08 02:05:31.266281 02AA01AC481302W4 nlclient[470:fetchs] (3) fetch service: fetch service: id: 8, version="5.9.4-5 (Display-2.8)", url="https://logsink.devices.nest.com/upload", errtext="No error", nlerr=0, httpresp=200, reqms=390 datalen=76 actcnt=2 curlerr="" stopreason="" lport=58147
+2025-11-08 02:05:31.270981 02AA01AC481302W4 nlclient[470:client] (3) nlloguploader: successfully uploaded log file '/nestlabs/var/log/nlevent#180758', response: 200
+2025-11-08 02:05:31.644882 02AA01AC481302W4 nlclient[470:fetchs] (3) fetch service: fetch service: id: 9, version="5.9.4-5 (Display-2.8)", url="https://logsink.devices.nest.com/upload", errtext="No error", nlerr=0, httpresp=200, reqms=290 datalen=76 actcnt=2 curlerr="" stopreason="" lport=58148
+2025-11-08 02:05:31.650070 02AA01AC481302W4 nlclient[470:client] (3) nlloguploader: successfully uploaded log file '/nestlabs/var/log/nlclient#220922', response: 200
+2025-11-08 02:05:32.066513 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:05:32.070725 02AA01AC481302W4 nlclient[470:fetchs] (3) fetch service: fetch service: id: 10, version="5.9.4-5 (Display-2.8)", url="https://logsink.devices.nest.com/upload", errtext="No error", nlerr=0, httpresp=200, reqms=402 datalen=75 actcnt=2 curlerr="" stopreason="" lport=58149
+2025-11-08 02:05:32.077805 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-24)
+2025-11-08 02:05:32.100845 02AA01AC481302W4 nlclient[470:client] (3) nlloguploader: successfully uploaded log file '/nestlabs/var/log/nlclient#220923', response: 200
+2025-11-08 02:05:32.113144 02AA01AC481302W4 nlclient[470:sleepm] (2) sleepman: 2 Features blocking sleep: BackplateController AttemptToSleepClient
+2025-11-08 02:05:37.069595 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-25)
+2025-11-08 02:05:42.068192 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-26)
+2025-11-08 02:05:47.073959 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-27)
+2025-11-08 02:05:52.065292 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:05:52.070602 02AA01AC481302W4 nlclient[470:client] (3) nlEnergyView: got energy stats for day (-28)
+2025-11-08 02:06:12.066391 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:06:32.067703 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:06:41.283127 02AA01AC481302W4 nlclient[470:client] (4) client: BacklightBrightnessAdjust from (90.000000) to (0.000000)
+2025-11-08 02:06:43.295487 02AA01AC481302W4 nlclient[470:client] (3) client: AttemptToSleep denied - reason: mIsInBootAnimation usbconnected 
+2025-11-08 02:06:52.069168 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:07:12.070755 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:07:32.071732 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:07:46.589035 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:07:46.611038 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:07:46.657486 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:07:46.730087 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:07:47.046562 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:07:52.066429 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:08:12.067649 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:08:32.068748 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:08:50.002372 02AA01AC481302W4 nlclient[470:contro] (2) thermostat: RethinkState bypassed: aSensorStateValidity (0), aHVACControlLockedOut (1), aLowerTargetTemperature (-1000.00)
+2025-11-08 02:08:52.069999 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:09:12.071464 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:09:32.072318 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:09:52.073417 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:10:04.471641 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:10:04.743949 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:10:05.039085 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:10:12.074760 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:10:32.075675 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:10:52.076744 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:11:12.078086 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:11:32.079490 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:11:52.080894 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:12:12.082786 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:12:32.082786 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply
+2025-11-08 02:12:44.416862 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:12:45.039604 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:12:45.307395 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:12:46.039787 02AA01AC481302W4 nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+2025-11-08 02:12:52.083915 02AA01AC481302W4 nlclient[470:sleepm] (4) sleepman: heartbeat reply

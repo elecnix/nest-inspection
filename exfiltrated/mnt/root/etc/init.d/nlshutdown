@@ -1,0 +1,73 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2015 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    This document is the property of Nest. It is considered
+#    confidential and proprietary information.
+#
+#    This document may not be reproduced or transmitted in any form,
+#    in whole or in part, without the express written permission of
+#    Nest.
+#
+#    Description:
+#      This contains functions to start and stop the shutdown daemon
+#
+
+# Source common library
+. /etc/init.d/functions
+
+# Source daemon-monitor library
+. /etc/init.d/dm
+
+# Export fallback shared library search path
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:}${NESTLABSLIBDIR}
+
+NLSHUTDOWND_NAME=nlshutdownd
+NLSHUTDOWND_APP=${NESTLABSSBINDIR}/${NLSHUTDOWND_NAME}
+NLSHUTDOWND_PID_FILE="${VARDIR}/run/${NLSHUTDOWND_NAME}.pid"
+
+stop_nlshutdownd () {
+	log_info "Service termination for ${NLSHUTDOWND_NAME} received from [${PPID}]: killing"
+	${STOPDAEMON} -q -x ${NLSHUTDOWND_APP} --signal KILL > ${NULL} 2>&1
+}
+
+start_nlshutdownd () {
+	log_info "Service initiation for ${NLSHUTDOWND_NAME} received from [${PPID}]"
+	${STARTDAEMON} -q -b -m -p "${NLSHUTDOWND_PID_FILE}" -a ${NLSHUTDOWND_APP} -- `${CAT} ${CONFDIR}/${NLSHUTDOWND_NAME}.options 2> ${NULL}`
+}
+
+
+case "${1}" in
+
+'start')
+	monit_service_action start "${NLSHUTDOWND_NAME}"
+	;;
+
+'monit_start')
+	echo_and_log "Starting shutdown management daemon: \c"
+	start_nlshutdownd
+	echo_and_log "DONE"
+	;;
+
+'stop')
+	monit_service_action stop "${NLSHUTDOWND_NAME}"
+	;;
+
+'monit_stop')
+	echo_and_log "Stopping shutdown management daemon: \c"
+	stop_nlshutdownd
+	echo_and_log "DONE"
+	;;
+
+'restart')
+	monit_service_action restart "${NLSHUTDOWND_NAME}"
+	;;
+
+*)
+	echo "Usage: ${0} <start | stop | restart>"
+	exit 1
+	;;
+
+esac

@@ -1,0 +1,12 @@
+#
+#    Copyright (c) 2012 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    Description:
+#      This file is the control and configuration file for the
+#      daemon-monitoring daemon, monit, for wpantund
+#
+
+check process wpantund matching /usr/sbin/wpantund
+  start program = "/etc/init.d/wpan-tunnel-driver monit_start"
+  stop  program = "/etc/init.d/wpan-tunnel-driver monit_stop"

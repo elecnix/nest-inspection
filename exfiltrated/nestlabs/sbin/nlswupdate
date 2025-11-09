@@ -1,0 +1,67 @@
+#!/bin/sh
+#
+# Copyright (c) 2011-2016 Nest Labs, Inc.
+# All rights reserved.
+#
+# This document is the property of Nest. It is considered
+# confidential and proprietary information.
+#
+# This document may not be reproduced or transmitted in any form,
+# in whole or in part, without the express written permission of
+# Nest.
+#
+# Source common library
+. /etc/init.d/functions
+ROOTDIR=${PREFIX}/
+BINDIR=${ROOTDIR}bin
+CONFDIR=${ROOTDIR}etc
+SBINDIR=${ROOTDIR}sbin
+USRBINDIR=${ROOTDIR}usr/bin
+INITDIR=${CONFDIR}/init.d
+NESTLABSDIR=${ROOTDIR}nestlabs
+NESTLABSDATADIR=${NESTLABSDIR}/share
+NESTLABSLIBDIR=${NESTLABSDIR}/lib
+NESTLABSSBINDIR=${NESTLABSDIR}/sbin
+OSM=${NESTLABSSBINDIR}/osm
+SED=${BINDIR}/sed
+READLINK=${USRBINDIR}/readlink
+DIRNAME=${USRBINDIR}/dirname
+NULL=${ROOTDIR}dev/null
+# Export fallback shared library search path
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:}${NESTLABSLIBDIR}
+IDENTIFIER=`${BOOTGETENV} -n nlmodel`
+if [ -n "${IDENTIFIER}" ]; then
+    IDENTIFIER_OPTION="--identifier='${IDENTIFIER}'"
+fi
+SWU_IMAGE=""
+for i in "${@}"
+do
+    if [ -e "${i}" ]; then
+        TEMP_PATH=$(${READLINK} -f "${i}")
+        if [ "tgz" = "${TEMP_PATH##*.}" ]; then
+            SWU_IMAGE=${TEMP_PATH}
+            echo "SWU Image : \"${SWU_IMAGE}\""
+            if [ "/media/dropbox" = $(${DIRNAME} "${SWU_IMAGE}") ]; then
+                INSTALL_OPTION="--keep"
+                echo "Using Dropbox. Keep SWU Image after osm install."
+            fi
+            break
+        fi
+    fi
+done
+if [ -z "${SWU_IMAGE}" ]; then
+    echo "ERROR: Cannot find SWU Image"
+    exit 1
+fi
+VALIDATION_TIME=`${OSM} info --active date 2> ${NULL} | ${SED} -n -e '/^primary:$/{n;s/^[[:space:]]*date[[:space:]]*:[[:space:]]*//p}'`
+if [ -n "${VALIDATION_TIME}" ]; then
+    VALIDATION_OPTION="--validation-time='${VALIDATION_TIME}'"
+fi
+CERT_FILE=${NESTLABSDATADIR}/certs/ca-bundle.pem
+if [ ! -e "${CERT_FILE}" ]; then
+    echo "WARNING: Cannot find root certificate file \"${CERT_FILE}\", installing signed images may fail!"
+fi
+if [ -x "${INITDIR}/nestlabs" ]; then
+    ${INITDIR}/nestlabs stop
+fi
+eval ${OSM} --verbose=3 --debug=3 install --directory=${ROOTDIR}media/scratch --blacklist=${NESTLABSDATADIR}/certs/nest-crl-bundle.pem --root-ca-cert=${CERT_FILE} "${IDENTIFIER_OPTION}" "${VALIDATION_OPTION}" ${INSTALL_OPTION} ${@}

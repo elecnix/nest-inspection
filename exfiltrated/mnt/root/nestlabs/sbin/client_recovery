@@ -1,0 +1,89 @@
+#!/bin/sh
+#
+#    Copyright (c) 2015 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    This document is the property of Nest. It is considered
+#    confidential and proprietary information.
+#
+#    This document may not be reproduced or transmitted in any form,
+#    in whole or in part, without the express written permission of
+#    Nest.
+#
+#    Description:
+#      This file implements a tiered recovery mechanism for the
+#      client when it reaches the # of crash per interval threshold. 
+#
+#      The worst recovery method will be a factory reset, when
+#      a simple reboot does not bring the system to a stable enough 
+#      condition.
+#
+
+. /etc/init.d/functions
+
+
+MEDIADIR=${ROOTDIR}/media
+RECOVERY_FILE=${MEDIADIR}/data/tier_recovery_state
+REBOOT=${SBINDIR}/reboot
+OSM=${NESTLABSSBINDIR}/osm
+
+tier2_recovery () {
+	# factory reset
+	${INITDIR}/nestlabs kill
+	${USRBINDIR}/wpanctl leave
+	${INITDIR}/networking stop
+	${RM} -rf ${MEDIADIR}/data/*
+	${RM} -rf ${MEDIADIR}/user-config/*
+	${RM} -rf ${MEDIADIR}/log/nlevent*
+	log_error "*** NLCLIENT FAILED TO START, ATTEMPTING TO RECOVER TIER 2 (factory reset) ***"
+	${REBOOT}
+	exit 0
+}
+
+tier1p_recovery () {
+	log_error "*** NLCLIENT FAILED TO START AFTER SW UPGRADE, ATTEMPTING TO RECOVER TIER 1p (roll back) ***"
+	${OSM} install --continue -f
+	exit 0
+}
+
+tier1_recovery () {
+	log_error "*** NLCLIENT FAILED TO START, ATTEMPTING TO RECOVER TIER 1 ***"
+	${REBOOT}
+	exit 0
+}
+
+# determine the time now
+now=`date +%s`
+
+# determine the time of last reboot loop, tier 1 if there wasn't any
+if [ -e ${RECOVERY_FILE} ]; then
+	last=`${CAT} ${RECOVERY_FILE}`
+else
+	last=`${EXPR} -3601`
+fi
+
+# record the timestame of this reboot loop
+${ECHO} ${now} > ${RECOVERY_FILE}
+
+# if creation of the file failed, factory reset
+if [ ! -e ${RECOVERY_FILE} ]; then
+	tier2_recovery
+fi
+
+# determine the time passed in real time between last reboot loop and this one
+passed=`${EXPR} ${now} - ${last}`
+osm_state=`${BOOTGETENV} -n install`
+if [ ${passed} -gt 3600 ]; then
+	tier1_recovery
+else
+	if [ ${osm_state} == "3:4" ]; then
+		# only in osm state 3:4 can we safely assume
+		# that nlclient hasn't had a chance to
+		# trigger osm continuation yet
+		# all other states are unsafe (or useless) to
+		# perform this.
+		tier1p_recovery
+	else
+		tier2_recovery
+	fi
+fi

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>nlwirelessregcal.em357</key>
+    <!-- The key for the calibration item goes here. This is also used as a suffix to
+         look up calibration data in sysenv -->
+	<dict>
+		<key>format</key>
+        <string>6lowpan-silabs</string>
+        <!-- This tells the code what decoder/enoder to use when translating from whats stored
+             in sysenv to something more generic. -->
+        <key>driver</key>
+        <string>6lowpan-silabs</string>
+        <!-- This tells the code which driver to instantiate. This will be specific to the underlying
+             technology and chipset -->
+        <key>driverProperties</key>
+        <dict>
+            <key>TxPowerModeAlt</key>
+            <integer>4</integer>
+            <key>LNABypass</key>
+            <true/>
+        </dict>
+        <!-- Driver-specific properties -->
+        <key>defaults</key>
+        <string>1500:11,16,-15;2600:11,16,-10</string>
+        <!-- The defaults go here. This will be used if looking up in sysenv fails -->
+        <key>powerIndexEU_ROW</key>
+        <string>1500</string>
+        <!-- Power index for Europe and Rest of the world -->
+        <key>powerIndexUS_CA</key>
+        <string>2600</string>
+        <!-- Power index for US and Canada -->
+	</dict>
+</dict>
+</plist>

@@ -1,0 +1,134 @@
+#!/bin/sh
+#
+# Copyright (c) 2010-2012 Nest Labs, Inc.
+# All rights reserved.
+#
+# Description:
+# This file implements a script to start/stop the primary
+# system application.
+#
+# Source common library
+. /etc/init.d/functions
+# Source daemon-monitor library
+. /etc/init.d/dm
+# Export fallback shared library search path
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:}${NESTLABSLIBDIR}
+NLCLIENTNAME=nlclient
+NLCLIENTAPP=${NESTLABSSBINDIR}/${NLCLIENTNAME}
+NLCLIENTPIDFILE="${VARDIR}/run/${NLCLIENTNAME}.pid"
+GENERICCONFFILENAME=nestlabs
+FAMILYCONFFILENAME=client
+PRODUCTCONFFILENAME=product
+DEMOCONFFILENAME=demo
+CONFFILENAMES="${GENERICCONFFILENAME} ${FAMILYCONFFILENAME} ${PRODUCTCONFFILENAME} ${DEMOCONFFILENAME}"
+EGREP="${GREP} -E"
+RMDIR="${RM} -r"
+MEDIADIR=${ROOTDIR}media
+SCRATCHDIR=${MEDIADIR}/scratch
+PROGRAM="`${BASENAME} ${0}`"
+DROPBOX=${NESTLABSSBINDIR}/dropbox
+cleanup_scratch () {
+ dropbox_file=`${DROPBOX} --show file | ${AWK} '{print $2}'`
+ if [ -e ${COREDUMPFLAG} ]; then
+  ${NESTLABSSBINDIR}/configcoredump setup
+  find ${SCRATCHDIR} -type f |${EGREP} -v "\.core|$dropbox_file" |xargs ${RM}
+ else
+  find ${SCRATCHDIR} -mindepth 1 -maxdepth 1 ! -name ".*" -a ! -name "${dropbox_file##*/}" -exec ${RM} -r {} \;
+ fi
+ dropbox_state=`${DROPBOX} --show state | ${AWK} '{print $2}'`
+ if [ "$dropbox_state" != "Extended" -a "$dropbox_state" != "Mounted" ]
+ then
+  ${RM} "$dropbox_file"
+ fi
+}
+case `${BOOTGETENV} -n "nlmodel"` in
+Flintstone-1.* )
+ #Resetting BLE Dialog chip using ble.sh. Will be removed when COM-210 is fixed
+ BLE_STOP_CMD="stop"
+ ;;
+Display-4.* )
+ BLE_START_CMD="start"
+ BLE_STOP_CMD="stop"
+ ;;
+esac
+find_configs () {
+ local dir="${1}"
+ local configs=""
+ shift 1
+ for type in ${@}; do
+  local config=""
+  # Add each config if present
+  config="${dir}/${type}.config"
+  if [ -r "${config}" ]; then
+   configs="${configs} -config ${config}"
+  fi
+ done
+ if [ -n "${configs}" ]; then
+  ${ECHO} "${configs}"
+ fi
+}
+has_configs () {
+ local dir="${1}"
+ shift 1
+ configs=`find_configs "${dir}" ${@}`
+ if [ -n "${configs}" ]; then
+  return 0
+ else
+  return 1
+ fi
+}
+end_service () {
+ local verb="${1}"
+ local how="${2}"
+ log_info "Service termination for ${NLCLIENTNAME} received from [${PPID}]: ${verb}"
+ ${STOPDAEMON} -q -x ${NLCLIENTAPP} ${how} > ${NULL} 2>&1
+ echo_and_log " ${verb} ${NLCLIENTNAME}\c"
+}
+stop_service () {
+ if has_configs "" "${NESTLABSCONFDIR}" demo ; then
+  STOPOPTS="--signal KILL"
+ else
+  STOPOPTS="--retry=TERM/180/ABRT/180/KILL/6"
+ fi
+ end_service "stopping" "${STOPOPTS}"
+}
+ble_actions () {
+ case "${1}" in
+ *)
+  ;;
+ esac
+}
+case "${1}" in
+'start')
+ ble_actions start
+ monit_service_action start "${NLCLIENTNAME}"
+ ;;
+'monit_start')
+ echo_and_log "Nest services:\c"
+ cleanup_scratch
+ ble_actions start
+ log_info "Service initiation for ${NLCLIENTNAME} received from [${PPID}]"
+ ${STARTDAEMON} -q -b -p "${NLCLIENTPIDFILE}" -a "${NLCLIENTAPP}" -- `find_configs ${NESTLABSCONFDIR} ${CONFFILENAMES}`
+ ;;
+'stop')
+ ble_actions stop
+ monit_service_action stop "${NLCLIENTNAME}"
+ ;;
+'monit_stop')
+ echo_and_log "Nest services:\c"
+ ble_actions stop
+ stop_service
+ ;;
+'kill')
+ echo_and_log "Nest services:\c"
+ end_service "killing" "--signal KILL"
+ echo_and_log "."
+ ;;
+'restart')
+ monit_service_action restart "${NLCLIENTNAME}"
+ ;;
+*)
+ echo "Usage: ${0} <start | stop | kill | restart>"
+ exit 1
+ ;;
+esac

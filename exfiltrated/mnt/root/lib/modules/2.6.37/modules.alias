@@ -1,0 +1,19 @@
+# Aliases extracted from modules themselves.
+alias sha1 sha1_generic
+alias sdio:c*v0097d4076* wl1271_sdio
+alias xfrm-type-10-51 ah6
+alias xfrm-type-10-50 esp6
+alias xfrm-type-10-108 ipcomp6
+alias xfrm-type-10-41 xfrm6_tunnel
+alias xfrm-mode-10-0 xfrm6_mode_transport
+alias xfrm-mode-10-1 xfrm6_mode_tunnel
+alias xfrm-mode-10-2 xfrm6_mode_ro
+alias xfrm-mode-10-4 xfrm6_mode_beet
+alias xfrm-type-10-43 mip6
+alias xfrm-type-10-60 mip6
+alias sit0 sit
+alias spi:wl1251 wl1251_spi
+alias sdio:c*v104Cd9066* wl1251_sdio
+alias spi:wl1271 wl12xx_spi
+alias platform:wl12xx wl12xx
+alias sdio:c*v0097d4076* wl12xx_sdio

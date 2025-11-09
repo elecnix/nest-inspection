@@ -1,0 +1,157 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2010-2016 Nest, Inc.
+#    All rights reserved.
+#
+#    Description:
+#      This file implements a script to start/stop the network
+#      connection manager daemon, connmand.
+#
+
+# Source common library
+. /etc/init.d/functions
+
+# Source networking library
+. /etc/init.d/networking-defines
+
+# Source daemon-monitor library
+. /etc/init.d/dm
+
+# Source networking defines
+. /etc/init.d/networking-defines
+
+# Export fallback shared library search path
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:}${NESTLABSLIBDIR}
+
+CONNMANCONFDIR=${ROOTDIR}media/user-config/connman
+
+NAME=connmand
+
+CONNMAND="${USRSBINDIR}/${NAME}"
+
+CONNMANDPIDFILE="${VARDIR}/run/${NAME}.pid"
+
+CONNMANDOPTS=`${CAT} ${CONFDIR}/${NAME}.options 2> ${NULL}`
+CONNMANDOPTS="${CONNMANDOPTS} --pidfile ${CONNMANDPIDFILE}"
+
+end_service () {
+	local verb="${1}"
+	local how="${2}"
+
+	log_info "Service termination for ${NAME} received from [${PPID}]: ${verb}"
+
+	${STOPDAEMON} -q -x ${CONNMAND} ${how} > ${NULL} 2>&1
+	echo_and_log " ${verb} ${NAME}\c"
+}
+
+flush_interface () {
+	local interface="${1}"
+
+	${IP} route flush dev "${interface}" > ${NULL} 2>&1
+	${IP} addr flush dev "${interface}" scope global > ${NULL} 2>&1
+}
+
+flush_interfaces () {
+	for interface in `ls /sys/class/net`; do
+		# flush the interfaces that connman controls
+		if [ "${interface}" == "${NETWORKING_WIFI_IFACE}" ]; then
+			flush_interface "${interface}"
+		fi
+	done
+}
+
+disable_arp_filter () {
+	${ECHO} "e f a 0 0 0 0" | ${USRSBINDIR}/wlan_cu -b > ${NULL} 2>&1
+}
+
+#
+# disconnect and reconnect to the WiFi AP
+# returned from the output of command
+# connmanctl services | grep '^*[A ][OR]' | grep wifi_ |  awk '{printf $NF}'
+#
+reconnect_service () {
+	local wifi_config=`${CONNMANCTL} services | ${GREP} '^*[A ][OR]' | ${GREP} wifi_ | ${AWK} '{printf $NF}'`
+
+	echo_and_log "Disconnecting from ${wifi_config}"
+	${CONNMANCTL} disconnect ${wifi_config}
+	echo_and_log "Reconnecting to ${wifi_config}"
+	${CONNMANCTL} connect ${wifi_config}
+}
+
+#
+# Start the daemon
+#
+start_connmand () {
+	create_dir_if_absent "${CONNMANCONFDIR}"
+
+	# Ideally, connman would have a configuration option
+	# or flag to instruct it to flush all addresses and
+	# routes on start-up. However, lacking such an option,
+	# we lean on ip to do the work before we start
+	# connman; otherwise, we may end up with a situation
+	# (e.g. when connman crashes) that an interface is
+	# assigned multiple IP addresses.
+
+	flush_interfaces
+
+	# WORKAROUND to get the ARP filter working
+	# dEbug -> Fw debug -> set Arp ip filter
+	# 0 0 0 0 will disable the ARP filter and, as a result,
+
+	disable_arp_filter
+
+	export CONNMAN_DHCP_DEBUG=1
+
+	${STARTDAEMON} -q -p ${CONNMANDPIDFILE} -a ${CONNMAND} -- ${CONNMANDOPTS}
+	unset CONNMAN_DHCP_DEBUG
+
+	echo_and_log " ${NAME}\c"
+}
+
+case "${1}" in
+
+'start')
+	if test -x ${CONNMAND}; then
+		monit_service_action start "${NAME}"
+	fi
+	;;
+
+'monit_start')
+	echo_and_log "Network connection daemon (from monit):\c"
+	start_connmand
+	echo_and_log "."
+	;;
+
+'stop')
+	echo_and_log "Network connection daemon stop:\c"
+	monit_service_action stop "${NAME}"
+	${SLEEP} 1
+	;;
+
+'kill')
+	echo_and_log "Network connection damemon kill:\c"
+	end_service "killing" "--signal KILL"
+	;;
+
+'monit_stop')
+	echo_and_log "Network connection daemon stop (from monit):\c"
+	${STOPDAEMON} -q --retry=TERM/8/KILL/6 -x ${CONNMAND}
+	${SLEEP} 1
+	;;
+
+'restart')
+	monit_service_action restart "${NAME}"
+	;;
+
+'reconnect')
+	echo_and_log "Network connection disconnect, then reconnect:\c"
+	reconnect_service
+	;;
+
+*)
+	echo_and_log "Usage: ${0} <start | stop | restart | kill | reconnect>"
+	exit 1
+	;;
+
+esac

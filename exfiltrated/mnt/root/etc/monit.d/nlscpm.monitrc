@@ -1,0 +1,16 @@
+#
+# Copyright (c) 2012 Nest Labs, Inc.
+# All rights reserved.
+#
+# Description:
+# This file is the control and configuration file for the
+# daemon-monitoring daemon, monit, for the Nest Labs System
+# Control and Power Management (SCPM) daemons, nlsleepd and
+# nlshutdownd.
+#
+check process nlsleepd matching /nestlabs/sbin/nlsleepd
+  start program = "/etc/init.d/nlsleep monit_start"
+  stop program = "/etc/init.d/nlsleep monit_stop"
+check process nlshutdownd matching /nestlabs/sbin/nlshutdownd
+  start program = "/etc/init.d/nlshutdown monit_start"
+  stop program = "/etc/init.d/nlshutdown monit_stop"

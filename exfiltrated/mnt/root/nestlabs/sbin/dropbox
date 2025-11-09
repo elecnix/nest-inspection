@@ -1,0 +1,1095 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2011 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    This document is the property of Nest. It is considered
+#    confidential and proprietary information.
+#
+#    This document may not be reproduced or transmitted in any form,
+#    in whole or in part, without the express written permission of
+#    Nest.
+#
+#    Description:
+#      This file implements a helper executable script for managing
+#      the file-based backing store used for USB Mass Storage Class
+#      (MSC) support.
+#
+#      The states, events and transitions among those states supported
+#      by the drop box is:
+#
+#                             Mount                Extend
+#           .----.         .----------.         .----------.
+#           |    |         V          |         |          V
+#           |  .-------------.      .-------------.      .--------------.
+#      List |  | Mounted (4) |      | Created (2) |      | Extended (3) |
+#           |  '-------------'      '-------------'      '--------------'
+#           |    ^         |          ^   | ^   ^          |
+#           '----'         '----------'   | |   '----------'
+#                             Unmount     | |      Retract
+#                                         | |
+#                                         | |
+#                                  Delete | | Create
+#                                         | |
+#                                         | |
+#                                         V |
+#              .-------------.      .-------------.
+#              | Unknown (0) |      | Deleted (1) |
+#              '-------------'      '-------------'
+#
+#      The numbers listed in parenthesis are the designated state
+#      identifers for each state.
+#
+
+# Constants
+
+ROOTDIR=${PREFIX}/
+
+BINDIR=${ROOTDIR}bin
+DATADIR=${ROOTDIR}share
+DEVICEDIR=${ROOTDIR}dev
+CONFDIR=${ROOTDIR}etc
+LIBDIR=${ROOTDIR}lib
+LIBEXECDIR=${ROOTDIR}libexec
+VARDIR=${ROOTDIR}var
+LOGDIR=${VARDIR}/log
+MANDIR=${ROOTDIR}man
+SBINDIR=${ROOTDIR}sbin
+
+USRDIR=${ROOTDIR}usr
+USRBINDIR=${USRDIR}/bin
+USRDATADIR=${USRDIR}/share
+USRLIBDIR=${USRDIR}/lib
+USRLIBEXECDIR=${USRDIR}/libexec
+USRSBINDIR=${USRDIR}/sbin
+
+AWK=${USRBINDIR}/awk
+BASENAME=${USRBINDIR}/basename
+CAT=${BINDIR}/cat
+DD=${BINDIR}/dd
+ECHO="${BINDIR}/echo -e"
+FALSE=${BINDIR}/false
+FIND=${USRBINDIR}/find
+LOGGER=${USRBINDIR}/logger
+LOSETUP=${SBINDIR}/losetup
+MKFSVFAT=${SBINDIR}/mkfs.vfat
+MOUNT=${BINDIR}/mount
+NULL=${DEVICEDIR}/null
+PARTED=${USRSBINDIR}/parted
+PRINTF=${USRBINDIR}/printf
+RM=${BINDIR}/rm
+SED=${BINDIR}/sed
+STAT=${BINDIR}/stat
+TR=${USRBINDIR}/tr
+TRUE=${BINDIR}/true
+UMOUNT=${BINDIR}/umount
+ZERO=${DEVICEDIR}/zero
+
+# Sizes
+
+KILOBYTE=1024
+MEGABYTE=$((1024 * KILOBYTE))
+GIGABYTE=$((1024 * MEGABYTE))
+
+# Actions / Events
+
+ACTION_CREATE=0
+ACTION_EXTEND=0
+ACTION_RETRACT=0
+ACTION_LIST=0
+ACTION_MOUNT=0
+ACTION_UNMOUNT=0
+ACTION_DELETE=0
+ACTION_SHOW=0
+
+ACTIONS=""
+
+# Options / Parameters
+
+OPTION_CONFIG_FILE="${CONFDIR}/nestlabs/dropbox.conf"
+OPTION_DEVICE=""
+OPTION_FILE="${ROOTDIR}media/scratch/dropbox"
+OPTION_FORMAT="vfat"
+OPTION_LABEL="Nest"
+OPTION_LUN=0
+OPTION_MOUNTPOINT="${ROOTDIR}media/dropbox"
+OPTION_NUMERIC=0
+OPTION_SIZE=41943040
+OPTION_SHOW="device file format label lun mount size state"
+
+# Other Globals
+
+SYSPLATFORMDIR="${ROOTDIR}sys"
+
+SYSUSBMSCATTRFILE='${SYSPLATFORMDIR}/${OPTION_DEVICE}/lun${OPTION_LUN}/file'
+
+BLOCKSIZE=$((128 * KILOBYTE))
+
+#
+# usage <status>
+#
+# Description:
+#   This routine prints out the proper command line usage for this
+#   program and then exits with the specified status.
+#
+# Input(s):
+#   status - Exit status to exit the program with.
+#
+# Returns:
+#   This subroutine does not return.
+#
+usage() {
+	local name=`${BASENAME} ${0}`
+
+	${ECHO} "Usage: ${name} [ options ]"
+
+	if [ ${1} -ne 0 ]; then
+		${ECHO} "Try '${name} -h' for more information."
+	fi
+
+	if [ ${1} -ne 1 ]; then
+${CAT} << EOF
+  --config-file PATH         Path to an external configuration file
+                             (default ${OPTION_CONFIG_FILE}).
+  -c, --create               Create the backing storage for the dropbox.
+  -d, --delete               Delete the backing storage for the dropbox.
+  --device DEVICE            Use DEVICE as the USB Mass Storage Class (MSC)
+                             gadget to extend the dropbox backing storage to
+                             the host system (default ${OPTION_DEVICE}).
+  -e, --extend               Extend the dropbox backing storage as a removable
+                             volume to the host system.
+  --file FILE                Specify FILE as the name of the file to use as
+                             the backing storage for the dropbox (default
+                             ${OPTION_FILE}).
+  -f, --format FORMAT        Specify FORMAT as the file system format of the
+                             dropbox backing storage (default ${OPTION_FORMAT}).
+  -h, --help                 Print this help, then exit.
+  --label LABEL              Specify LABEL as the label or name for the volume
+                             extended to the host system (default ${OPTION_LABEL}).
+  -l, --list                 Display the current contents of the dropbox.
+  --lun LUN                  Specify LUN as the logical unit number for the
+                             device extended to the host system (default ${OPTION_LUN}).
+  -m, --mount                Mount the dropbox for internal access.
+  -n, --numeric              Display the current dropbox settings or state
+                             numerically, where appropriate, rather than as
+                             human-readable strings.
+  --mount-point PATH         Specify PATH as the mount point at which to mount
+                             the dropbox for internal access (default
+                             ${OPTION_MOUNTPOINT}).
+  -r, --retract              Retract the dropbox as a removable volume from the
+                             host system.
+  -s, --size SIZE            Specify SIZE, in bytes, as the preformatted size
+                             of the dropbox backing storage (default `encode_size ${OPTION_SIZE}`).
+  --show OPTION[,OPTION]...  Display the specified dropbox options or attributes,
+                             then exit. The following options or attributes are
+                             supported:
+
+                               all, device, file, format, label, lun, mount,
+                               size, state
+
+  -u, --unmount              Unmount the dropbox for internal access.
+  -v, --version              Display version information, then exit.
+EOF
+	fi
+
+	exit ${1}
+}
+
+#
+# version
+#
+# Description:
+#   This routine prints out program version information and then exits.
+#
+# Input(s):
+#   N/A
+#
+# Returns:
+#   This subroutine does not return.
+#
+version() {
+	${ECHO} "${PROGRAM} 2011-11-16"
+	${ECHO} "Copyright (c) 2011 Nest Labs, Inc."
+	${ECHO} "All rights reserved."
+
+	exit 0
+}
+
+log() {
+	local args="${1}"
+	local priority="${2}"
+	shift 2
+
+	${LOGGER} ${args} -p "${priority}" -t "${PROGRAM}[$$]" "${@}"
+	#${ECHO} "${priority}" "${PROGRAM}[$$]" ${@}
+}
+
+# Output to syslog and stderr
+log_error() {
+	log "-s" "user.err" "${@}"
+}
+
+# Output to syslog only
+log_info() {
+	log "" "user.info" "${@}"
+}
+
+#
+# format_vfat <path> <label>
+#
+# Description:
+#   This routine formats the file at the specified path as a VFAT /
+#   FAT-32 file system with the specified label.
+#
+# Input(s):
+#   path  - The path to the file to format.
+#   label - The volume label to apply to the formatted file.
+#
+# Returns:
+#   0 if successful; otherwise, > 0 on error.
+#
+format_vfat() {
+	local path="${1}"
+	local label="${2}"
+
+	if [ -f "${path}" ]; then
+		${MKFSVFAT} -n "${label}" "${path}"
+	fi
+}
+
+#
+# dropbox_backing_file_get
+#
+# Input(s):
+#   N/A
+#
+# Returns:
+#   0 if successful; otherwise, > 0 on error.
+#
+dropbox_backing_file_get() {
+	local path="`eval echo ${SYSUSBMSCATTRFILE}`"
+
+	if [ -f "${path}" ]; then
+		${CAT} "${path}"
+	fi
+}
+
+#
+# dropbox_backing_file_set <path>
+#
+# Input(s):
+#   path - The path to the file to set as the file-based backing storage
+#          for the dropbox.
+#
+# Returns:
+#   0 if successful; otherwise, > 0 on error.
+#
+dropbox_backing_file_set() {
+	local value="${1}"
+	local path="`eval echo ${SYSUSBMSCATTRFILE}`"
+
+	if [ -f "${path}" ]; then
+		${ECHO} "${value}" > "${path}"
+	fi
+}
+
+#
+# dropbox_device <path>
+#
+dropbox_device() {
+	local path="${1}"
+
+	if [ -f "${path}" ]; then
+		${LOSETUP} -j "${path}" | ${AWK} -F: '{print $1}'
+	fi
+}
+
+#
+# awk_escape_path <path>
+#
+awk_escape_path() {
+	local path="${1}"
+
+	${ECHO} "${1}" | ${SED} -n -e 's,\/,\\/,gp'
+}
+
+#
+# dropbox_mounted <path> <mountpoint>
+#
+dropbox_mounted() {
+	local path="${1}"
+	local mountpoint="${2}"
+	local device=`dropbox_device "${path}"`
+
+	if [ -b "${device}" ]; then
+		local regexp=`awk_escape_path ${device}`
+		local mountedat=`${CAT} /proc/mounts | ${AWK} "/${regexp}/{ print \\$2 }"`
+		if [ -d "${mountedat}" ] && [ "${mountedat}" = "${mountpoint}" ]; then
+			return 0
+		fi
+	fi
+
+	return 1
+}
+
+#
+# check_file <path>
+#
+check_file() {
+	test -f "${1}"
+}
+
+#
+# is_mounted
+#
+is_mounted() {
+	dropbox_mounted "${OPTION_FILE}.${OPTION_FORMAT}" "${OPTION_MOUNTPOINT}"
+}
+
+#
+# is_created
+#
+is_created() {
+	check_file "${OPTION_FILE}.${OPTION_FORMAT}"
+}
+
+#
+# is_extended
+#
+is_extended() {
+	test -n "`dropbox_backing_file_get`"
+}
+
+#
+# get_size
+#
+# If the dropbox file is currently in the "Created", "Extended" or
+# "Mounted" states, then its size is returned. Otherwise, the current
+# option size is returned.
+#
+get_size() {
+	if is_created || is_extended || is_mounted ; then
+		${STAT} -c "%s" "${OPTION_FILE}.${OPTION_FORMAT}"
+	else
+		echo "${OPTION_SIZE}"
+	fi
+}
+
+#
+# encode_size <size>
+#
+encode_size() {
+	local size="${1}"
+	local divisor=""
+	local label=""
+
+	if [ ${size} -lt ${KILOBYTE} ]; then
+		divisor=1
+		label="B"
+
+	elif [ ${size} -lt ${MEGABYTE} ]; then
+		divisor=${KILOBYTE}
+		label="KiB"
+
+	elif [ ${size} -lt ${GIGABYTE} ]; then
+		divisor=${MEGABYTE}
+		label="MiB"
+
+	else
+		divisor=1
+		label="B"
+
+	fi
+
+	${ECHO} "$((size / divisor)) ${label}"
+}
+
+#
+# decode_state <state>
+#
+decode_state() {
+	local state="${1}"
+
+	if [ ${OPTION_NUMERIC} -eq 1 ]; then
+		case "${state}" in
+
+		'Deleted')
+			${ECHO} 1
+			;;
+
+		'Created')
+			${ECHO} 2
+			;;
+
+		'Extended')
+			${ECHO} 3
+			;;
+
+		'Mounted')
+			${ECHO} 4
+			;;
+
+		*)
+			${ECHO} 0
+			;;
+
+		esac
+	else
+		${ECHO} "${state}"
+	fi	
+}
+
+#
+# get_state
+#
+get_state() {
+	is_created
+	local created=$?
+	is_mounted
+	local mounted=$?
+	is_extended
+	local extended=$?
+
+	if [ ${created} -ne 0 ]; then
+		decode_state "Deleted"
+	elif [ ${created} -eq 0 ]; then
+		if [ ${mounted} -eq 0 ] && [ ${extended} -ne 0 ]; then
+			decode_state "Mounted"
+		elif [ ${mounted} -ne 0 ] && [ ${extended} -eq 0 ]; then
+			decode_state "Extended"
+		elif [ ${mounted} -ne 0 ] && [ ${extended} -ne 0 ]; then
+			decode_state "Created"
+		else
+			decode_state "Unknown"
+		fi
+	else
+		decode_state "Unknown"
+	fi
+}
+
+#
+# dropbox_format <path> <format> <label>
+#
+dropbox_format() {
+	local path="${1}"
+	local format="${2}"
+	local label="${3}"
+
+	log_info "Formatting dropbox file-based backing storage '${path}' with format '${format}' and label '${label}'."
+
+	case "${format}" in
+
+	vfat)
+		format_vfat "${path}" "${label}"
+		;;
+
+	esac
+}
+
+#
+# howmany <x> <y>
+#
+howmany() {
+	local x=${1}
+	local y=${2}
+
+	if [ $((x % y)) -eq 0 ]; then
+		${ECHO} $((x / y))
+	else
+		${ECHO} $(((x / y) + 1))
+	fi
+}
+
+#
+# dropbox_create <path> <size> <format> <label>
+#
+dropbox_create() {
+	local path="${1}"
+	local size="${2}"
+	local format="${3}"
+	local label="${4}"
+	local bs=${BLOCKSIZE}
+	local count=`howmany ${size} ${bs}`
+
+	if [ ! -f "${path}" ]; then
+		log_info "Creating dropbox file-based backing storage '${path}' of size '`encode_size ${size}`'."
+
+		${DD} if="${ZERO}" of="${path}" bs=${bs} count=${count} 2> ${NULL}
+
+		if [ -f "${path}" ]; then
+			dropbox_format "${path}" "${format}" "${label}"
+		fi
+	fi
+}
+
+#
+# dropbox_extend <path>
+#
+dropbox_extend() {
+	local path="${1}"
+
+	log_info "Extending dropbox file-based backing storage '${path}'."
+
+	dropbox_backing_file_set "${path}"
+}
+
+#
+# dropbox_retract <path>
+#
+dropbox_retract() {
+	local path="${1}"
+
+	log_info "Retracting dropbox file-based backing storage '${path}'."
+
+	dropbox_backing_file_set
+}
+
+#
+# dropbox_mount <path> <mount point>
+#
+# In general, when the dropbox is formatted as a raw FAT file system,
+# we expect the file system to start at sector 0 (offset 0
+# bytes). However, when the FAT file system exists as part of an MBR
+# (Master Boot Record) or GPT (GUID Partition Table), we expect the
+# file system to be in the first partition at sector 36 (offset 18,342
+# bytes) or sector 34 (offset 17,408 bytes), respectively.
+#
+# The awk inline script below allows us to determine that offset.
+#
+dropbox_mount() {
+	local path="${1}"
+	local mountpoint="${2}"
+	local device=`${LOSETUP} -f`
+	local offset=`${PARTED} -m "${path}" unit B print | ${AWK} -F ':' '/^\//{ if (getline) { sub(/B$/, "", $2); print $2 } else print 0 }'`
+
+	if [ -z "${device}" ]; then
+		error="unable to obtain a loopback device"
+	fi
+
+	if [ -z "${offset}" ] || [ "${offset}" -lt 0 ]; then
+		error="unrecognized volume format or label"
+	fi
+
+	if [ -n "${error}" ]; then
+		log_error "Cannot mount dropbox file-based backing storage '${path}' at '${mountpoint}': ${error}."
+		exit 1
+	fi
+
+	log_info "Mounting dropbox file-based backing storage '${path}' at offset '${offset}' on device '${device}' on mount point '${mountpoint}'."
+
+	${LOSETUP} -o "${offset}" "${device}" "${path}"
+	${MOUNT} "${device}" "${mountpoint}"
+}
+
+#
+# dropbox_list <mount point>
+#
+# Description:
+#   This function lists the fully-qualified paths of all regular files
+#   in the dropbox at the specified mount point.
+#
+# Input(s):
+#   1 - The dropbox mount point for which the regular files should be
+#       listed.
+#
+dropbox_list() {
+	local mountpoint="${1}"
+
+	if [ -d "${mountpoint}" ]; then
+		${FIND} "${mountpoint}" -type f
+	fi
+}
+
+#
+# dropbox_unmount <path> <mountpoint>
+#
+dropbox_unmount() {
+	local path="${1}"
+	local mountpoint="${2}"
+	local device=`dropbox_device "${path}"`
+
+	if [ -d "${mountpoint}" ]; then
+		log_info "Unmounting dropbox file-based backing storage '${path}' on mount point '${mountpoint}'."
+		${UMOUNT} "${mountpoint}" && ${LOSETUP} -d "${device}"
+	fi
+}
+
+#
+# dropbox_delete <path>
+#
+dropbox_delete() {
+	local path="${1}"
+
+	if [ -f "${path}" ]; then
+		log_info "Deleting dropbox file-based backing storage '${path}'."
+		${RM} -f "${path}"
+	fi
+}
+
+do_dropbox_create() {
+	local path="${1}"
+	local size="${2}"
+	local format="${3}"
+	local label="${4}"
+
+	check_size "${size}"
+	check_format "${format}"
+
+	if is_created ; then
+		log_error "Cannot create dropbox file-based backing storage ${path}: file already exists."
+		exit 1
+	fi
+
+	dropbox_create "${path}" "${size}" "${format}" "${label}"
+}
+
+do_dropbox_extend() {
+	local path="${1}"
+	local mountpoint="${2}"
+
+	if is_extended ; then
+		log_error "Cannot extend dropbox file-based backing storage '${path}': already extended."
+		exit 1
+	fi
+
+	if ! is_created ; then
+		log_error "Cannot extend dropbox file-based backing storage '${path}': no such file."
+		exit 1
+	fi
+
+	if is_mounted ; then
+		log_error "Cannot extend dropbox file-based backing storage '${path}': currently mounted."
+		exit 1
+	fi
+
+	dropbox_extend "${path}"
+}
+
+do_dropbox_retract() {
+	local path="${1}"
+
+    	if ! is_created ; then
+		log_error "Cannot retract dropbox file-based backing storage '${path}': no such file."
+		exit 1
+    	fi
+
+    	if is_mounted ; then
+    	    	log_error "Cannot retract dropbox file-based backing storage '${path}': currently mounted."
+    	    	exit 1
+	fi
+
+	if is_extended ; then
+		dropbox_retract "${path}"
+	fi
+}
+
+do_dropbox_mount() {
+	local path="${1}"
+	local mountpoint="${2}"
+
+	if is_mounted ; then
+		log_error "Cannot mount dropbox file-based backing storage '${path}': already mounted."
+		exit 1
+	fi
+
+	if is_extended ; then
+		log_error "Cannot mount dropbox file-based backing storage '${path}': currently extended."
+		exit 1
+	fi
+
+    	if ! is_created ; then
+		log_error "Cannot mount dropbox file-based backing storage '${path}': no such file."
+		exit 1
+	fi
+
+	dropbox_mount "${path}" "${mountpoint}"
+}
+
+do_dropbox_list() {
+	local mountpoint="${1}"
+
+	if ! is_mounted ; then
+		log_error "Cannot list dropbox file-based backing storage mounted at '${mountpoint}': not mounted."
+		exit 1
+	fi
+
+	dropbox_list "${mountpoint}"
+}
+
+do_dropbox_unmount() {
+	local path="${1}"
+	local mountpoint="${2}"
+
+	if ! is_mounted ; then
+		log_error "Cannot unmount dropbox file-based backing storage '${path}': not mounted."
+		exit 1
+	fi
+
+	dropbox_unmount "${path}" "${mountpoint}"
+}
+
+do_dropbox_delete() {
+	local path="${1}"
+	local mountpoint="${2}"
+
+	if ! is_created ; then
+		log_error "Cannot delete dropbox file-based backing storage '${path}': no such file."
+		exit 1
+	fi
+
+	if is_mounted ; then
+		log_error "Cannot delete dropbox file-based backing storage '${path}': currently mounted."
+		exit 1
+	fi
+
+	if is_extended ; then
+		log_error "Cannot delete dropbox file-based backing storage '${path}': currently extended."
+		exit 1
+	fi
+
+	dropbox_delete "${path}"
+}
+
+attribute_show() {
+	local label="${1}"
+	local value="${2}"
+
+	if [ ${OPTION_NUMERIC} -ne 1 ]; then
+		${PRINTF} "%-8s" "${label}:"
+	fi
+
+	${ECHO} "${value}"
+}
+
+do_dropbox_show() {
+	local options="${1}"
+
+	for option in ${options} ; do
+
+		case "${option}" in
+
+		device)
+			attribute_show "Device" "${OPTION_DEVICE}"
+			;;
+
+		file)
+			attribute_show "File" "${OPTION_FILE}.${OPTION_FORMAT}"
+			;;
+
+		format)
+			attribute_show "Format" "${OPTION_FORMAT}"
+			;;
+
+		label)
+			attribute_show "Label" "${OPTION_LABEL}"
+			;;
+
+		lun)
+			attribute_show "LUN" "${OPTION_LUN}"
+			;;
+
+		mount)
+			attribute_show "Mount" "${OPTION_MOUNTPOINT}"
+			;;
+
+		size)
+			local size=`get_size`
+
+			[ ${OPTION_NUMERIC} -eq 1 ] || size="`encode_size ${size}`"
+			attribute_show "Size" "${size}"
+
+			;;
+
+		state)
+			attribute_show "State" "`get_state`"
+			;;
+
+		esac
+	done
+}
+
+#
+# check_support
+#
+# Description:
+#   This routine checks to see whether the drop box functionality is
+#   supported on the current system and exits with failure status if
+#   not.
+#
+# Input(s):
+#   N/A
+#
+# Returns:
+#   This routine does not return.
+#
+check_support() {
+	local path="`eval echo ${SYSUSBMSCATTRFILE}`"
+
+	if [ ! -f "${path}" ]; then
+		log_error "Dropbox support does not exist on this platform."
+		exit 1
+	fi
+}
+
+check_actions() {
+	if [ ${ACTION_CREATE} -eq 1 ] && [ ${ACTION_LIST} -eq 1 ] && [ ${ACTION_MOUNT} -ne 1 ]; then
+		log_error "The dropbox create and list options cannot be used without also specifying the mount option."
+		exit 1
+
+	elif [ ${ACTION_EXTEND} -eq 1 ] && [ ${ACTION_RETRACT} -eq 1 ]; then
+		log_error "The dropbox extend and retract options are mutually exclusive. Please choose one or the other."
+		exit 1
+
+	elif [ ${ACTION_EXTEND} -eq 1 ] && [ ${ACTION_DELETE} -eq 1 ]; then
+		log_error "The dropbox extend and delete options are incompatible. Please choose on or the other."
+		exit 1
+
+	elif [ ${ACTION_EXTEND} -eq 1 ] && [ ${ACTION_MOUNT} -eq 1 ]; then
+		log_error "The dropbox extend and mount options are incompatible. Please choose on or the other."
+		exit 1
+
+	elif [ ${OPTION_NUMERIC} -eq 1 ] && [ ${ACTION_SHOW} -ne 1 ]; then
+		log_error "The numeric option may only be used with the show option."
+		exit 1
+
+	fi
+}
+
+#
+# check_format <format>
+#
+# Description:
+#   This routine determines whether the specified volume format is
+#   supported.
+#
+# Input(s):
+#   format - The volume format to check support for.
+#
+# Returns:
+#   0 on success; otherwise, exits with failure status.
+#
+check_format() {
+	local format="${1}"
+
+	case "${format}" in
+
+	vfat)
+		;;
+
+	*)
+		log_error "The format \"${format}\" is not supported."
+		exit 1
+		;;
+
+	esac
+}
+
+#
+# check_size <size>
+#
+check_size() {
+	local size="${1}"
+	local bs=${BLOCKSIZE}
+	local pretty_bs="`encode_size ${bs}`"
+
+	if [ ${size} -lt ${bs} ]; then
+		log_error "The size \"${size}\" is less than ${Pretty_bs}. Please specify a size greater than ${pretty_bs}."
+		exit 1
+	fi
+}
+
+#
+# Main Program Body
+#
+
+PROGRAM="`${BASENAME} ${0}`"
+
+while [ ${#} -gt 0 ]; do
+	if [ ${1} == "--config-file" ]; then
+		if [ -z "${2}" ]; then
+			usage 1
+		fi
+		OPTION_CONFIG_FILE="${2}"
+		shift 2
+
+	elif [ ${1} == "-c" ] || [ ${1} == "--create" ]; then
+		ACTION_CREATE=1
+		ACTIONS="${ACTIONS} create"
+		shift 1
+
+	elif [ ${1} == "-d" ] || [ ${1} == "--delete" ]; then
+		ACTION_DELETE=1
+		ACTIONS="${ACTIONS} delete"
+		shift 1
+
+	elif [ ${1} == "--device" ]; then
+		if [ -z "${2}" ]; then
+			usage 1
+		fi
+		OPTION_DEVICE="${2}"
+		shift 2
+
+	elif [ ${1} == "-e" ] || [ ${1} == "--extend" ]; then
+		ACTION_EXTEND=1
+		ACTIONS="${ACTIONS} extend"
+		shift 1
+
+	elif [ ${1} == "--file" ]; then
+		if [ -z "${2}" ]; then
+			usage 1
+		fi
+		OPTION_FILE="${2}"
+		shift 2
+
+	elif [ ${1} == "-f" ] || [ ${1} == "--format" ]; then
+		if [ -z "${2}" ]; then
+			usage 1
+		fi
+		OPTION_FORMAT="${2}"
+		shift 2
+
+	elif [ ${1} == "-h" ] || [ ${1} == "--help" ]; then
+		usage 0
+
+	elif [ ${1} == "-l" ] || [ ${1} == "--list" ]; then
+		ACTION_LIST=1
+		ACTIONS="${ACTIONS} list"
+		shift 1
+
+	elif [ ${1} == "--label" ]; then
+		if [ -z "${2}" ]; then
+			usage 1
+		fi
+		OPTION_LABEL="${2}"
+		shift 2
+
+	elif [ ${1} == "--lun" ]; then
+		if [ -z "${2}" ]; then
+			usage 1
+		fi
+		OPTION_LUN="${2}"
+		shift 2
+
+	elif [ ${1} == "-m" ] || [ ${1} == "--mount" ]; then
+		ACTION_MOUNT=1
+		ACTIONS="${ACTIONS} mount"
+		shift 1
+
+	elif [ ${1} == "-n" ] || [ ${1} == "--numeric" ]; then
+		OPTION_NUMERIC=1
+		shift 1
+
+	elif [ ${1} == "--mount-point" ]; then
+		if [ -z "${2}" ]; then
+			usage 1
+		fi
+		OPTION_MOUNTPOINT="${2}"
+		shift 2
+
+	elif [ ${1} == "-r" ] || [ ${1} == "--retract" ]; then
+		ACTION_RETRACT=1
+		ACTIONS="${ACTIONS} retract"
+		shift 1
+
+	elif [ ${1} == "-s" ] || [ ${1} == "--size" ]; then
+		if [ -z "${2}" ]; then
+			usage 1
+		fi
+		OPTION_SIZE="${2}"
+		shift 2
+
+	elif [ ${1} == "--show" ]; then
+		ACTION_SHOW=1
+		ACTIONS="${ACTIONS} show"
+		if [ -z "${2}" ]; then
+			usage 1
+
+		elif [ "${2}" != "all" ]; then
+			OPTION_SHOW="`${ECHO} ${2} | ${TR} ',' ' '`"
+
+		fi
+		shift 2
+
+	elif [ ${1} == "-u" ] || [ ${1} == "--unmount" ]; then
+		ACTION_UNMOUNT=1
+		ACTIONS="${ACTIONS} unmount"
+		shift 1
+
+	elif [ ${1} == "-v" ] || [ ${1} == "--version" ]; then
+		version
+
+	else
+        	log_error "Unknown argument '${1}'."
+        	usage 1
+
+	fi
+done
+
+#
+# Read in external configuration file
+#
+if [ -f "${OPTION_CONFIG_FILE}" ]; then
+	source "${OPTION_CONFIG_FILE}"
+else
+	log_error "Can not read configuration file: ${OPTION_CONFIG_FILE}"
+	exit 1
+fi
+
+#
+# Check whether or not dropbox functionality is supported on this system.
+#
+check_support
+
+#
+# Check whether a valid combination of options and actions was specified.
+#
+check_actions
+
+#
+# Perform the requested actions with the default or specified options.
+#
+
+for action in ${ACTIONS}; do
+
+	case "${action}" in
+
+	create)
+		do_dropbox_create "${OPTION_FILE}.${OPTION_FORMAT}" "${OPTION_SIZE}" "${OPTION_FORMAT}" "${OPTION_LABEL}"
+		;;
+
+	extend)
+		do_dropbox_extend "${OPTION_FILE}.${OPTION_FORMAT}"
+		;;
+
+	retract)
+		do_dropbox_retract "${OPTION_FILE}.${OPTION_FORMAT}"
+		;;
+
+	mount)
+		do_dropbox_mount "${OPTION_FILE}.${OPTION_FORMAT}" "${OPTION_MOUNTPOINT}"
+		;;
+
+	list)
+		do_dropbox_list "${OPTION_MOUNTPOINT}"
+		;;
+
+	unmount)
+		do_dropbox_unmount "${OPTION_FILE}.${OPTION_FORMAT}" "${OPTION_MOUNTPOINT}"
+		;;
+
+	delete)
+		do_dropbox_delete "${OPTION_FILE}.${OPTION_FORMAT}"
+		;;
+
+	show)
+		do_dropbox_show "${OPTION_SHOW}"
+		;;
+
+	*)
+		log_error "Unknown dropbox action '${action}'."
+		exit 1
+
+	esac
+
+done

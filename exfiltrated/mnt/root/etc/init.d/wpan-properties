@@ -1,0 +1,99 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2013 Nest, Inc.
+#    All rights reserved.
+#
+#    Description:
+#      When D1 and D2 unit shipped, their 802.15.4 MAC addresses were not copied
+#      into the system environment so it was necessary to deploy a script that
+#      would extract this information from the radio and update the provisioning
+#      area in the field.
+#
+#      All later products will be provisionined in the factory such that this
+#      script should never have any work to do.  As an extra precaution against
+#      unintended changes to the provisioning, this file should not be included
+#      in the file system images for such products.
+#
+
+# Source common library
+. /etc/init.d/functions
+
+BOOTSETENV=${SBINDIR}/fw_setenv
+
+WPANCTL=${BINDIR}/wpanctl
+
+# raw address in characters
+EXPECTED_802154_RAW_ADDR_LENGTH=16
+
+# pretty address in characters ( 8 * 2 + 7 )
+EXPECTED_802154_PRETTY_ADDR_LENGTH=23
+
+# Expected OUI of MAC address. If we don't get a match, we reload
+EXPECTED_802154_ADDR_OUI="18:B4:30"
+
+# the environment key that'we re using.
+# NOTE: This key must be in sync with the one in nlsysenv-keys.hpp
+NV_802154_ADDR_KEY="hwaddr1"
+
+read_802154_hw_addr () 
+{
+	local raw_address=`wpanctl getprop HWAddr | ${SED} 's/^.*= \[\([[:digit:][:alpha:]]*\)\].*/\1/'`
+	if [ "${#raw_address}" -eq "$EXPECTED_802154_RAW_ADDR_LENGTH" ]
+	then
+		local a=$raw_address;
+		pretty_address="${a:0:2}"
+		a=${a:2}
+
+		while [ -n "$a" ]
+		do
+			pretty_address="$pretty_address:"${a:0:2}
+			a=${a:2}
+		done
+
+		${ECHO} "$pretty_address"
+	fi
+}
+
+clone_802154_hw_addr ()
+{
+	hw_addr=`read_802154_hw_addr`
+	if [ -n "$hw_addr" ]
+	then
+		echo_and_log "Setting $NV_802154_ADDR_KEY to $hw_addr"
+		${BOOTSETENV} "$NV_802154_ADDR_KEY" "$hw_addr"
+	fi
+}
+
+nv_check_802154_hw_addr ()
+{
+	env_addr=`${BOOTGETENV} "$NV_802154_ADDR_KEY" 2> ${NULL} | ${SED} 's/.*=\(.*\)/\1/' | grep "^$EXPECTED_802154_ADDR_OUI"`
+
+	# Check if it's the expected length. If the length was wrong in the first place, or
+	# If the OUI didn't match then we will write
+	if [ "${#env_addr}" -ne "$EXPECTED_802154_PRETTY_ADDR_LENGTH" ]
+	then
+		clone_802154_hw_addr
+	fi
+}
+
+case "${1}" in
+
+'start')
+	nv_check_802154_hw_addr
+	;;
+
+'stop')
+	;;
+
+'restart')
+	${0} stop
+	${0} start
+	;;
+
+*)
+	echo "Usage: ${0} <start | stop | restart>"
+	exit 1
+	;;
+
+esac

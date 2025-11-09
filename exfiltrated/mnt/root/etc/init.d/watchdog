@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# Copyright (c) 2010-2012 Nest Labs, Inc.
+# All rights reserved.
+#
+# Description:
+# This file implements a script to start/stop the hardware
+# watchdog daemon.
+#
+# Source common library
+. /etc/init.d/functions
+# Source daemon-monitor library
+. /etc/init.d/dm
+# Export fallback shared library search path
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:}${NESTLABSLIBDIR}
+WATCHDOGD_NAME=watchdogd
+WATCHDOGD="${NESTLABSSBINDIR}/watchdogd"
+start_watchdogd () {
+    if test -x ${WATCHDOGD}; then
+        ${STARTDAEMON} -b -x ${WATCHDOGD} -- `${CAT} ${CONFDIR}/watchdogd.options 2> ${NULL}`
+ echo_and_log " watchdogd\c"
+    fi
+}
+stop_watchdogd () {
+    ${STOPDAEMON} -q -x ${WATCHDOGD}
+}
+case "${1}" in
+'start')
+ echo_and_log "Hardware watchdog daemon:\c"
+ if $CHECK watchdog; then
+     start_watchdogd
+ fi
+ echo_and_log "."
+ ;;
+'stop')
+ stop_watchdogd
+ ;;
+'restart')
+ ${0} stop
+ ${0} start
+ ;;
+'module')
+ ${MODPROBE} ${MODULE_NAME}
+ ;;
+*)
+ echo "Usage: ${0} <start | stop | restart | module>"
+ exit 1
+ ;;
+esac

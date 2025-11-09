@@ -1,0 +1,179 @@
+#!/bin/sh
+
+#    Copyright (c) 2012 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    This document is the property of Nest. It is considered
+#    confidential and proprietary information.
+#
+#    This document may not be reproduced or transmitted in any form,
+#    in whole or in part, without the express written permission of
+#    Nest.
+#
+#    Description:
+#      This file implements a script to send a D-Bus destination the
+#      com.nestlabs.Heartbeat.Request method call and returns status
+#      based on the the response or lack thereof.
+#
+
+ROOTDIR=${PREFIX}/
+
+BINDIR=${ROOTDIR}bin
+SBINDIR=${ROOTDIR}sbin
+
+USRDIR=${ROOTDIR}usr
+USRBINDIR=${USRDIR}/bin
+USRSBINDIR=${USRDIR}/sbin
+
+BASENAME=${USRBINDIR}/basename
+CAT=${BINDIR}/cat
+DBUSSEND="${USRBINDIR}/dbus-send --system"
+ECHO="${BINDIR}/echo -e"
+LOGGER=${USRBINDIR}/logger
+SED=${BINDIR}/sed
+
+#
+# usage <status>
+#
+# Description:
+#   This routine prints out the proper command line usage for this
+#   program and then exits with the specified status.
+#
+# Input(s):
+#   status - Exit status to exit the program with.
+#
+# Returns:
+#   This subroutine does not return.
+#
+usage () {
+	local name=`${BASENAME} ${0}`
+
+	${ECHO} "Usage: ${name} [ options ] <destination>"
+
+	if [ ${1} -ne 0 ]; then
+		${ECHO} "Try '${name} -h' for more information."
+	fi
+
+	if [ ${1} -ne 1 ]; then
+${CAT} << EOF
+  -h, --help                 Print this help, then exit.
+  -q, --quiet                Run silently, suppressing all diagnostic and
+                             informative output.
+  -t, --timeout SECONDS      Use SECONDS as the timeout for the heartbeat
+                             reply (default 25).
+EOF
+	fi
+
+	exit ${1}
+}
+
+log() {
+	local args="${1}"
+	local priority="${2}"
+	shift 2
+
+	${LOGGER} ${args} -p "${priority}" -t "${PROGRAM}[$$]" "${@}"
+}
+
+log_error() {
+	log "-s" "user.err" "${@}"
+}
+
+log_info() {
+	log "" "user.info" "${@}"
+	echo "${@}"
+}
+
+log_result() {
+	local destination="${1}"
+	local value="${2}"
+	local error="${3}"
+
+	if [ -n "${error}" ]; then
+
+		case "${error}" in
+
+		'org.freedesktop.DBus.Error.UnknownMethod')
+			reason="does not support the heartbeat protocol"
+			;;
+
+		'org.freedesktop.DBus.Error.ServiceUnknown')
+			reason="is unknown"
+			;;
+
+		*)
+			reason="${error}"
+			;;
+
+		esac
+
+		log_error "The destination '${destination}': ${reason}"
+
+	elif [ -n "${value}" ]; then
+
+		case "${value}" in
+
+		'true')
+			action="accepted"
+			;;
+
+		'false')
+			action="rejected"
+			;;
+
+		esac
+
+		log_info "The destination '${destination}' ${action} the heartbeat."
+	fi
+}
+
+#
+# Main Program Body
+#
+
+PROGRAM="`${BASENAME} ${0}`"
+
+while [ ${#} -gt 0 ]; do
+    	if [ ${1:0:1} == "-" ]; then
+		if [ ${1} == "-h" ] || [ ${1} == "--help" ]; then
+			usage 0
+
+		elif [ ${1} == "-t" ] || [ ${1} == "--timeout" ]; then
+			SECONDS=${2}
+			TIMEOUT="--reply-timeout=$((SECONDS * 1000))"
+			shift 2
+
+		elif [ ${1} == "-q" ] || [ ${1} == "--quiet" ]; then
+		    	QUIET=1
+			shift 1
+
+		else
+	        	log_error "Unknown argument '${1}'."
+	        	usage 1
+
+		fi
+
+	else
+		break
+
+	fi
+done
+
+if [ ${#} -ne 1 ]; then
+	usage 1
+fi
+
+response=`${DBUSSEND} --print-reply --dest="${1}" ${TIMEOUT} / com.nestlabs.Heartbeat.Request 2>&1`
+value=`echo "${response}" | ${SED} -n -e 's/[[:space:]]\+boolean[[:space:]]\(true\|false\)/\1/gp'`
+
+if [ -n "${value}" ] && [ "${value}" == "true" ]; then
+	status=0
+else
+	status=1
+fi
+
+if [ -z "${QUIET}" ] || [ "${QUIET}" != 1 ]; then
+	log_result "${1}" "${value}" "`echo ${response} | ${SED} -n -e 's,Error \([.[:alnum:]]\+\):[[:space:]].\+$,\1,gp'`"
+fi
+  
+exit ${status}

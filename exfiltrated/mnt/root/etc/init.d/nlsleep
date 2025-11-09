@@ -1,0 +1,61 @@
+#!/bin/sh
+#
+# Copyright (c) 2015 Nest Labs, Inc.
+# All rights reserved.
+#
+# This document is the property of Nest. It is considered
+# confidential and proprietary information.
+#
+# This document may not be reproduced or transmitted in any form,
+# in whole or in part, without the express written permission of
+# Nest.
+#
+# Description:
+# This contains functions to start and stop the sleep daemon
+#
+# Source common library
+. /etc/init.d/functions
+# Source daemon-monitor library
+. /etc/init.d/dm
+# Export fallback shared library search path
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:}${NESTLABSLIBDIR}
+PMDEBUG=${ROOTDIR}sys/kernel/debug/pm_debug
+NLSLEEPD_NAME=nlsleepd
+NLSLEEPD_APP=${NESTLABSSBINDIR}/${NLSLEEPD_NAME}
+NLSLEEPD_PID_FILE="${VARDIR}/run/${NLSLEEPD_NAME}.pid"
+stop_nlsleepd () {
+ log_info "Service termination for ${NLSLEEPD_NAME} received from [${PPID}]: killing"
+ ${STOPDAEMON} -q -x ${NLSLEEPD_APP} --signal KILL > ${NULL} 2>&1
+}
+start_nlsleepd () {
+ log_info "Service initiation for ${NLSLEEPD_NAME} received from [${PPID}]"
+ ${STARTDAEMON} -q -b -m -p "${NLSLEEPD_PID_FILE}" -a ${NLSLEEPD_APP} -- `${CAT} ${CONFDIR}/${NLSLEEPD_NAME}.options 2> ${NULL}`
+ ${ECHO} 1 > ${PMDEBUG}/enable_off_mode
+ ${ECHO} 1 > ${PMDEBUG}/sleep_while_idle
+ ${ECHO} 1 > ${PMDEBUG}/voltage_off_while_idle
+}
+case "${1}" in
+'start')
+ monit_service_action start "${NLSLEEPD_NAME}"
+ ;;
+'monit_start')
+ echo_and_log "Starting sleep management daemon: \c"
+ start_nlsleepd
+ echo_and_log "DONE"
+ ;;
+'stop')
+ monit_service_action stop "${NLSLEEPD_NAME}"
+ ;;
+'monit_stop')
+ echo_and_log "Stopping sleep management daemon: \c"
+ stop_nlsleepd
+ echo_and_log "DONE"
+ ;;
+'restart')
+ monit_service_action restart "${NLSLEEPD_NAME}"
+ ;;
+*)
+ echo "Usage: ${0} <start | stop | restart>"
+ exit 1
+ ;;
+esac

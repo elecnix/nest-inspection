@@ -1,0 +1,3 @@
+SUBSYSTEM=="spidev", KERNEL=="spidev*", ATTRS{uevent}=="*OF_NAME=spidev_em35x*", SYMLINK+="spidev_em35x"
+SUBSYSTEM=="spidev", KERNEL=="spidev*", ATTRS{uevent}=="*OF_NAME=spidev_nrf52*", SYMLINK+="spidev_nrf52"
+SUBSYSTEM=="spidev", KERNEL=="spidev*", ATTRS{uevent}=="*OF_NAME=spidev_air*", SYMLINK+="spidev_air"

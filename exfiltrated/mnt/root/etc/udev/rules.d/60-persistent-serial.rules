@@ -1,0 +1,3 @@
+SUBSYSTEM=="tty", KERNEL=="tty*", ATTRS{uevent}=="*OF_ALIAS_*=serial-ble0*", SYMLINK+="ttyble0"
+SUBSYSTEM=="tty", KERNEL=="tty*", ATTRS{uevent}=="*OF_ALIAS_*=serial-sensormcu0*", SYMLINK+="ttysensormcu0"
+SUBSYSTEM=="tty", KERNEL=="tty*", ATTRS{uevent}=="*OF_ALIAS_*=serial-S0*", NAME="ttyS0"

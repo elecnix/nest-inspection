@@ -1,0 +1,102 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2013 Nest, Inc.
+#    All rights reserved.
+#
+#    Description:
+#      This file implements a script to start/stop the WPAN Tunnel Driver.
+#
+
+# Source common library
+. /etc/init.d/functions
+
+# Source daemon-monitor library
+. /etc/init.d/dm
+
+WPAN_TUNNEL_DRIVER_NAME=wpantund
+RUNDIR=${VARDIR}/run/${WPAN_TUNNEL_DRIVER_NAME}
+CHOWN=${BINDIR}/chown
+
+[ -n "${SIXLOWPAN_USER}" ]				|| SIXLOWPAN_USER=root
+[ -n "${SIXLOWPAN_GROUP}" ]				|| SIXLOWPAN_GROUP=admin
+
+# WPAN Tunnel Driver supports syslog, so this isn't really necessary.
+OUTPUT_LOG=/dev/null
+
+WPAN_TUNNEL_DRIVER=${USRSBINDIR}/${WPAN_TUNNEL_DRIVER_NAME}
+WPAN_TUNNEL_DRIVER_PID_FILE=${RUNDIR}/${WPAN_TUNNEL_DRIVER_NAME}.pid
+WPAN_TUNNEL_DRIVER_CONFIG_LOCATION=/media/system-config/wpantund_config_location
+WPAN_TUNNEL_DRIVER_OPTS=
+
+pre_start () {
+	[ -x "${WPAN_TUNNEL_DRIVER}" ] || die "\"${WPAN_TUNNEL_DRIVER}\" is either missing or not executable."
+
+	${MKDIR} -p -m 0775 ${RUNDIR} || die "Unable to set permissions on ${RUNDIR}"
+    ${CHOWN} ${SIXLOWPAN_USER}:${SIXLOWPAN_GROUP} ${RUNDIR} || die "Unable to set ownership on ${RUNDIR}"
+}
+
+start_wpan_tunnel_driver () {
+
+	[ -s ${WPAN_TUNNEL_DRIVER_CONFIG_LOCATION} ] && WPAN_TUNNEL_DRIVER_OPTS="-c $(cat ${WPAN_TUNNEL_DRIVER_CONFIG_LOCATION})"
+
+	${STARTDAEMON} -b -q -p ${WPAN_TUNNEL_DRIVER_PID_FILE} -m -a ${WPAN_TUNNEL_DRIVER} -- ${WPAN_TUNNEL_DRIVER_OPTS}
+
+	${SLEEP} 2
+}
+
+stop_wpan_tunnel_driver () {
+
+	${STOPDAEMON} -q --retry=TERM/8/KILL/6 -x ${WPAN_TUNNEL_DRIVER}
+}
+
+case "${1}" in
+
+'start')
+	monit_service_action start ${WPAN_TUNNEL_DRIVER_NAME}
+	;;
+
+'monit_start')
+	pre_start
+	echo_and_log "WPAN Tunnel Driver (from monit):\c"
+	start_wpan_tunnel_driver
+	echo_and_log "."
+	;;
+
+'stop')
+	# This line is added because we need to support downgrade
+	# on D1 and D2, where NCP update is needed. In upgrade-ip-modem-app
+	# script, there is a call to "monit_pause" before stopping wpan-tunnel-driver.
+	# Because "monit_pause" sends -SIGSTOP to monit, taking it out
+	# of the picture, the subsequent call "/etc/init.d/wpan-tunnel-driver stop",
+	# which now goes through monit, will stuck. 
+	# Note that the stop command will not stuck on 4.5 SW as it was not
+	# using monit in the desired way, so the monit_pause was probably added
+	# to work around the weirdness of monit behavior at that time.
+	# In order to work around that script, this line attempt to resume
+	# monit by sending -SIGCONT.  Luckily if monit is up and running, and never
+	# needs to be stopped/paused as before, which is true with monit cleanup
+	# effort today (9/3/2015), sending -SIGCONT will be an no-op.
+	${KILLALL} -SIGCONT monit
+	# End of work around for downgrading D1 to any version, and D2 to 4.5.
+	monit_service_action stop ${WPAN_TUNNEL_DRIVER_NAME}
+	;;
+
+'monit_stop')
+	echo_and_log "Halting WPAN Tunnel Driver:\c"
+	stop_wpan_tunnel_driver
+	echo_and_log "."
+	;;
+
+'restart')
+	${0} stop
+	${SLEEP} 1
+	${0} start
+	;;
+
+*)
+	echo "Usage: ${0} <start | start-from-monit | stop | restart>"
+	exit 1
+	;;
+
+esac

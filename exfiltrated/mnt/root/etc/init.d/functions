@@ -1,0 +1,143 @@
+#!/bin/sh
+#
+# Copyright (c) 2010-2012 Nest Labs, Inc.
+# All rights reserved.
+#
+# Description:
+# This file defines common, shared functions and variables used
+# by all system initialization scripts.
+#
+#
+# Common directories
+#
+ROOTDIR=${PREFIX}/
+BINDIR=${ROOTDIR}bin
+CONFDIR=${ROOTDIR}etc
+COREDUMPFLAG=${ROOTDIR}.init_enable_core
+DATADIR=${ROOTDIR}share
+DEVDIR=${ROOTDIR}dev
+LIBDIR=${ROOTDIR}lib
+LIBEXECDIR=${ROOTDIR}libexec
+MANDIR=${ROOTDIR}man
+SBINDIR=${ROOTDIR}sbin
+TMPDIR=${ROOTDIR}tmp
+VARDIR=${ROOTDIR}var
+LOGDIR=${VARDIR}/log
+USRDIR=${ROOTDIR}usr
+USRBINDIR=${USRDIR}/bin
+USRDATADIR=${USRDIR}/share
+USRLIBDIR=${USRDIR}/lib
+USRLIBEXECDIR=${USRDIR}/libexec
+USRSBINDIR=${USRDIR}/sbin
+NESTLABSDIR=${ROOTDIR}nestlabs
+NESTLABSBINDIR=${NESTLABSDIR}/bin
+NESTLABSCONFDIR=${NESTLABSDIR}/etc
+NESTLABSDATADIR=${NESTLABSDIR}/share
+NESTLABSLIBDIR=${NESTLABSDIR}/lib
+NESTLABSLIBEXECDIR=${NESTLABSDIR}/libexec
+NESTLABSLOGDIR=${NESTLABSDIR}/log
+NESTLABSSBINDIR=${NESTLABSDIR}/sbin
+NESTLABSVARDIR=${NESTLABSDIR}/var
+INITDIR=${CONFDIR}/init.d
+#
+# Common executables and files
+#
+ARPING="${USRBINDIR}/arping"
+AWK="${USRBINDIR}/awk"
+BASENAME=${USRBINDIR}/basename
+BOOTGETENV=${SBINDIR}/fw_printenv
+CAT="${BINDIR}/cat"
+CHMOD="${BINDIR}/chmod"
+CKSUM="${USRBINDIR}/cksum"
+CMP="${USRBINDIR}/cmp"
+CP="${BINDIR}/cp -f"
+CUT="${USRBINDIR}/cut"
+DAEMONIZE="${SBINDIR}/start-stop-daemon -o"
+DIFF="${USRBINDIR}/diff"
+EXPR="${USRBINDIR}/expr"
+GREP="${BINDIR}/grep"
+HEXDUMP="${USRBINDIR}/hexdump"
+HOSTNAME="${BINDIR}/hostname"
+IFCONFIG="${SBINDIR}/ifconfig"
+IP="${BINDIR}/ip"
+IW="${USRSBINDIR}/iw"
+KILL="${BINDIR}/kill"
+KILLALL="${USRBINDIR}/killall -q"
+LN="${BINDIR}/ln -sf"
+LOGGER="${USRBINDIR}/logger"
+MKDIR="${BINDIR}/mkdir"
+MODPROBE="${SBINDIR}/modprobe"
+MOUNT="${BINDIR}/mount"
+MV="${BINDIR}/mv"
+PRINTF="${USRBINDIR}/printf"
+RM="${BINDIR}/rm -f"
+RMMOD="${SBINDIR}/rmmod"
+ROUTE="${SBINDIR}/route"
+SED="${BINDIR}/sed"
+SLEEP="${BINDIR}/sleep"
+STARTDAEMON="${DAEMONIZE} --start"
+STOPDAEMON="${DAEMONIZE} --stop"
+TR="${USRBINDIR}/tr"
+TRUE="${BINDIR}/true"
+UNMOUNT="${BINDIR}/umount"
+USLEEP="${BINDIR}/usleep"
+WL="${USRSBINDIR}/wl"
+TOLOWER="${TR} '[[:upper:]]' '[[:lower:]]'"
+TOUPPER="${TR} '[[:lower:]]' '[[:upper:]]'"
+CHECK="${TRUE}"
+NULL="${DEVDIR}/null"
+if $CHECK verbose; then
+    ECHO="${BINDIR}/echo -e"
+    VERBOSE='-v'
+    QUIET=:
+else
+    ECHO=:
+    VERBOSE=:
+    QUIET='-q'
+fi
+#
+# Other common variables
+#
+LOCALHOST="localhost"
+#
+# is_network_root
+#
+# Determines whether or not this system is running a network booted
+# NFS root file system.
+#
+is_network_root() {
+    ${GREP} ' / nfs' ${ROOTDIR}proc/mounts > ${NULL} 2>&1
+}
+#
+# Logging macros
+#
+echo_and_log() {
+ ${ECHO} "${@}"
+}
+log() {
+ local args="${1}"
+ local priority="${2}"
+ shift 2
+ ${LOGGER} "${args}" -p "${priority}" -t "${PROGRAM}[$$]" "${@}"
+}
+log_error() {
+ log "-s" "user.err" "${@}"
+}
+log_info() {
+ log "" "user.info" "${@}"
+}
+log_debug() {
+ log "-s" "user.debug" "${@}"
+}
+#
+# Misc Macros
+#
+die() {
+ log_error $*
+ exit 1
+}
+create_dir_if_absent () {
+    if [ ! -d "${1}" ]; then
+        ${MKDIR} -p "${1}"
+    fi
+}

@@ -1,0 +1,14 @@
+[wifi_18b43029c8f7_4d65726c6f74_managed_psk]
+Name=Merlot
+SSID=4d65726c6f74
+Frequency=2462
+Favorite=true
+AutoConnect=false
+Modified=2020-06-20T21:34:07.419268Z
+Passphrase=xxx
+IPv4.method=dhcp
+IPv6.method=auto
+IPv6.privacy=prefered
+IPv6.DHCP.DUID=0001000120f6550a18b43029c8f7
+Order=0
+IPv4.DHCP.LastAddress=10.72.91.65

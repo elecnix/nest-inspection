@@ -1,0 +1,36 @@
+#!/bin/sh
+#
+# Copyright (c) 2015 Nest Labs, Inc.
+# All rights reserved.
+#
+# This document is the property of Nest. It is considered
+# confidential and proprietary information.
+#
+# This document may not be reproduced or transmitted in any form,
+# in whole or in part, without the express written permission of
+# Nest.
+#
+# Description:
+# This file implements the list of services to stop on system
+# shut down.
+#
+# Source common library
+. /etc/init.d/functions
+# Stop system services
+${INITDIR}/announce stop
+${INITDIR}/nlsleep stop
+${INITDIR}/monit stop
+${INITDIR}/x-loader-refresher
+${INITDIR}/nestlabs stop
+${INITDIR}/sshd stop
+${INITDIR}/networking stop
+${INITDIR}/nlshutdown stop
+${INITDIR}/orderly_reboot stop
+${INITDIR}/nlmetrics stop
+${INITDIR}/dbus stop
+${INITDIR}/udev stop
+${INITDIR}/syslog stop
+${INITDIR}/hwclock save
+${INITDIR}/umountfs stop
+${INITDIR}/umountroot stop
+${INITDIR}/halt stop

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>DarkRoom</key>
+  <real>130</real>
+  <key>Low</key>
+  <real>42</real>
+  <key>Medium</key>
+  <real>90</real>
+  <key>High</key>
+  <real>100</real>
+  <key>Dark</key>
+  <real>40</real>
+  <key>Mappings</key>
+  <array>
+       <dict>
+           <key>illuminance</key><real>0</real>
+           <key>brightness</key><real>40</real>
+       </dict>
+       <dict>
+           <key>illuminance</key><real>40</real>
+           <key>brightness</key><real>40</real>
+       </dict>
+       <dict>
+           <key>illuminance</key><real>60</real>
+           <key>brightness</key><real>52</real>
+       </dict>
+       <dict>
+           <key>illuminance</key><real>80</real>
+           <key>brightness</key><real>59</real>
+       </dict>
+       <dict>
+           <key>illuminance</key><real>100</real>
+           <key>brightness</key><real>65</real>
+       </dict>
+       <dict>
+           <key>illuminance</key><real>140</real>
+           <key>brightness</key><real>72</real>
+       </dict>
+       <dict>
+           <key>illuminance</key><real>180</real>
+           <key>brightness</key><real>76</real>
+       </dict>
+       <dict>
+           <key>illuminance</key><real>435</real>
+           <key>brightness</key><real>85</real>
+       </dict>
+       <dict>
+           <key>illuminance</key><real>1965</real>
+           <key>brightness</key><real>93</real>
+       </dict>
+       <dict>
+           <key>illuminance</key><real>24025</real>
+           <key>brightness</key><real>100</real>
+       </dict>
+   </array>
+</dict>
+</plist>

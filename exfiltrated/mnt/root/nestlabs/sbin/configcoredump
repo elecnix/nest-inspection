@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+#    Copyright (c) 2015 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    This document is the property of Nest. It is considered
+#    confidential and proprietary information.
+#
+#    This document may not be reproduced or transmitted in any form,
+#    in whole or in part, without the express written permission of
+#    Nest.
+#
+#    Description:
+#	This file let user configure (enable/disable) the generation
+#	of core dumps should a user space process terminates
+#	abnormally.
+#
+
+. /etc/init.d/functions
+
+REMOUNTROOTFS=${NESTLABSSBINDIR}/remountrootfs
+
+setup_dump () {
+	sysctl -w "kernel.core_pattern=/media/scratch/%e.%p.%s.%t.core"
+	ulimit -c unlimited
+}
+
+case "${1}" in
+'setup')
+	if [ -e ${COREDUMPFLAG} ]; then
+		setup_dump
+	fi
+;;
+'enable')
+	${REMOUNTROOTFS} "rw"
+	touch ${COREDUMPFLAG}
+	${REMOUNTROOTFS} "ro"
+	setup_dump
+	${ECHO} "Core dump enabled, core files will be generated after next reboot."
+;;
+'disable')
+	${REMOUNTROOTFS} "rw"
+	${RM} ${COREDUMPFLAG}
+	${REMOUNTROOTFS} "ro"
+	${ECHO} "Core dump disabled, existing core files may be erased."
+;;
+esac

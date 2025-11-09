@@ -1,0 +1,211 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2012 Nest, Inc.
+#    All rights reserved.
+#
+#    Description:
+#      This file implements a script to manage
+#      high level setup and configuration for the NCP
+#
+
+# Source common library
+. /etc/init.d/functions
+
+case `${BOOTGETENV} -n "nlmodel"` in
+Diamond-* )
+    NCP_POWER_GPIO="/sys/devices/platform/diamond-zigbee/power_enable"
+    NCP_RESET_GPIO="/sys/devices/platform/diamond-zigbee/reset#"
+    NCP_INTERRUPT_GPIO="/sys/devices/platform/diamond-zigbee/interrupt"
+
+    NCP_POWER_ON_CMD=cc2530_power_on
+    NCP_SLEEP_CMD=cc2530_sleep
+    NCP_RESET_CMD=cc2530_reset
+    NCP_BOOTLOAD_CMD=cc2530_bootload
+    ;;
+
+Display-2.* )
+    NCP_POWER_GPIO="/sys/devices/platform/diamond-zigbee/power_enable"
+    NCP_RESET_GPIO="/sys/devices/platform/diamond-zigbee/reset#"
+    NCP_INTERRUPT_GPIO="/sys/devices/platform/diamond-zigbee/interrupt"
+    PADCONF_EXPORT=/sys/class/gpio/export
+    PADCONF_UNEXPORT=/sys/class/gpio/unexport    
+    NCP_FORCE_BL_GPIO_NUMBER="181"
+    NCP_FORCE_BL_GPIO="/sys/class/gpio/gpio${NCP_FORCE_BL_GPIO_NUMBER}"
+    NCP_FORCE_BL_PADCONF="/sys/kernel/debug/omap_mux/mcspi2_cs0"
+    ZB_LOADER=/nestlabs/bin/zb-loader
+
+    NCP_POWER_ON_CMD=em357_power_on
+    NCP_SLEEP_CMD=em357_sleep
+    NCP_RESET_CMD=em357_reset
+    NCP_BOOTLOAD_CMD=em357_bootload
+    ;;
+
+Display-* | Flintstone-* )
+    NCP_GPIO="/sys/bus/platform/devices/0.em35x-gpios"
+    NCP_POWER_GPIO="${NCP_GPIO}/wake"
+    NCP_RESET_GPIO="${NCP_GPIO}/reset"    
+    NCP_INTERRUPT_GPIO="${NCP_GPIO}/irq"
+    ZB_LOADER=/nestlabs/bin/zb-loader
+    
+    NCP_POWER_ON_CMD=em35x_power_on
+    NCP_SLEEP_CMD=em35x_sleep
+    NCP_RESET_CMD=em35x_reset
+    NCP_BOOTLOAD_CMD=em35x_bootload
+    ;;
+
+* )
+    NCP_POWER_ON_CMD=false
+    NCP_SLEEP_CMD=false
+    NCP_RESET_CMD=false
+    NCP_BOOTLOAD_CMD=false
+    ;;
+esac
+
+cc2530_power_on () {
+    [ -d "${NCP_POWER_GPIO}" ] && echo 1 > "${NCP_POWER_GPIO}"/value
+    [ -d "${NCP_RESET_GPIO}" ] && echo 1 > "${NCP_RESET_GPIO}"/value
+}
+
+cc2530_sleep () {
+    [ -d "${NCP_POWER_GPIO}" ] && echo 0 > "${NCP_POWER_GPIO}"/value
+    [ -d "${NCP_RESET_GPIO}" ] && echo 1 > "${NCP_RESET_GPIO}"/value
+}
+
+cc2530_reset () {
+    [ -d "${NCP_RESET_GPIO}" ] && {
+        echo 0 > "${NCP_RESET_GPIO}"/value
+        sleep 1
+        echo 1 > "${NCP_RESET_GPIO}"/value
+    }
+    [ -d "${NCP_INTERRUPT_GPIO}" ] && echo "falling" > "${NCP_INTERRUPT_GPIO}"/edge
+}
+
+cc2530_bootload () {
+    echo_and_log Not supported.
+    false
+}
+
+em357_power_on () {
+    # A variant of the next line was present in
+    # the original em357.sh startup script,
+    # allong with the following comment:
+    #
+    # > this is because the default value for Slave Select is wrong
+    # > after the first transaction it fixes itself
+    #
+    # Turns out it was important. It's absence led to all
+    # sorts of mysterious problems, including SAPPHIRE-8661.
+    ${ZB_LOADER} --version > /dev/null
+
+    [ -d "${NCP_INTERRUPT_GPIO}" ] && echo "falling" > "${NCP_INTERRUPT_GPIO}"/edge
+}
+
+em357_sleep () {
+    # Nothing to do here
+    true
+}
+
+em357_reset () {
+    [ -d "${NCP_RESET_GPIO}" ] && {
+        echo 0 > "${NCP_RESET_GPIO}"/value
+        sleep 1
+        echo 1 > "${NCP_RESET_GPIO}"/value
+    }
+    [ -d "${NCP_INTERRUPT_GPIO}" ] && echo "falling" > "${NCP_INTERRUPT_GPIO}"/edge
+}
+
+em357_bootload () {
+    ${ECHO} ${NCP_FORCE_BL_GPIO_NUMBER} > ${PADCONF_EXPORT}
+
+    # set the pad config to mode 4 to be able to drive it low
+    ${ECHO} 0x4 > ${NCP_FORCE_BL_PADCONF}
+
+    # output a zero, forcing slave select LOW
+    ${ECHO} out > ${NCP_FORCE_BL_GPIO}/direction
+    ${ECHO} 0 > ${NCP_FORCE_BL_GPIO}/value
+
+    ${NCP_POWER_ON_CMD}
+    ${NCP_RESET_CMD}
+    sleep 1
+
+    # set the pad config back to mode 0
+    ${ECHO} 0x0 > ${NCP_FORCE_BL_PADCONF}
+    ${ECHO} ${NCP_FORCE_BL_GPIO_NUMBER} > ${PADCONF_UNEXPORT}
+}
+
+em35x_power_on () {
+    # A variant of the next line was present in
+    # the original em357.sh startup script,
+    # allong with the following comment:
+    #
+    # > this is because the default value for Slave Select is wrong
+    # > after the first transaction it fixes itself
+    #
+    # Turns out it was important. It's absence led to all
+    # sorts of mysterious problems, including SAPPHIRE-8661.
+    ${ZB_LOADER} --version > /dev/null
+
+    [ -w "${NCP_POWER_GPIO}"/value ] && echo 1 > "${NCP_POWER_GPIO}"/value
+    [ -w "${NCP_INTERRUPT_GPIO}"/edge ] && echo "falling" > "${NCP_INTERRUPT_GPIO}"/edge
+    # this one is optional
+    if [ -w "${NCP_INTERRUPT_GPIO}"/wakeup ]
+    then
+        echo "enabled" > "${NCP_INTERRUPT_GPIO}"/wakeup
+    fi
+}
+
+em35x_sleep () {
+    # Nothing to do here
+    true
+}
+
+em35x_reset () {
+    [ -d "${NCP_RESET_GPIO}" ] && {
+        echo 0 > "${NCP_RESET_GPIO}"/value
+        sleep 1
+        echo 1 > "${NCP_RESET_GPIO}"/value
+    }
+    [ -d "${NCP_INTERRUPT_GPIO}" ] && echo "falling" > "${NCP_INTERRUPT_GPIO}"/edge
+}
+
+em35x_bootload () {
+    [ -d "${NCP_POWER_GPIO}" ] && echo 0 > "${NCP_POWER_GPIO}"/value
+       
+    sleep 1
+    ${NCP_RESET_CMD}
+    sleep 1
+
+    [ -d "${NCP_POWER_GPIO}" ] && echo 1 > "${NCP_POWER_GPIO}"/value
+}
+
+case "${1}" in
+'start')
+    echo_and_log "Starting NCP: \c"
+    ${NCP_POWER_ON_CMD} || die "Failed to start NCP"
+    ${NCP_RESET_CMD} || die "Failed to reset NCP"
+    echo_and_log "done."
+    ;;
+
+'reset')
+    echo_and_log "Resetting NCP: \c"
+    ${NCP_RESET_CMD} || die "Failed to reset NCP"
+    echo_and_log "done."
+    ;;
+
+'stop'|'lowpower')
+    echo_and_log "Stopping NCP (low power): \c"
+    ${NCP_SLEEP_CMD} || die "Failed to sleep NCP"
+    echo_and_log "done."
+    ;;
+
+'bootloader')
+    echo_and_log "Putting NCP into bootloader mode: \c"
+    ${NCP_BOOTLOAD_CMD} || die "Failed to enter bootloader mode"
+    echo_and_log "done."
+    ;;
+*)
+    echo "Usage: ${0} <start|reset|lowpower|bootloader>"
+    exit 1
+    ;;
+esac

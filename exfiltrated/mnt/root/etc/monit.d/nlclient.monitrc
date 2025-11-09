@@ -1,0 +1,17 @@
+#
+# Copyright (c) 2012 Nest Labs, Inc.
+# All rights reserved.
+#
+# Description:
+# This file is the control and configuration file for the
+# daemon-monitoring daemon, monit, for the Nest Learning
+# Thermostat process, nlclient.
+#
+# Daemon cycles are 5 seconds each so to check every minute,
+# its 12 cycles. So 3 minutes is 12*3 = 36
+check process nlclient matching /nestlabs/sbin/nlclient
+  start program = "/etc/init.d/nestlabs monit_start" with timeout 20 seconds
+  stop program = "/etc/init.d/nestlabs monit_stop"
+  if 5 restarts within 100 cycles then unmonitor
+  if 5 restarts within 100 cycles then exec "/nestlabs/sbin/client_recovery"
+  if mem > 28000 KB for 2 cycles then restart

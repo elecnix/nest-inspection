@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Installations</key>
+	<dict>
+		<key>Production</key>
+		<array>
+			<dict>
+				<key>DataPath</key>
+				<string>production/heatlink.elf</string>
+				<key>Date</key>
+				<string>N/A</string>
+				<key>Description</key>
+				<string>Nest Heat Link Software</string>
+				<key>Format</key>
+				<string>elf</string>
+				<key>Host</key>
+				<string>N/A</string>
+				<key>Kind</key>
+				<string>mono</string>
+				<key>MaxApplicability</key>
+				<string>Amber-1.20</string>
+				<key>MinApplicability</key>
+				<string>Amber-1.2</string>
+				<key>Size</key>
+				<integer>502704</integer>
+				<key>User</key>
+				<string>N/A</string>
+				<key>Version</key>
+				<string>2.1.2-1</string>
+			</dict>
+		</array>
+	</dict>
+</dict>
+</plist>

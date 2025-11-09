@@ -1,0 +1,39 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2015 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    This document is the property of Nest. It is considered
+#    confidential and proprietary information.
+#
+#    This document may not be reproduced or transmitted in any form,
+#    in whole or in part, without the express written permission of
+#    Nest.
+#
+#    Description:
+#       This file keeps track if the system was last rebooted gracefully
+
+# Source common library
+. /etc/init.d/functions
+
+case "${1}" in
+
+'start')
+	if [ -e /var/log/orderly_reboot ]; then
+		${RM} /var/log/orderly_reboot
+	else
+		log_error "!! System was not shutdown properly !!"
+	fi
+	;;
+
+'stop')
+	touch /var/log/orderly_reboot
+	;;
+
+*)
+	echo "Usage: ${0} <start | stop >"
+	exit 1
+	;;
+
+esac

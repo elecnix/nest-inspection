@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# Copyright (c) 2014 Nest Labs, Inc.
+# All rights reserved.
+#
+# Description:
+# This file defines networking common properties
+#
+#
+# Defines
+#
+NETWORKING_TECHNOLOGIES="common wifi wpan"
+#
+# Name of interfaces
+#
+NETWORKING_WIFI_IFACE="wlan0"
+NETWORKING_THREAD_IFACE="wpan0"
+NETWORKING_THREAD_LEGACY_IFACE="wpan0-L"
+NETWORKING_WEAVE_TUNNEL_IFACE="weav-tun0"
+NETWORKING_LOOPBACK_IFACE="lo"
+NETWORKING_SOFTAP_IFACE="wl0.1"
+NETWORKING_USB_IFACE="usb0"
+#
+# Networking executables and files
+#
+CONNMANCTL="${USRBINDIR}/connmanctl"

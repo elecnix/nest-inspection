@@ -1,0 +1,19 @@
+#
+#    Copyright (c) 2012 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    Description:
+#      This file is the control and configuration file for the
+#      daemon-monitoring daemon, monit, for the Nest Learning
+#      Thermostat process, connmand.
+#
+
+check process connmand matching /usr/sbin/connmand
+  start program = "/etc/init.d/connman monit_start" with timeout 8 seconds
+  stop  program = "/etc/init.d/connman monit_stop"
+  if mem >  6 MB for 8 cycles then restart
+
+check file connman_crashdump with path "/tmp/connmand.log"
+  if does not exist then exec "/bin/touch /tmp/connmand.log"
+  if changed checksum then exec "/bin/sh -c '/bin/cat /tmp/connmand.log | /usr/bin/logger -t connmand-crash-log'"
+

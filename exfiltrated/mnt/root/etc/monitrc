@@ -1,0 +1,66 @@
+#
+# Copyright (c) 2011-2012 Nest Labs, Inc.
+# All rights reserved.
+#
+# Description:
+# This file is the control and configuration file for the
+# daemon-monitoring daemon, monit.
+#
+#
+# Global Section
+#
+# Start monit in the background (run as a daemon) and check for
+# services at 5 second intervals, delaying the first check for 2
+# seconds.
+set daemon 5 with start delay 2
+# Establish the port, bind address and access restrictions for the
+# internal HTTP daemon that supports IPC between the client and
+# daemon.
+set httpd port 2812 and
+  use address 127.0.0.1
+  allow 127.0.0.1
+# Set logging to syslog with the 'daemon' facility.
+set logfile syslog facility log_daemon
+# Set the monit PID file
+set pidfile /var/run/monit.pid
+# Set the location of monit ID file which saves the unique ID specific for a
+# given monit. The ID is generated and stored on first monit start.
+set idfile /var/run/monit.id
+# Set the location of monit state file which saves the monitoring
+# state on each cycle. If state file is stored on persistent file
+# system, monit will recover the monitoring state across reboots. If
+# it is on temporary file system, the state will be lost on reboot.
+set statefile /var/run/monit.state
+check system host
+  if loadavg(15min) greater than 4.0 then exec "/bin/sh -c '/nestlabs/sbin/monit-resource-logger ; /sbin/reboot'"
+  if loadavg(15min) greater than 5.0 then exec "/bin/sh -c '/usr/bin/killall -q watchdogd ; /sbin/reboot -f'"
+  if memory > 41 MB for 5 cycles then exec "/bin/sh -c '/nestlabs/sbin/monit-resource-logger ; /sbin/reboot'"
+  if memory > 41 MB for 25 cycles then exec "/bin/sh -c '/usr/bin/killall -q watchdogd ; /sbin/reboot -f'"
+check device root with path /
+  if changed fsflags then alert
+  if space usage > 90% then alert
+  if inode usage > 90% then alert
+check device system-config with path /media/system-config
+  if changed fsflags then alert
+  if space usage > 90% then alert
+  if inode usage > 90% then alert
+check device user-config with path /media/user-config
+  if changed fsflags then alert
+  if space usage > 90% then alert
+  if inode usage > 90% then alert
+check device data with path /media/data
+  if changed fsflags then alert
+  if space usage > 90% then alert
+  if inode usage > 90% then alert
+check device log with path /media/log
+  if changed fsflags then alert
+  if space usage > 90% then alert
+  if inode usage > 90% then alert
+include /etc/monit.d/dbus-daemon.monitrc
+include /etc/monit.d/nlheartbeat.monitrc
+include /etc/monit.d/nlscpm.monitrc
+include /etc/monit.d/connmand.monitrc
+include /etc/monit.d/wpantund.monitrc
+include /etc/monit.d/wpa_supplicant.monitrc
+include /etc/monit.d/nlclient.monitrc
+include /etc/monit.d/nlmetricsd.monitrc

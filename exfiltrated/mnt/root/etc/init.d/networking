@@ -1,0 +1,167 @@
+#!/bin/sh
+#
+# Copyright (c) 2011-2014 Nest Labs, Inc.
+# All rights reserved.
+#
+# Description:
+# This file implements a script to start/stop various system
+# networking infrastructure and services.
+#
+# Source common library
+. /etc/init.d/functions
+# Source our defines
+. /etc/init.d/networking-defines
+# Helper function to get the list of technologies we are acting on.
+# Input:
+# 1 : space-separated list of technologies. An empty string means "all" including common infrastructure
+# Output:
+# Stdout : the list of technologies
+get_technologies ()
+{
+    local technologies="${1}"
+    # Default to both if none given
+    if [ -z "${technologies}" ]; then
+  technologies="${NETWORKING_TECHNOLOGIES}"
+    fi
+ echo "${technologies}"
+}
+# Helper function to tell us if a technology is in the list of technologies
+# Input:
+# 1 : The space-separated list of technologies
+# 2 : The technology to check for
+# Output:
+# Stdout : 0 if the the technolog is in the list, 1 otherwise
+has_technology ()
+{
+ local technologies="${1}"
+ local technology="${2}"
+ local match=`${ECHO} "${technologies}" | ${GREP} "${technology}"`
+ if [ -z "${match}" ]; then
+  return 1
+ fi
+}
+# The next four functions are helpers to start/stop WiFi or WPAN/6LoWPAN
+start_wifi ()
+{
+ echo_and_log "Starting WiFi"
+ ${INITDIR}/wlan start
+ ${INITDIR}/wpasupplicant start
+}
+stop_wifi ()
+{
+ echo_and_log "Stopping WiFi"
+ ${INITDIR}/wpasupplicant stop
+ ${INITDIR}/wlan stop
+}
+start_wpan ()
+{
+ echo_and_log "Starting WPAN"
+ ${INITDIR}/ncp start
+ ${INITDIR}/wpan-tunnel-driver start
+ ${INITDIR}/wpan-properties start
+}
+stop_wpan ()
+{
+ echo_and_log "Stopping WPAN"
+ ${INITDIR}/wpan-tunnel-driver stop
+}
+# Start networking based on the given inputs
+# Input:
+# 1 : The space-separated list of technologies to start. An empty string means "all" including common infrastructure
+start_networking ()
+{
+ local technologies=`get_technologies "${1}"`
+ if has_technology "${technologies}" "wifi" ; then
+  start_wifi
+ fi
+ if has_technology "${technologies}" "common" ; then
+  ${INITDIR}/connman start
+  ${INITDIR}/mdnsd start
+ fi
+ if has_technology "${technologies}" "wpan" ; then
+  start_wpan
+ fi
+}
+# Stop networking based on the given inputs
+# Input:
+# 1 : The space-separated list of technologies to stop. An empty string means "all" including common infrastructure
+stop_networking ()
+{
+ local technologies=`get_technologies "${1}"`
+ if has_technology "${technologies}" "common" ; then
+  ${INITDIR}/mdnsd stop
+  ${INITDIR}/connman stop
+ fi
+ if has_technology "${technologies}" "wpan" ; then
+  stop_wpan
+ fi
+ if has_technology "${technologies}" "wifi" ; then
+  stop_wifi
+ fi
+}
+# Restart networking based on the given inputs
+# Input:
+# 1 : The space-separated list of technologies to restart. An empty string means "all" including common infrastructure
+restart_networking ()
+{
+ local technologies=`get_technologies "${1}"`
+ stop_networking "${technologies}"
+ ${SLEEP} 1
+ start_networking "${technologies}"
+}
+delayed_restart_networking()
+{
+ return 0
+}
+# Reconnect networking to the same connman service based on the given inputs
+# NB: at present this only works for wifi
+# Input:
+# 1 : The space-separated list of technologies to reconnect An empty string means "all" including common infrastructure
+reconnect_networking ()
+{
+ local technologies=`get_technologies "${1}"`
+ if has_technology "${technologies}" "wifi" ; then
+  ${INITDIR}/connman reconnect
+ fi
+ ${SLEEP} 1
+}
+# Trace (and kill and restart) networking services based on the given inputs
+# Input:
+# 1 : The space-separated list of technologies to restart. An empty string means "all" including common infrastructure
+trace_networking ()
+{
+ local technologies=`get_technologies "${1}"`
+    if has_technology "${technologies}" "wifi" ; then
+        killall -SIGABRT wpa_supplicant
+ fi
+ if has_technology "${technologies}" "common" ; then
+        killall -SIGABRT connmand
+ fi
+# nothing for now
+# if has_technology "${technologies}" "wpan" ; then
+# fi
+}
+case "${1}" in
+'start')
+ start_networking "${2}"
+ ;;
+'stop')
+ stop_networking "${2}"
+ ;;
+'restart')
+ restart_networking "${2}"
+ ;;
+'delayed_restart')
+ delayed_restart_networking "${2}"
+ ;;
+'trace')
+ trace_networking "${2}"
+ ;;
+'reconnect')
+ reconnect_networking "${2}"
+ ;;
+*)
+ echo "Usage: ${0} <start | stop | restart | delayed_restart | trace | reconnect>"
+ exit 1
+ ;;
+esac

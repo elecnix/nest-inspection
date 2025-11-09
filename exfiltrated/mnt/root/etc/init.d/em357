@@ -1,0 +1,65 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2014 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    This document is the property of Nest. It is considered
+#    confidential and proprietary information.
+#
+#    This document may not be reproduced or transmitted in any form,
+#    in whole or in part, without the express written permission of
+#    Nest.
+#
+#    Description:
+#      This is a legacy script required for downgrading the EM357 using
+#      older versions of upgrade-ip-modem-app.
+#
+
+# Source common library
+. /etc/init.d/functions
+
+FORCE_BOOTLOAD_GPIO_NUMBER=181
+FORCE_BOOTLOAD_PADCONF=/sys/kernel/debug/omap_mux/mcspi2_cs0
+FORCE_BOOTLOAD_GPIO=/sys/class/gpio/gpio${FORCE_BOOTLOAD_GPIO_NUMBER}
+PADCONF_EXPORT=/sys/class/gpio/export
+PADCONF_UNEXPORT=/sys/class/gpio/unexport
+
+NCP_RESET_GPIO="/sys/devices/platform/diamond-zigbee/reset#/value"
+NCP_INTERRUPT_EDGE="/sys/devices/platform/diamond-zigbee/interrupt/edge"
+
+reset_em357 () {
+	echo falling > "${NCP_INTERRUPT_EDGE}"
+	echo 0 > "${NCP_RESET_GPIO}"
+	sleep 1
+	echo 1 > "${NCP_RESET_GPIO}"
+}
+                
+case "${1}" in
+'bootloader')
+    echo_and_log "Putting em357 in bootloader...\c"
+    
+    ${ECHO} ${FORCE_BOOTLOAD_GPIO_NUMBER} > ${PADCONF_EXPORT}
+
+    # set the pad config to mode 4 to be able to drive it low
+    ${ECHO} 0x4 > ${FORCE_BOOTLOAD_PADCONF} 
+
+    # output a zero
+    # echo "Forcing slave select to LOW"
+    ${ECHO} out > ${FORCE_BOOTLOAD_GPIO}/direction
+    ${ECHO} 0 > ${FORCE_BOOTLOAD_GPIO}/value 
+    
+    reset_em357
+    sleep 1
+
+    # set the pad config back to mode 0
+    ${ECHO} 0x0 > ${FORCE_BOOTLOAD_PADCONF} 
+    ${ECHO} ${FORCE_BOOTLOAD_GPIO_NUMBER} > ${PADCONF_UNEXPORT}
+    echo_and_log "done."
+    ;;
+*)
+    echo "Usage: ${0} <bootloader>"
+    exit 1
+    ;;
+esac
+

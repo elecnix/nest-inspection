@@ -1,0 +1,150 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2010-2014 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    Description:
+#      This file implements a script to calibrate/start/stop the
+#      wl12xx wireless subsystem.
+#
+#      This script only brings hardware up to a usable state by
+#      loading firmware, configuration and NVRAM settings. Actual
+#      network configuration occurs elsewhere.
+#
+
+# Source common library
+. /etc/init.d/functions
+
+# Source networking defines
+. /etc/init.d/networking-defines
+
+# Export fallback shared library search path
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:}${NESTLABSLIBDIR}
+
+# IW executable
+IW="${USRSBINDIR}/iw"
+
+# TI WLAN module
+WL12XX_MOD=wl12xx
+WL12XX_SDIO_MOD=wl12xx_sdio
+
+# Other executables
+IFACE=${NETWORKING_WIFI_IFACE}
+WLANCONF="${CONFDIR}/ti-connectivity/tiwlan.ini"
+WLANCONFCKS="${ROOTDIR}media/system-config/tiwlan.ini.cks"
+WLANCONFCKS_TMP="${ROOTDIR}tmp/tiwlan.ini.cks"
+FWDIR="${LIBDIR}/firmware"
+WLANFW="${FWDIR}/wl1271-fw.bin"
+WLANNVSLINK="${ROOTDIR}lib/firmware/ti-connectivity/wl1271-nvs.bin"
+WLANNVS="${ROOTDIR}media/system-config/wl12xx-nvs.bin"
+WLANNVS_TMP="${ROOTDIR}tmp/wl12xx-nvs.bin"
+MCPWLANNVS="${ROOTDIR}media/system-config/wl1271-nvs.bin"
+WLANCALSEQ="calibrator plt autocalibrate ${NETWORKING_WIFI_IFACE} /lib/modules/2.6.37/updates/drivers/net/wireless/wl12xx/wl12xx_sdio.ko ${WLANCONF} ${WLANNVSLINK} `${BOOTGETENV} -n ethaddr`"
+WLANTRSNVS="calibrator set upd_nvs ${WLANCONF} ${MCPWLANNVS} ${WLANNVSLINK}"
+
+OSCMSG_TMP="${ROOTDIR}tmp/oscillator.msg"
+OSCVAL_TMP="${ROOTDIR}tmp/oscillator"
+
+REGENERATE=0
+
+wlan_up () {
+	test -x ${IP} && ${IP} link set dev ${IFACE} up
+}
+
+wlan_down () {
+	test -x ${IP} && ${IP} link set dev ${IFACE} down
+}
+
+wl12xx_insert () {
+    if [ ! -f "${WLANNVS}" -a ! -f "${MCPWLANNVS}" ]; then
+	# No nvs, perform initial calibration
+	${LOGGER} -t tical -p user.warn "TI NLCP no NVS"
+	${MODPROBE} ${WL12XX_MOD}.ko
+	${WLANCALSEQ}
+    fi
+    if [ ! -f "${WLANNVS}" -a -f "${MCPWLANNVS}" ]; then
+	# Upgrade from MCP to NLCP
+	${LOGGER} -t tical -p user.warn "TI NLCP upgrade"
+	${MODPROBE} ${WL12XX_MOD}.ko
+	${WLANTRSNVS}
+	${CKSUM} ${WLANCONF} > ${WLANCONFCKS}
+    fi
+    if [ ! -f "${WLANNVS}" ]; then
+	# SAPPHIRE-9389
+	${LOGGER} -t tical -p user.warn "TI NLCP nvram file missing"
+    fi
+    if [ ! -f "${WLANNVSLINK}" ]; then
+	# SAPPHIRE-9389 make the link manually
+	${LOGGER} -t tical -p user.warn "TI NLCP link file missing (relink)"
+	${LN} ${WLANNVS} ${WLANNVSLINK}
+    fi
+    if [ ! -f "${WLANCONFCKS}" ] ; then
+	# Upgrading to use ini file checksum.
+	${LOGGER} -t tical -p user.warn "TI NLCP generate CSUM"
+	${CKSUM} ${WLANCONF} > ${WLANCONFCKS}
+	REGENERATE=1
+    fi
+
+    ${CKSUM} ${WLANCONF} > ${WLANCONFCKS_TMP}
+
+    ${CMP} -s ${WLANCONFCKS} ${WLANCONFCKS_TMP}
+    if [ $? -ne 0 -o "$REGENERATE" -eq 1 ] ; then
+
+	${LOGGER} -t tical -p user.warn "TI NLCP CSUM regenerate"
+	${MV} -f ${WLANNVS} ${WLANNVS}.backup
+
+	${MODPROBE} ${WL12XX_MOD}.ko
+	${WLANTRSNVS}
+	${CKSUM} ${WLANCONF} > ${WLANCONFCKS}
+
+	${HEXDUMP} ${WLANNVS} > ${WLANNVS_TMP}.hex
+	${HEXDUMP} ${WLANNVS}.backup > ${WLANNVS_TMP}.backup.hex
+	${DIFF} ${WLANNVS_TMP}.backup.hex ${WLANNVS_TMP}.hex > ${WLANNVS_TMP}.diff
+	if [ $? -ne 0 ] ; then
+	    echo -n "TI NLCP Oscillator Warmup was=" > ${OSCMSG_TMP}
+	    ${HEXDUMP} -s 0x1d5 -n 1 ${WLANNVS}.backup > ${OSCVAL_TMP}.backup
+	    ${CUT} -c 11-12 ${OSCVAL_TMP}.backup >> ${OSCMSG_TMP}
+	    echo -n "TI NLCP Oscillator Warmup now=" >> ${OSCMSG_TMP}
+	    ${HEXDUMP} -s 0x1d5 -n 1 ${WLANNVS} > ${OSCVAL_TMP}
+	    ${CUT} -c 11-12 ${OSCVAL_TMP} >> ${OSCMSG_TMP}
+
+	    ${LOGGER} -t tical -p user.warn "TI NLCP Cal file regeneration required"
+	    ${LOGGER} -t tical -p user.warn < ${OSCMSG_TMP}
+	    ${LOGGER} -t tical -p user.warn "TI NLCP Cal file diffs follow:"
+	    ${LOGGER} -t tical -p user.warn < ${WLANNVS_TMP}.diff
+	fi
+    fi
+    ${MODPROBE} ${WL12XX_SDIO_MOD}.ko
+    wlan_up
+}
+
+wl12xx_remove () {
+    ${MODPROBE} -r ${WL12XX_MOD}.ko
+}
+
+wl12xx_sdio_remove () {
+    ${MODPROBE} -r ${WL12XX_SDIO_MOD}.ko
+}
+
+case "${1}" in
+
+'start')
+    echo_and_log "Texas Instruments Wireless LAN:\c"
+    wl12xx_insert
+    ;;
+'stop')
+    wlan_down
+    wl12xx_sdio_remove
+    wl12xx_remove
+    ;;
+'restart')
+    ${0} stop
+    ${0} start
+    ;;
+*)
+    echo "Usage: ${0} <start | stop | restart>"
+    exit 1
+    ;;
+
+esac

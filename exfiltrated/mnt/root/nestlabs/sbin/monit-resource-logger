@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# If any init operation fails, abort immediately.
+set -e
+
+ONCEDIR=/var/run/$(basename ${0})
+
+# Only run once.
+mkdir -p $(dirname ${ONCEDIR})
+mkdir ${ONCEDIR} &>/dev/null
+
+# If one logger fails, we want to continue running other loggers.
+set +e
+
+# Signal NlMetricsD to log.
+if killall -0 nlmetricsd &>/dev/null
+then
+    killall -SIGUSR1 nlmetricsd
+fi
+
+# Collect performance counters.
+if which perf &>/dev/null
+then
+    file=/var/log/perfdata
+    last=$( (ls -v1 ${file}.* 2>/dev/null || echo ${file}.-1) | tail -1 | sed "s|^${file}\.||g" )
+    next=$((${last} + 1))
+
+    if [[ -e ${file} ]]
+    then
+        mv ${file} ${file}.${next}
+        next=$((${next} + 1))
+    fi
+
+    perf record --output=/var/log/perfdata --call-graph=fp --event=cpu-clock --pid=$(cat /var/run/nlclient.pid) sleep 1
+
+    # The log uploader is triggered by this sequence
+    mv ${file} ${file}.${next}
+fi

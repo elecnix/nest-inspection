@@ -1,0 +1,38 @@
+#!/bin/sh
+
+. /etc/init.d/functions
+. /etc/init.d/dm
+
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:}${NESTLABSLIBDIR}
+
+DAEMON_NAME="nlmetricsd"
+DAEMON_PATH="${NESTLABSSBINDIR}/${DAEMON_NAME}"
+
+case "${1}" in
+
+'start')
+	monit_service_action start "${DAEMON_NAME}"
+	;;
+
+'monit_start')
+	${STARTDAEMON} -b -x ${DAEMON_PATH}
+	;;
+
+'stop')
+	monit_service_action stop "${DAEMON_NAME}"
+	;;
+
+'monit_stop')
+	${STOPDAEMON} -q -x ${DAEMON_PATH}
+	;;
+
+'restart')
+	${0} stop
+	${0} start
+	;;
+*)
+	echo "Usage: ${0} <start | stop | restart | module>"
+	exit 1
+	;;
+
+esac

@@ -1,0 +1,261 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2013 Nest, Inc.
+#    All rights reserved.
+#
+#    This document is the property of Nest. It is considered
+#    confidential and proprietary information.
+#
+#    This document may not be reproduced or transmitted in any form,
+#    in whole or in part, without the express written permission of
+#    Nest.
+#
+#    Description:
+#      This script is for updating the SiLabs application image.
+#
+
+# Usage: /nestlabs/sbin/upgrade-ip-modem-app
+# Optional param to force update: /nestlabs/sbin/upgrade-ip-modem-app -f
+# Optional param to update with a different image: /nestlabs/sbin/upgrade-ip-modem-app -i newfile.bin
+# Optional param to force update with a different image: /nestlabs/sbin/upgrade-ip-modem-app -i newfile.bin -f
+
+# Source common library
+. /etc/init.d/functions
+
+EXEC_DIR=`dirname $0`
+
+if [ "${EXEC_DIR}" = "." ]
+then ROOT_DIR="/"
+else ROOT_DIR="${EXEC_DIR}/../.."
+fi
+
+NCP_IMAGE="${ROOT_DIR}"/usr/share/silabs/data/firmware/ip-modem-app.bin
+DEEP_SLEEP_IMAGE="${ROOT_DIR}"/usr/share/silabs/data/firmware/deep-sleep-app.bin
+
+NLMODEL="nlmodel"
+FAMILY_DIAMOND="Diamond"
+FAMILY_J49="Display"
+CC2530_LOADER="${ROOT_DIR}/nestlabs/sbin/nlzbupdater"
+EM357_LOADER="${ROOT_DIR}/nestlabs/bin/zb-loader"
+EM357_DIAGS="${ROOT_DIR}/nestlabs/bin/zb-diags"
+ECHO=echo
+KILLALL=killall
+SLEEP=sleep
+FORCE_UPDATE=0
+
+get_family=`${BOOTGETENV} -n "$NLMODEL" | cut -d"-" -f1`
+
+verify_cc2530() {
+	log_info "Verify not implemented for CC2530."
+}
+
+stop_wpan_tunnel_driver() {
+    if [ -e /etc/init.d/wpan-tunnel-driver ]; then
+        /etc/init.d/wpan-tunnel-driver stop
+        pid=`${CAT} /var/run/wpan*/wpan*.pid`
+        ctr=0
+        while [ "`ps ax |${GREP} -e wpantund -e wpan-tunnel-driver |${GREP} ${pid}`" != "" ]; do
+            ctr=`${EXPR} ${ctr} + 1`
+            log_info "Waiting for wpantund to die"
+            ${SLEEP} 1
+            if [ ${ctr} == 10 ]; then
+                /etc/init.d/wpan-tunnel-driver stop
+                log_info "Retry wpan-tunnel-driver stop"
+            fi
+            if [ ${ctr} == 60 ]; then
+                log_info "Wpantund won't die, give up and fail the installation"
+                exit 1
+            fi
+	done
+    fi
+}
+
+update_cc2530() {
+    # We will allow the caller to pick the serial port to use
+    # for the update by checking to see if NCP_SERIAL is already
+    # set. If it isn't, we go with our default: /dev/ttyO1
+    [ -z "$NCP_SERIAL" ] && NCP_SERIAL=/dev/ttyO1
+
+    # Older version of the kernel used /dev/ttyS1 instead,
+    # So we check here to make sure /dev/ttyO1 exists. If it
+    # doesn't, we will try /dev/ttyS1 instead.
+    [ -c "$NCP_SERIAL" ] || NCP_SERIAL=/dev/ttyS1
+
+    # Quick sanity check to make sure that the serial port file
+    # exists and is a character device.
+    if [ '!' -c "${NCP_SERIAL}" ]; then
+        log_info "\"${NCP_SERIAL}\" is not a character device!"
+        exit -4
+    fi
+
+#    if  [ $FORCE_UPDATE != 1 ]; then
+#        # Check if upgrade is required
+#        version=`/usr/bin/wpanctl get NCPVersion`
+#        ${CC2530_LOADER} --is-update-required "${NCP_IMAGE}" "${version}"
+#        # Check return code. If update is not required, exit.
+#        if [ ${?} != 0 ]; then
+#            log_info "Versions matched. EM357 update is not required."
+#            exit 0
+#        fi
+#    else
+#        ${ECHO} "Forcing EM357 update"
+#    fi
+
+    # Stop everything
+    stop_wpan_tunnel_driver
+
+    log_info "Load image"
+    ${CC2530_LOADER} "${NCP_SERIAL}" "${NCP_IMAGE}"
+    exit ${?}
+}
+
+
+verify_em357() {
+	${EM357_LOADER} --verify "${NCP_IMAGE}"
+}
+
+update_em357() {
+    counter=0
+    status=0
+    oldVersion="unknown"
+    newVersion="unknown"
+    while [  $counter -lt 10 ]; do
+
+        if  [ $FORCE_UPDATE != 1 ]; then
+            # Check if upgrade is required
+            oldVersion=`/usr/bin/wpanctl get NCPVersion`
+            # Response to above command is: NCPVersion = "ConnectIP/2.0.0b301 s1 m7"
+            ${EM357_LOADER} --is-update-required "${NCP_IMAGE}" "${oldVersion:14:25}"
+            status=${?}
+            if [ -z "$oldVersion" ]; then
+                oldVersion="unknown"
+            else
+                oldVersion=${oldVersion:14:25}
+            fi
+            # Check return code. If update is not required, exit.
+            if [ ${status} != 0 ]; then
+                newVersion=$oldVersion
+                log_info "Versions matched. EM357 update is not required."
+                log_info "802.15.4 update result: OldVersion=\"${oldVersion}\", NewVersion=\"${newVersion}\", NumberOfTries=${counter}, Status=${status}"
+                exit 0
+            fi
+        else
+            ${ECHO} "Forcing EM357 update"
+        fi
+
+        let counter=counter+1
+
+        # Stop everything
+        if [ -e /etc/init.d/spi-server ]; then
+            /etc/init.d/spi-server stop 1>/dev/null 2>/dev/null
+        fi
+        ${KILLALL} -9 spi-server 1>/dev/null 2>/dev/null
+
+        stop_wpan_tunnel_driver
+
+        log_info "Get bootloader version"
+        ${EM357_LOADER} --force-bootloader
+        bootloaderVersion=`${EM357_LOADER} --version`
+        status=${?}
+        log_info ${bootloaderVersion}
+
+        if [ ${status} != 0  ]; then
+            log_info "EM357 is not running the correct bootloader"
+        else
+            # Try loading the image
+            log_info "Load image"
+            ${EM357_LOADER} --app-easyload "${NCP_IMAGE}"
+            status=${?}
+            log_info ${status}
+        fi
+        # Don't retry if loading image succeeded
+        if [ ${status} == 0 ]; then
+            log_info "Load succeeded"
+            break
+        fi
+        # If we got to this point, we failed.
+        # Wait a second. The "|| exit 1" allows
+        # for ctrl-c to work more reasonably.
+        sleep 1 || exit 1
+    done
+
+    # if loading app does not succeed,
+    # load a small image that will force em357 to just deep sleep
+    if [ ${status} != 0 ]; then
+        log_info "Loading ip-modem-app failed. Loading deep-sleep-app."
+        ${EM357_LOADER} --app-easyload "${DEEP_SLEEP_IMAGE}"
+        hailmary_status=${?}
+        if [ ${hailmary_status} != 0 ]; then
+            if [ ${hailmary_status} != 253 ]; then
+                newVersion="DeepSleepApp"
+            else
+                newVersion="unknown"
+            fi
+        fi
+    fi
+    log_info "802.15.4 update result: OldVersion=\"${oldVersion}\", NewVersion=\"${newVersion}\", NumberOfTries=${counter}, Status=${status}"
+    if [ ${status} == 0 ]; then
+    	log_info "Em357 update done"
+    fi
+    exit ${status}
+}
+
+#set -x
+
+family=$get_family
+verify=0
+
+# Parse command line arguments
+while [ $# != 0 ]
+do
+    key="$1"
+    shift
+    case $key in
+        -f)
+            FORCE_UPDATE=1
+            ;;
+        -i)
+            if [ "${1}" == "" ]; then
+              echo "Please provide path to .bin after -i"
+            else
+              NCP_IMAGE="${1}"
+              shift
+            fi
+            ;;
+        -v)
+            verify=1
+            ;;
+         *)
+            # unknown option
+            echo "Usage: upgrade-ip-modem-app -i <path_to.bin> -f"
+            exit 1
+            ;;
+    esac
+done
+
+if [ "!" -f "${NCP_IMAGE}" ] ; then
+    log_info "Unable to open \"${NCP_IMAGE}\"!"
+    exit -5
+fi
+
+# start update
+if [ "$family" = "$FAMILY_DIAMOND" ]; then
+    if [ $verify == 1 ]; then
+      verify_cc2530
+    else
+      update_cc2530
+    fi
+elif [ "$family" = "$FAMILY_J49" ]; then
+    if [ $verify == 1 ]; then
+      verify_em357
+    else
+      update_em357
+    fi
+else
+    if [ $verify == 1 ]; then
+      verify_em357
+    else
+      update_em357
+    fi
+fi

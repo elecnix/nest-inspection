@@ -1,0 +1,93 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2011 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    Description:
+#      This file implements daemon (i.e. service) monitoring abstractions
+#      that may be called by other initialization scripts.
+#
+
+# Source, if necessary, common library
+if [ -z "${ROOTDIR}" ]; then
+    . /etc/init.d/functions
+fi
+
+MONIT=${USRSBINDIR}/monit
+
+# Usage: monit_service_action ACTION SERVICE
+monit_service_action () {
+	local action="${1}"
+	local service="${2}"
+	retry=0
+	wait_exp=1
+
+	if [ -n "${action}" ] && [ -n "${service}" ] && [ -x ${MONIT} ]; then
+		${MONIT} "${action}" "${service}" > ${NULL} 2>&1
+		st=${?}
+		while [ ${st} != 0 ]; do
+			${SLEEP} ${wait_exp}
+			wait_exp=$((wait_exp*3))
+			${MONIT} "${action}" "${service}" > ${NULL} 2>&1
+			st=${?}
+			if [ ${retry} == 5 ]; then
+				break;
+			fi
+			retry=`expr ${retry} + 1`
+		done
+		if [ ${st} == 0 ]; then
+			echo_and_log " Please wait while monit ${action}s ${service}"
+			retry=0
+			if [ ${action} == "start" ]; then
+				while [ "`pidof -o %PPID ${service}`" == "" ]; do
+					echo_and_log ". \c"
+					${USLEEP} 250000
+					retry=`expr ${retry} + 1`
+					if [ ${retry} -gt 240 ]; then
+						echo_and_log "monit failed to ${action} ${service}"
+						break
+					fi
+				done
+			elif [ ${action} == "stop" ]; then
+				while [ "`pidof -o %PPID ${service}`" != "" ]; do
+					echo_and_log ". \c"
+					${USLEEP} 250000
+					retry=`expr ${retry} + 1`
+					if [ ${retry} -gt 240 ]; then
+						echo_and_log "monit failed to ${action} ${service}"
+						break
+					fi
+				done
+			fi
+			echo_and_log "."
+		else
+			echo_and_log "monit failed to ${action} ${service}"
+		fi
+	fi
+}
+
+# Usage: start_service SERVICE
+start_service () {
+	monit_service_action start "${1}"
+}
+
+# Usage: stop_service SERVICE
+stop_service () {
+	monit_service_action stop "${1}"
+}
+
+# Usage: restart_service SERVICE
+restart_service () {
+	monit_service_action restart "${1}"
+}
+
+# Usage: monitor_service SERVICE
+monitor_service () {
+	monit_service_action monitor "${1}"
+}
+
+# Usage: unmonitor_service SERVICE
+unmonitor_service () {
+	monit_service_action unmonitor "${1}"
+}

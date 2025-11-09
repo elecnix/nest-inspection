@@ -1,0 +1,81 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2012 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    Description:
+#      This file implements a script to start/stop the system
+#      heartbeat / software watchdog daemon.
+#
+
+# Source common library
+. /etc/init.d/functions
+
+# Source daemon-monitor library
+. /etc/init.d/dm
+
+# Export fallback shared library search path
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:}${NESTLABSLIBDIR}
+
+NLHEARTBEATNAME=nlheartbeatd
+NLHEARTBEATAPP=${NESTLABSSBINDIR}/${NLHEARTBEATNAME}
+NLHEARTBEATPIDFILE="${VARDIR}/run/${NLHEARTBEATNAME}.pid"
+
+PROGRAM="`${BASENAME} ${0}`"
+
+end_service () {
+	local verb="${1}"
+	local how="${2}"
+
+	log_info "Service termination for ${NLHEARTBEATNAME} received from [${PPID}]: ${verb}"
+
+	${STOPDAEMON} -q -x ${NLHEARTBEATAPP} ${how} > ${NULL} 2>&1
+	rm -f "${NLHEARTBEATPIDFILE}"
+	echo_and_log " ${verb} ${NLHEARTBEATNAME}\c"
+}
+
+case "${1}" in
+
+'start')
+	monit_service_action start "${NLHEARTBEATNAME}"
+	;;
+
+'monit_start')
+	echo_and_log "Software watchdog daemon:\c"
+	log_info "Service initiation for ${NLHEARTBEATNAME} received from [${PPID}]"
+	${STARTDAEMON} -q -b -m -p "${NLHEARTBEATPIDFILE}" -a "${NLHEARTBEATAPP}" -- `${CAT} ${CONFDIR}/${NLHEARTBEATNAME}.options 2> ${NULL}`
+	echo_and_log " ${NLHEARTBEATNAME}\c"
+	echo_and_log "."
+	;;
+
+'stop')
+	monit_service_action stop "${NLHEARTBEATNAME}"
+	;;
+
+'kill')
+	# Note: for this to be useful, monit must not be running.
+	if [ -f "$NLHEARTBEATPIDFILE" ] ; then
+		echo_and_log "Sending SIGKILL to ${NLHEARTBEATNAME}"
+		${KILL} -9 $(cat "${NLHEARTBEATPIDFILE}")
+	else
+		echo_and_log "The process ${NLHEARTBEATNAME} does not appear to be running, not sending SIGKILL"
+	fi
+	;;
+
+'monit_stop')
+	echo_and_log "Software watchdog daemon:\c"
+	end_service "stopping" "--retry=TERM/180/ABRT/180/KILL/6"
+	echo_and_log "."
+	;;
+
+'restart')
+	monit_service_action restart "${NLHEARTBEATNAME}"
+	;;
+
+*)
+	echo "Usage: ${0} <start | stop | restart | kill>"
+	exit 1
+	;;
+
+esac

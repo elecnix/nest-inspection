@@ -1,0 +1,64 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2010-2011 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    Description:
+#      This file implements a script to start/stop the Wi-Fi Protected
+#      Access (WPA) supplicant daemon, wpa_supplicant.
+#
+
+# Source common library
+. /etc/init.d/functions
+
+# Source daemon-monitor library
+. /etc/init.d/dm
+
+NAME=wpa_supplicant
+
+WPAD="${SBINDIR}/${NAME}"
+
+WPADPIDFILE="${VARDIR}/run/${NAME}.pid"
+
+WPADOPTS=`${CAT} ${CONFDIR}/${NAME}.options 2> ${NULL}`
+WPADOPTS="${WPADOPTS} -P ${WPADPIDFILE}"
+
+case "${1}" in
+
+'start')
+	echo_and_log "WPA Supplicant start"
+	monit_service_action start "${NAME}"
+	echo_and_log "."
+	;;
+
+'monit_start')
+	echo_and_log "WPA Supplicant monit_start"
+	${STARTDAEMON} -q -p ${WPADPIDFILE} -a ${WPAD} -- ${WPADOPTS}
+	echo_and_log "."
+	;;
+
+'stop')
+	echo_and_log "WPA Supplicant stop"
+	monit_service_action stop "${NAME}"
+	echo_and_log "."
+	;;
+
+'monit_stop')
+	echo_and_log "WPA Supplicant monit_stop"
+	${STOPDAEMON} -q -x ${WPAD}
+	echo_and_log "."
+	;;
+
+'restart')
+	echo_and_log "WPA Supplicant restart\c"
+	monit_service_action restart "${NAME}"
+	echo_and_log "."
+	;;
+
+*)
+	echo "Usage: ${0} <start | stop | restart>"
+	exit 1
+	;;
+
+esac

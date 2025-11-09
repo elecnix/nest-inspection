@@ -1,0 +1,83 @@
+#!/bin/sh
+
+#
+#    Copyright (c) 2011 Nest Labs, Inc.
+#    All rights reserved.
+#
+#    Description:
+#      This file implements a script to start/stop the 
+#      daemon-monitoring daemon (DMD), monit.
+#
+
+# Source common library
+. /etc/init.d/functions
+
+NAME=monit
+
+MONIT="${USRSBINDIR}/${NAME}"
+
+MONITPIDFILE="${VARDIR}/run/${NAME}.pid"
+
+MONITOPTS=`${CAT} ${CONFDIR}/${NAME}.options 2> ${NULL}`
+MONITOPTS="${MONITOPTS} -p ${MONITPIDFILE}"
+
+MONITDATADIR="${ROOTDIR}media/system-config/monit"
+
+start_monit () {
+	if test -x ${MONIT}; then
+		create_dir_if_absent "${MONITDATADIR}"
+
+		${STARTDAEMON} -q -p ${MONITPIDFILE} -x ${MONIT} > ${NULL} 2>&1 -- ${MONITOPTS}
+		echo_and_log " ${NAME}\c"
+	fi
+}
+
+# arguments are passed on to ${STOPDAEMON}
+stop_monit () {
+	echo_and_log "Stopping ${NAME}"
+	if test -e ${MONITPIDFILE}; then
+		pid="`cat ${MONITPIDFILE}`"
+	else
+		pid=""
+	fi
+	${STOPDAEMON} -q -p ${MONITPIDFILE} -x ${MONIT} "$@" > ${NULL} 2>&1
+	if [ "${pid}" != "" ]; then
+		while [ "`ps ${pid} | ${GREP} ${pid}`" != "" ]; do
+			echo_and_log "."
+			${SLEEP} 1
+		done
+	fi
+	${SLEEP} 1
+}
+
+case "${1}" in
+
+'start')
+	echo_and_log "System monitor daemon:\c"
+
+	if ${CHECK} monit; then
+		start_monit
+	fi
+
+	echo_and_log "."
+	;;
+
+'stop')
+	stop_monit
+	;;
+
+'kill')
+	stop_monit --signal 9
+	;;
+
+'restart')
+	${0} stop
+	${0} start
+	;;
+
+*)
+	${ECHO} "Usage: ${0} <start | stop | restart>"
+	exit 1
+	;;
+
+esac

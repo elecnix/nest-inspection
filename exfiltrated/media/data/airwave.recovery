@@ -1,0 +1,28 @@
+Airwave:"" { Version:1, NumScalars:3, NumObjects:1,
+FanCoolingData:"" { NumberOfCycles:3, OldestCycleIndex:0, NewestCycleIndex:2,
+Cycle:"0" { NumberOfPoints:6,
+Point:"O" { t:3046141816, T:1625292, H:2621440 }
+Point:"P" { t:3046143734, T:1533608, H:2411724 }
+Point:"S" { t:3046143554, T:1549926, H:2411724 }
+Point:"D" { t:3046143764, T:1544028, H:2457600 }
+Point:"E" { t:3046143794, T:1544028, H:2457600 }
+Point:"L" { t:3046143794, T:1518554, H:2411724 }
+}
+Cycle:"1" { NumberOfPoints:6,
+Point:"O" { t:3047968341, T:1544683, H:2942566 }
+Point:"P" { t:3047969780, T:1500119, H:2870476 }
+Point:"S" { t:3047969420, T:1506017, H:2870476 }
+Point:"D" { t:3047969840, T:1494876, H:3086745 }
+Point:"E" { t:3047969840, T:1494876, H:3112960 }
+Point:"L" { t:3047969840, T:1494201, H:2870476 }
+}
+Cycle:"2" { NumberOfPoints:6,
+Point:"O" { t:3051898400, T:1601044, H:2896691 }
+Point:"P" { t:3051900598, T:1550581, H:2837708 }
+Point:"S" { t:3051900028, T:1561722, H:2837708 }
+Point:"D" { t:3051900568, T:1556480, H:3034316 }
+Point:"E" { t:3051900630, T:1556480, H:3080192 }
+Point:"L" { t:3051900628, T:1536164, H:2837708 }
+}
+}
+}
