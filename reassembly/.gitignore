@@ -1,0 +1,15 @@
+# Rust
+nest-ui-rs/target/
+nest-ui-rs/Cargo.lock
+nest-ui-rs/**/*.rs.bk
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
