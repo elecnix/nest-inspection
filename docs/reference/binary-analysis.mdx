@@ -1,0 +1,284 @@
+---
+title: Binary Analysis
+description: 'Reverse engineering analysis of Nest firmware binaries'
+---
+
+# Binary Analysis
+
+This document details the analysis of the Nest Learning Thermostat firmware binaries.
+
+## nlclient - Main Application
+
+### Binary Information
+
+**File**: `/nestlabs/sbin/nlclient`  
+**Size**: 5,122,360 bytes (4.9 MB)  
+**Type**: ELF 32-bit LSB executable, ARM, EABI5  
+**Architecture**: ARMv7 (hard-float ABI)  
+**Build ID**: 31ee6d0af8d98780f53872ab5e729cbd5243bff3  
+**Stripped**: Yes (no debug symbols)  
+**Interpreter**: `/lib/ld-linux-armhf.so.3`
+
+### Dependencies
+
+The nlclient binary links against 47 shared libraries:
+
+#### Core System Libraries
+- `libstdc++.so.6` - C++ standard library
+- `libc.so.6` - C standard library
+- `libm.so.6` - Math library
+- `libgcc_s.so.1` - GCC support library
+- `libpthread.so.0` - POSIX threads
+
+#### Boost Libraries (v1.66.0)
+- `libboost_filesystem.so.1.66.0` - File system operations
+- `libboost_system.so.1.66.0` - System utilities
+- `libboost_signals.so.1.66.0` - Signal/slot mechanism
+- `libboost_chrono.so.1.66.0` - Time utilities
+
+#### Network & Protocol Libraries
+- `libcurl.so.4` - HTTP client
+- `libssl.so.1.0.0` - OpenSSL SSL/TLS
+- `libcrypto.so.1.0.0` - OpenSSL cryptography
+- `libpcap.so.1` - Packet capture
+- `libprotobuf.so.11` - Protocol Buffers
+
+#### Nest-Specific Libraries
+- `libnlcore.so` - Core Nest functionality
+- `libnlappcore.so` - Application core
+- `libnlapputils.so` - Application utilities
+- `libnlappkit.so` - Application kit
+- `libnlwebservice.so` - Web service client
+- `libnlnetworkmanager.so` - Network management
+- `libnlsystem.so` - System utilities
+- `libnldbus.so` - D-Bus IPC
+- `libnlappdbus.so` - Application D-Bus
+- `libnldropbox.so` - Cloud upload service
+- `libnlpathobserver.so` - File system monitoring
+
+#### UI & Internationalization
+- `libfreetype.so.6` - Font rendering
+- `libpng14.so.14` - PNG image support
+- `libicui18n.so.44` - ICU internationalization
+- `libicudata.so.44` - ICU data
+- `libicuuc.so.44` - ICU common utilities
+
+#### Data Processing
+- `libxml2.so.2` - XML parsing
+- `libmjson-1.3.so` - JSON parsing
+- `libz.so.1` - Compression
+
+#### Nuovations Libraries
+- `libNuovationsUtilities.so` - Utilities
+- `libCFUtilities.so` - CoreFoundation utilities
+- `libLogUtilities.so` - Logging
+- `libCoreFoundation.so.474` - CoreFoundation framework
+- `libVersion.so` - Version management
+
+#### System Integration
+- `libdbus-1.so.3` - D-Bus system bus
+- `libdaemon.so.0` - Daemon utilities
+- `libu-boot.so` - U-Boot environment
+- `libuuid.so.1` - UUID generation
+- `libproc-3.2.8.so` - Process utilities
+- `libglib-2.0.so.0` - GLib utilities
+
+#### Mozilla Libraries
+- `libnspr4.so` - Netscape Portable Runtime
+- `libplc4.so` - NSPR C library
+- `libplds4.so` - NSPR data structures
+
+### Key Functionality Indicators
+
+#### Weave Protocol Support
+Strings analysis reveals extensive Weave protocol implementation:
+- `nl::Weave::DeviceManager::WeaveDeviceManager`
+- `nl::System::Environment::kWeavePrivateKey`
+- `nl::System::Environment::kWeavePairingCode`
+- `nl::System::Environment::kWeaveCertificate`
+- `nl::Inet::TCPEndPoint::TCPConnectTimeoutHandler`
+
+#### Thread/WPAN Support
+- `nlWPANCtl::Interface::SetThreadDeviceMode`
+- Thread device mode management
+
+#### Learning & Scheduling
+Key strings related to learning algorithms:
+- `client: received new temperature schedule`
+- `client: incoming cloud temperature schedule received`
+- `learning_completed`
+- `autoaway_previous_learning`
+- `pre_emergency_learning_mode`
+- `nlLongTimerNextSchedule`
+- `sensor_schedule`
+
+#### Time-of-Use (TOU) Features
+- `nlTOUAlertInitialLearnMore`
+- `nlTOUAlertSpeedBumpLearnMore`
+- `nlTOUAlertRateChangeLearnMore`
+- `nlTOUAlertStepDemandChargeLearnMore`
+
+## System Daemons
+
+### osm - Operating System Manager
+
+**File**: `/nestlabs/sbin/osm`  
+**Size**: 325,132 bytes  
+**Purpose**: Software update management and service orchestration
+
+### watchdogd - System Watchdog
+
+**File**: `/nestlabs/sbin/watchdogd`  
+**Size**: 29,452 bytes  
+**Purpose**: Hardware watchdog management and system recovery
+
+### nlheartbeatd - Health Monitoring
+
+**File**: `/nestlabs/sbin/nlheartbeatd`  
+**Size**: 97,192 bytes  
+**Purpose**: System health monitoring and diagnostics
+
+### nlmetricsd - Metrics Collection
+
+**File**: `/nestlabs/sbin/nlmetricsd`  
+**Size**: 4,728 bytes  
+**Purpose**: Performance and usage metrics collection
+
+### nlsleepd - Power Management
+
+**File**: `/nestlabs/sbin/nlsleepd`  
+**Size**: 61,044 bytes  
+**Purpose**: Sleep state management and power optimization
+
+### nlshutdownd - Shutdown Coordination
+
+**File**: `/nestlabs/sbin/nlshutdownd`  
+**Size**: 31,272 bytes  
+**Purpose**: Orderly shutdown coordination across services
+
+### dropbox - Cloud Upload Service
+
+**File**: `/nestlabs/sbin/dropbox`  
+**Size**: 23,474 bytes  
+**Purpose**: Upload logs and diagnostics to Nest cloud
+
+## Update Components
+
+### nlswupdate - Software Update Manager
+
+**File**: `/nestlabs/sbin/nlswupdate`  
+**Size**: 2,321 bytes  
+**Purpose**: Main software update orchestration script
+
+### nlbpupdater - Backplate Firmware Updater
+
+**File**: `/nestlabs/sbin/nlbpupdater`  
+**Size**: 201,132 bytes  
+**Purpose**: Update backplate microcontroller firmware
+
+### nlzbupdater - ZigBee Firmware Updater
+
+**File**: `/nestlabs/sbin/nlzbupdater`  
+**Size**: 11,368 bytes  
+**Purpose**: Update ZigBee radio firmware
+
+### nliplupdater - Bootloader Updater
+
+**File**: `/nestlabs/sbin/nliplupdater`  
+**Size**: 8,368 bytes  
+**Purpose**: Update IPL (Initial Program Loader) bootloader
+
+## Recovery Tools
+
+### client_recovery - Recovery Mode
+
+**File**: `/nestlabs/sbin/client_recovery`  
+**Size**: 2,286 bytes  
+**Purpose**: Factory reset and recovery operations
+
+### nand_ecc_check - NAND Health Check
+
+**File**: `/nestlabs/sbin/nand_ecc_check`  
+**Size**: 8,028 bytes  
+**Purpose**: Check NAND flash ECC errors and health
+
+## Analysis Tools
+
+### Disassembly Commands
+
+```bash
+# Extract all symbols (limited due to stripped binary)
+nm mnt/root/nestlabs/sbin/nlclient
+
+# Disassemble specific sections
+objdump -d mnt/root/nestlabs/sbin/nlclient > nlclient_disasm.txt
+
+# View ELF headers
+readelf -a mnt/root/nestlabs/sbin/nlclient > nlclient_elf.txt
+
+# Extract strings (already done)
+strings mnt/root/nestlabs/sbin/nlclient > nlclient_strings.txt
+```
+
+### Recommended Tools
+
+- **Ghidra**: Open-source reverse engineering suite
+- **IDA Pro**: Professional disassembler (ARM support)
+- **radare2**: Open-source reverse engineering framework
+- **Binary Ninja**: Modern binary analysis platform
+
+### Analysis Approach
+
+1. **Static Analysis**
+   - String analysis (completed)
+   - Control flow graph generation
+   - Function identification
+   - API usage mapping
+
+2. **Dynamic Analysis** (requires ARM emulation)
+   - QEMU user-mode emulation
+   - System call tracing with strace
+   - Library call tracing with ltrace
+   - Network traffic analysis
+
+3. **Firmware Emulation** (advanced)
+   - Full system emulation with QEMU
+   - Requires kernel and device tree
+   - Network service interception
+   - Hardware peripheral emulation
+
+## Key Findings
+
+### Architecture Insights
+
+1. **Modular Design**: Heavy use of shared libraries for separation of concerns
+2. **Weave Protocol**: Native implementation of Google's Weave IoT protocol
+3. **Thread Support**: WPAN/Thread mesh networking capability
+4. **Cloud Integration**: Continuous connection to Nest cloud services
+5. **Learning Engine**: Sophisticated temperature prediction and scheduling
+6. **Update System**: Multi-stage update with rollback capability
+
+### Security Observations
+
+1. **SSL/TLS**: Uses OpenSSL 1.0.0 (check for known vulnerabilities)
+2. **Stripped Binary**: No debug symbols (security through obscurity)
+3. **Weave Certificates**: Device-specific certificates for authentication
+4. **Packet Capture**: libpcap suggests network monitoring capability
+5. **D-Bus IPC**: Inter-process communication via D-Bus
+
+### Performance Characteristics
+
+1. **C++ Implementation**: Main application written in C++
+2. **Boost Libraries**: Modern C++ with Boost framework
+3. **Protocol Buffers**: Efficient binary serialization
+4. **ICU**: Full internationalization support (9 languages)
+5. **Hard-Float ABI**: Optimized for ARM hardware FPU
+
+## Next Steps
+
+- [ ] Detailed function analysis with Ghidra
+- [ ] Protocol reverse engineering (Weave)
+- [ ] Learning algorithm reconstruction
+- [ ] Update mechanism analysis
+- [ ] Security vulnerability assessment
+- [ ] Emulation environment setup

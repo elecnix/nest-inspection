@@ -1,0 +1,210 @@
+---
+title: Processor
+description: Texas Instruments OMAP processor details and capabilities
+---
+
+# Processor
+
+The Nest Learning Thermostat uses Texas Instruments OMAP (Open Multimedia Applications Platform) processors, which are highly integrated system-on-chip (SoC) devices designed for embedded and mobile applications.
+
+## OMAP Architecture
+
+### Processor Generations
+- **Early Models**: OMAP 3530/3730 (Cortex-A8)
+- **Later Models**: OMAP 4430/4460 (Cortex-A9)
+- **Clock Speeds**: 600MHz - 1.5GHz depending on model
+- **Process Technology**: 45nm - 28nm CMOS
+
+### Core Components
+- **CPU Core**: ARM Cortex-A8/A9 application processor
+- **GPU**: PowerVR SGX graphics accelerator
+- **DSP**: C64x+ digital signal processor
+- **Memory Controller**: LPDDR2/DDR3 interface
+- **Peripherals**: Rich set of communication interfaces
+
+## CPU Subsystem
+
+### ARM Cortex-A8
+- **Architecture**: ARMv7-A
+- **Pipeline**: 13-stage in-order pipeline
+- **Cache**: 32KB L1 instruction, 32KB L1 data, 256KB L2
+- **Performance**: 2.0 DMIPS/MHz
+- **Power**: Dynamic voltage and frequency scaling
+
+### ARM Cortex-A9
+- **Architecture**: ARMv7-A
+- **Pipeline**: 8-stage out-of-order pipeline
+- **Cache**: 32KB L1 instruction, 32KB L1 data, 512KB L2
+- **Performance**: 2.5 DMIPS/MHz
+- **Features**: NEON SIMD, TrustZone security
+
+## Graphics Subsystem
+
+### PowerVR SGX530
+- **API Support**: OpenGL ES 2.0, OpenVG 1.1
+- **Fill Rate**: 200M pixels/sec
+- **Triangle Rate**: 14M triangles/sec
+- **Memory**: Shared system memory
+- **Power**: Optimized for low power consumption
+
+### PowerVR SGX540
+- **API Support**: OpenGL ES 2.0, OpenVG 1.1
+- **Fill Rate**: 500M pixels/sec
+- **Triangle Rate**: 35M triangles/sec
+- **Features**: Enhanced shader performance
+- **Memory**: Enhanced memory bandwidth
+
+## Digital Signal Processing
+
+### C64x+ DSP
+- **Architecture**: VLIW (Very Long Instruction Word)
+- **Clock Speed**: 430MHz - 520MHz
+- **Performance**: Up to 4,800 MIPS
+- **Applications**: Audio processing, sensor fusion
+- **Power Management**: Independent power domains
+
+### DSP Capabilities
+- **Audio**: Codec support, echo cancellation
+- **Video**: H.264 encoding/decoding acceleration
+- **Image**: Camera image processing
+- **Control**: Real-time control algorithms
+
+## Memory System
+
+### Memory Controller
+- **Type**: LPDDR2/DDR3 SDRAM controller
+- **Bandwidth**: Up to 6.4GB/s
+- **Capacity**: Support for up to 2GB RAM
+- **Features**: ECC support, power management
+
+### Cache Hierarchy
+```
+L1 Cache (32KB each)
+├── Instruction Cache
+└── Data Cache
+L2 Cache (256KB-512KB)
+└── Unified Cache
+Main Memory (256MB-512MB)
+└── DDR2/DDR3 SDRAM
+```
+
+### Memory Performance
+- **Latency**: L1: 1-3 cycles, L2: 10-12 cycles
+- **Bandwidth**: 3.2GB/s theoretical, 2.1GB/s practical
+- **Power**: Dynamic memory power management
+
+## Peripheral Interfaces
+
+### High-Speed Interfaces
+- **USB 2.0**: High-speed host/device mode
+- **Ethernet**: 10/100 Mbps MAC
+- **MMC/SD**: Card interface support
+- **Camera**: Parallel camera interface
+
+### Serial Interfaces
+- **I2C**: Up to 4 I2C controllers
+- **SPI**: Up to 4 SPI controllers
+- **UART**: Up to 6 UART interfaces
+- **McASP**: Audio serial port
+
+### Display Interfaces
+- **LCD Controller**: RGB interface up to 24-bit
+- **HDMI**: 720p/1080p output support
+- **DSI**: MIPI display serial interface
+
+## Power Management
+
+### Power Domains
+- **Core Domain**: CPU and GPU power management
+- **PER Domain**: Peripheral power management
+- **IVA Domain**: DSP power management
+- **EMIF Domain**: Memory power management
+
+### Power States
+- **Active**: Full performance mode
+- **Idle**: CPU clock gating
+- **Sleep**: Low power retention
+- **Deep Sleep**: Minimal power state
+
+### Dynamic Voltage Frequency Scaling (DVFS)
+- **Frequency Steps**: Multiple operating points
+- **Voltage Scaling**: Automatic voltage adjustment
+- **Transition Time**: <100μs state changes
+- **Efficiency**: Up to 50% power savings
+
+## Clock System
+
+### Clock Domains
+- **System Clock**: Core system timing
+- **Peripheral Clock**: Peripheral interface timing
+- **Display Clock**: Display subsystem timing
+- **Audio Clock**: Audio subsystem timing
+
+### Clock Sources
+- **Main Oscillator**: 19.2MHz or 26MHz crystal
+- **PLL**: Phase-locked loops for frequency multiplication
+- **RTC**: 32kHz real-time clock
+- **External**: Optional external clock input
+
+## Security Features
+
+### TrustZone
+- **Hardware Security**: ARM TrustZone technology
+- **Secure World**: Isolated execution environment
+- **Normal World**: Standard operating system
+- **Communication**: Secure monitor calls
+
+### Boot Security
+- **Secure Boot**: Signed image verification
+- **Encryption**: Hardware encryption engines
+- **Key Storage**: Secure key storage
+- **Tamper Detection**: Hardware tamper detection
+
+## Thermal Management
+
+### Temperature Monitoring
+- **Sensors**: On-die temperature sensors
+- **Accuracy**: ±2°C temperature measurement
+- **Range**: -40°C to +125°C operating range
+- **Calibration**: Factory calibrated sensors
+
+### Thermal Protection
+- **Throttling**: Automatic frequency throttling
+- **Shutdown**: Over-temperature protection
+- **Cooling**: Passive cooling recommendations
+- **Monitoring**: Real-time temperature tracking
+
+## Development Support
+
+### Debug Interface
+- **JTAG**: Standard JTAG debug interface
+- **ETB**: Embedded trace buffer
+- **DCC**: Debug communication channel
+- **Serial**: Serial debug console
+
+### Development Tools
+- **Code Composer Studio**: TI development environment
+- **GCC**: Open-source compiler support
+- **GDB**: GNU debugger support
+- **Trace**: Instruction and data tracing
+
+## Performance Characteristics
+
+### Benchmarks
+- **Dhrystone**: 1.5-2.5 DMIPS/MHz
+- **CoreMark**: 2.0-3.0 CoreMark/MHz
+- **Graphics**: 200-500 MPixels/s
+- **Memory**: 2.1-4.2 GB/s bandwidth
+
+### Power Consumption
+- **Active**: 500mW - 2W typical
+- **Idle**: 50mW - 200mW
+- **Sleep**: <10mW deep sleep
+- **Peak**: Up to 5W maximum
+
+## Related Documentation
+
+- [Hardware Overview](./overview.mdx)
+- [Sensor System](./sensors.mdx)
+- [Display System](./display.mdx)
+- [Linux System](../architecture/linux-system.mdx)

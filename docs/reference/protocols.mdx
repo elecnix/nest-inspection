@@ -1,0 +1,560 @@
+---
+title: Network Protocols
+description: 'Weave, Thread, and network protocol implementation'
+---
+
+# Network Protocols
+
+This document analyzes the network protocols and communication systems used by the Nest Learning Thermostat.
+
+## Overview
+
+The Nest thermostat implements multiple network protocols:
+
+1. **Weave** - Google's IoT application protocol
+2. **Thread** - IEEE 802.15.4-based mesh networking
+3. **Wi-Fi** - Primary internet connectivity (802.11 b/g/n)
+4. **ZigBee** - Legacy mesh networking support
+5. **TCP/IP** - Standard internet protocols
+
+## Weave Protocol
+
+### Architecture
+
+Weave is Google's application-layer protocol for IoT devices, providing:
+- Secure device-to-device communication
+- Device-to-cloud communication
+- Service discovery
+- Data management
+- Software updates
+- Network provisioning
+
+**Library**: `/nestlabs/lib/libnlweavetools.a` (334 KB)
+
+### Core Components
+
+From binary analysis, the Weave implementation includes:
+
+#### 1. Device Manager
+```cpp
+nl::Weave::DeviceManager::WeaveDeviceManager
+```
+
+Handles:
+- Device registration
+- Pairing process
+- Network provisioning
+- Locale configuration
+- Device identification
+
+#### 2. Security Manager
+```cpp
+nl::Weave::WeaveSecurityManager
+```
+
+Implements:
+- **CASE** (Certificate Authenticated Session Establishment)
+- Session key management
+- Certificate validation
+- Secure connections
+- Idle session timeout
+
+#### 3. Message Layer
+```cpp
+nl::Weave::WeaveMessageLayer
+nl::Weave::WeaveExchangeManager
+```
+
+Provides:
+- Message routing
+- Reliable message delivery (WRMP)
+- Connection management
+- Message fragmentation
+- Timeout handling
+
+#### 4. Connection Management
+```cpp
+nl::Weave::WeaveConnection
+```
+
+Handles:
+- TCP connection establishment
+- Connection keep-alive
+- Connection closure
+- Data transmission
+- Error handling
+
+### Weave Profiles
+
+The implementation includes multiple Weave profiles:
+
+#### Security Profile
+```cpp
+nl::Weave::Profiles::Security
+```
+
+- Application fabric root key derivation
+- Key diversification
+- Certificate management
+
+#### Data Management Profile
+```cpp
+nl::Weave::Profiles::DataManagement_Legacy::DMClient
+```
+
+- View subscriptions
+- Cancel subscriptions
+- Data synchronization
+- Change notifications
+
+#### Software Update Profile
+```cpp
+nl::Weave::Profiles::SoftwareUpdateServer
+```
+
+- Image query requests
+- Image announcements
+- Update coordination
+
+#### Bulk Data Transfer Profile
+```cpp
+nl::Weave::Profiles::BulkDataTransferServer
+```
+
+- Block query requests
+- Large data transfers
+- Efficient data streaming
+
+#### Alarm Profile
+```cpp
+nl::Weave::Profiles::WeaveAlarmClient
+```
+
+- Grace period management
+- Alarm notifications
+
+#### Status Reporting
+```cpp
+nl::Weave::Profiles::StatusReporting::StatusReport
+```
+
+- Error reporting
+- Status codes
+- Diagnostic information
+
+### Weave Security
+
+#### Pairing Process
+
+**Environment Variables**:
+- `kWeavePrivateKey` - Device private key
+- `kWeavePairingCode` - Pairing code for setup
+- `kWeaveCertificate` - Device certificate
+
+**Pairing Flow**:
+1. User initiates pairing in Nest app
+2. Device broadcasts pairing availability
+3. App discovers device
+4. User enters pairing code
+5. CASE session established
+6. Device provisioned with network credentials
+7. Device registers with Nest cloud
+
+#### Certificate Authentication
+
+The system uses X.509 certificates for authentication:
+- Device certificates signed by Nest CA
+- Certificate chain validation
+- ASN.1 parsing (`nl::Weave::ASN1`)
+- OID (Object Identifier) table
+
+#### Session Management
+
+- **Secure Sessions**: Encrypted with session keys
+- **Unsecured Connections**: For initial pairing only
+- **Session Timeout**: Automatic session expiration
+- **Session Callbacks**: Connection state notifications
+
+### Weave Bindings
+
+```cpp
+nl::Weave::Binding
+```
+
+Provides abstraction for:
+- Connection establishment
+- Security negotiation
+- Automatic reconnection
+- Failure handling
+
+### TLV (Tag-Length-Value) Encoding
+
+```cpp
+nl::Weave::TLV::TLVWriter
+nl::Weave::TLV::TLVReader
+```
+
+Efficient binary serialization:
+- Compact encoding
+- Type safety
+- Nested structures
+- Packet buffer management
+
+### Network Integration
+
+Weave integrates with lower-level protocols:
+- **TCP/IP**: Primary transport via `nl::Inet::TCPEndPoint`
+- **UDP**: For discovery and lightweight messages
+- **Thread**: For mesh networking
+- **Wi-Fi**: For internet connectivity
+
+## Thread / WPAN
+
+### wpantund - WPAN Tunnel Daemon
+
+**Binary**: `/usr/sbin/wpantund`  
+**Control**: `/usr/bin/wpanctl`  
+**Config**: `/etc/wpantund.conf`
+
+wpantund provides a tunnel interface for Thread/ZigBee networking.
+
+### Configuration
+
+**Interface**: `wpan0` (virtual network interface)
+
+**NCP (Network Co-Processor)**: EM357 chip via SPI
+
+**SPI Configuration**:
+```
+Device: /dev/spidev2.0
+Interrupt: /sys/devices/platform/diamond-zigbee/interrupt/value
+Reset: /sys/devices/platform/diamond-zigbee/reset#/value
+Wake: /sys/devices/platform/diamond-zigbee/wake/value
+```
+
+**Radio Parameters**:
+- **TX Power**: -15 dBm (default)
+- **TX Power Limit**: -10 dBm (to protect Wi-Fi FEM)
+- **TX Power Mode**: 5 (boost mode, external PA)
+- **CCA Threshold**: -70 dBm (configurable)
+
+### Thread Features
+
+Thread provides:
+- **IPv6 Mesh Network**: Self-healing mesh topology
+- **Low Power**: Sleepy end device support
+- **Secure**: Built-in encryption
+- **Reliable**: Automatic routing and recovery
+
+**Device Modes**:
+```cpp
+nl::WPANCtl::Interface::SetThreadDeviceMode
+```
+
+Possible modes:
+- Router
+- End Device
+- Sleepy End Device
+- Commissioner
+
+### Firmware Management
+
+**Firmware Check**:
+```bash
+/nestlabs/bin/zb-loader --is-update-required /usr/share/silabs/data/firmware/ip-modem-app.bin
+```
+
+**Firmware Update**:
+```bash
+/nestlabs/bin/zb-loader --app-easyload /usr/share/silabs/data/firmware/ip-modem-app.bin
+```
+
+**Auto-Update**: Enabled by default
+
+### Legacy Support
+
+The configuration enables legacy mode for backward compatibility:
+```
+com.nestlabs.internal:Legacy:Enabled true
+com.nestlabs.internal:Legacy:PreferInterface true
+```
+
+This suggests support for older Nest devices or protocols.
+
+## Wi-Fi
+
+### Connection Management
+
+**Service**: ConnMan (Connection Manager)  
+**Config**: `/etc/connman/`  
+**Plugin**: `/usr/lib/connman/plugins/wpan-tunnel-plugin.so`
+
+ConnMan manages:
+- Wi-Fi scanning
+- Network selection
+- Connection establishment
+- IP configuration (DHCP)
+- DNS configuration
+
+### WPA Supplicant
+
+**Config**: `/etc/wpa_supplicant.conf`  
+**Service**: wpa_supplicant
+
+Handles:
+- WPA/WPA2 authentication
+- Network credentials
+- Roaming
+- Signal monitoring
+
+### Wi-Fi Calibration
+
+**File**: `/nestlabs/share/wl12xx-nvs.bin`
+
+Device-specific calibration data for TI WL12xx Wi-Fi chip:
+- TX power calibration
+- RX sensitivity
+- Frequency offset
+- MAC address
+
+## Network Stack
+
+### TCP/IP Implementation
+
+**Library**: Standard Linux networking stack
+
+**Protocols**:
+- IPv4 and IPv6
+- TCP and UDP
+- ICMP
+- DHCP client
+- DNS resolver
+
+### Inet Layer
+
+```cpp
+nl::Inet::InetLayer
+nl::Inet::TCPEndPoint
+```
+
+Nest's abstraction over BSD sockets:
+- Non-blocking I/O
+- Event-driven architecture
+- Connection pooling
+- Timeout management
+- Inactivity timers
+
+### Packet Buffers
+
+```cpp
+nl::Weave::System::PacketBuffer
+```
+
+Efficient packet buffer management:
+- Zero-copy where possible
+- Reference counting
+- Buffer chaining
+- Memory pooling
+
+## Cloud Communication
+
+### HTTPS Connections
+
+**Library**: libcurl + OpenSSL
+
+**Endpoints**:
+- Nest cloud API
+- Weather service
+- Software updates
+- Diagnostics upload
+
+**Features**:
+- TLS 1.2+ encryption
+- Certificate validation
+- Connection keep-alive
+- Retry logic
+
+### Web Service Client
+
+**Library**: `libnlwebservice.so`
+
+Provides:
+- RESTful API client
+- JSON parsing/generation
+- Authentication
+- Rate limiting
+- Error handling
+
+### Dropbox Service
+
+**Binary**: `/nestlabs/sbin/dropbox` (23 KB)
+
+Uploads diagnostics to Nest cloud:
+- Log files
+- Core dumps
+- Metrics
+- Error reports
+
+**Storage**: `/media/scratch/` (temporary)
+
+## mDNS / DNS-SD
+
+**Service**: mdnsd (mDNS daemon)
+
+Provides:
+- Service discovery
+- Local name resolution
+- Bonjour compatibility
+
+Used for:
+- Local device discovery
+- Development/debugging
+- Network diagnostics
+
+## Network Provisioning
+
+### Initial Setup
+
+1. **Access Point Mode**: Device creates temporary Wi-Fi AP
+2. **Mobile App Connection**: User connects phone to device AP
+3. **Credential Transfer**: App sends Wi-Fi credentials via Weave
+4. **Network Connection**: Device connects to home Wi-Fi
+5. **Cloud Registration**: Device registers with Nest cloud
+
+### Weave Network Provisioning
+
+```cpp
+nl::Weave::DeviceManager::WeaveDeviceManager::HandleNetworkProvisioningResponse
+```
+
+Handles:
+- Network credential storage
+- Connection verification
+- Fallback mechanisms
+- Error reporting
+
+## HeatLink Communication
+
+**Master**: `WeaveHeatLinkMaster`
+
+The thermostat communicates with HeatLink (boiler controller) via:
+- **Weave Protocol**: Over Thread mesh
+- **Pairing**: `kFactoryPairedHeatLinkPairingCode`
+- **Firmware Updates**: Via `/nestlabs/share/heatlink/data/firmware/`
+
+**Firmware**: `heatlink.elf`
+
+## Protocol Analysis Tools
+
+### Packet Capture
+
+**Library**: libpcap (linked in nlclient)
+
+The thermostat has packet capture capability, suggesting:
+- Network diagnostics
+- Protocol debugging
+- Traffic analysis
+
+### Network Monitoring
+
+**Commands**:
+```bash
+# View WPAN status
+wpanctl status
+
+# View network interfaces
+ip addr show
+
+# View routing table
+ip route show
+
+# View active connections
+netstat -an
+
+# Capture packets
+tcpdump -i wpan0 -w capture.pcap
+```
+
+## Security Considerations
+
+### Attack Surface
+
+**Network Services**:
+- SSH (port 22) - May be disabled in production
+- mDNS (port 5353) - Local network only
+- Weave - Encrypted with certificates
+
+**Potential Vulnerabilities**:
+- Wi-Fi credential storage
+- Certificate private key storage
+- Weave protocol implementation
+- Thread mesh security
+- Cloud API authentication
+
+### Encryption
+
+- **Wi-Fi**: WPA2 encryption
+- **Weave**: TLS-like encryption with CASE
+- **Thread**: AES-128 encryption
+- **HTTPS**: TLS 1.2+ to cloud
+
+### Certificate Storage
+
+Certificates and keys stored in:
+- `/media/system-config/` (SSH keys)
+- Weave environment variables
+- Secure storage (implementation unclear)
+
+## Protocol Reverse Engineering
+
+### Recommended Approach
+
+1. **Packet Capture**: Capture Weave traffic with tcpdump
+2. **TLS Decryption**: Extract session keys (if possible)
+3. **Protocol Analysis**: Analyze Weave message structure
+4. **Binary Analysis**: Reverse engineer Weave library
+5. **Emulation**: Emulate device for testing
+
+### Wireshark Dissectors
+
+Consider developing Wireshark dissectors for:
+- Weave protocol
+- Thread/802.15.4 with Nest extensions
+- HeatLink communication
+
+## Network Performance
+
+### Optimization Features
+
+- **Connection Pooling**: Reuse TCP connections
+- **Keep-Alive**: Maintain persistent connections
+- **Compression**: Reduce data transfer
+- **Delta Updates**: Incremental software updates
+- **Local Caching**: Cache weather data
+
+### Bandwidth Usage
+
+Typical bandwidth:
+- **Idle**: ~1-5 KB/hour (heartbeats)
+- **Active**: ~10-50 KB/hour (normal operation)
+- **Update**: ~10-50 MB (software update)
+- **Diagnostics**: ~1-10 MB (log upload)
+
+## Future Protocol Support
+
+The architecture suggests potential for:
+- **Matter**: Thread-based smart home standard
+- **IPv6**: Full IPv6 support via Thread
+- **CoAP**: Constrained Application Protocol
+- **MQTT**: Lightweight pub/sub messaging
+
+## Next Steps
+
+- [ ] Capture and analyze Weave protocol traffic
+- [ ] Reverse engineer Weave message format
+- [ ] Document Thread network topology
+- [ ] Analyze HeatLink communication protocol
+- [ ] Study certificate chain and PKI
+- [ ] Test security of pairing process
+- [ ] Develop protocol dissectors
+- [ ] Analyze cloud API endpoints

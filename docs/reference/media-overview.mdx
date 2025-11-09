@@ -1,0 +1,204 @@
+---
+title: Media Partitions Overview
+description: 'Overview of writable media partitions'
+---
+
+# Media Partitions (/media)
+
+The `/media` directory contains mount points for writable JFFS2 partitions that store configuration, data, and logs.
+
+## Partition Summary
+
+| Partition | Device | Size | Mount Point | Usage | Purpose |
+|-----------|--------|------|-------------|-------|---------|
+| System Config | mtdblock10 | 4MB | /media/system-config | 11% | System settings |
+| User Config | mtdblock11 | 8MB | /media/user-config | 7% | User preferences |
+| Data | mtdblock12 | 20MB | /media/data | 6% | Runtime data |
+| Log | mtdblock13 | 20MB | /media/log | 4% | System logs |
+| Scratch | mtdblock14 | 92MB | /media/scratch | 4% | Temporary storage |
+
+**Total**: 144MB writable storage
+
+## Directory Structure
+
+```
+/media/
+├── system-config/  → See [System Config](/reference/media-system-config)
+│   ├── ssh/        # SSH host keys
+│   └── *.bin       # WiFi calibration
+├── user-config/    → See [User Config](/reference/media-user-config)
+│   ├── connman/    # Network profiles
+│   └── settings.config  # User settings
+├── data/           → See [Data Partition](/reference/media-data)
+│   ├── *.json      # Configuration files
+│   └── *.recovery  # Recovery state files
+├── log/            → See [Log Partition](/reference/media-log)
+│   ├── messages    # System messages
+│   ├── nlclient    # Application log
+│   └── nlevent     # Event log
+└── scratch/        → See [Scratch Partition](/reference/media-scratch)
+    └── dropbox.vfat  # Upload staging
+```
+
+## Partition Purposes
+
+### System Config (4MB)
+**Purpose**: System-level configuration that persists across updates
+
+**Contents**:
+- SSH host keys (device identity)
+- WiFi calibration data (hardware-specific)
+- System-level settings
+
+**Characteristics**:
+- Rarely modified
+- Critical for system operation
+- Backed up during updates
+
+### User Config (8MB)
+**Purpose**: User preferences and network configuration
+
+**Contents**:
+- Network profiles (WiFi credentials)
+- User settings (temperature units, etc.)
+- Timezone configuration
+
+**Characteristics**:
+- Modified by user actions
+- Preserved during updates
+- Can be reset to defaults
+
+### Data (20MB)
+**Purpose**: Thermostat operational data
+
+**Contents**:
+- Schedule data
+- Learning algorithms state
+- Energy statistics
+- Prediction models
+- HVAC control state
+
+**Characteristics**:
+- Frequently updated
+- Critical for thermostat operation
+- Uses recovery file format for reliability
+
+### Log (20MB)
+**Purpose**: System and application logs
+
+**Contents**:
+- System messages
+- Application logs
+- Event logs
+- Debug information
+
+**Characteristics**:
+- Continuously written
+- Rotated to prevent overflow
+- Uploaded to cloud periodically
+
+### Scratch (92MB)
+**Purpose**: Temporary storage and upload staging
+
+**Contents**:
+- Dropbox upload queue
+- Temporary files
+- Crash dumps
+- Large transient data
+
+**Characteristics**:
+- Largest partition
+- Can be cleared safely
+- Used for bulk data operations
+
+## Filesystem Type
+
+All media partitions use **JFFS2** (Journaling Flash File System 2):
+
+**Features**:
+- Wear leveling for flash longevity
+- Compression to save space
+- Power-loss protection
+- Bad block handling
+
+**Mount Options**:
+- Read-write (rw)
+- No access time updates (noatime) for performance
+
+## Data Persistence Strategy
+
+### Critical Data
+Stored in **recovery files** (.recovery) on the data partition:
+- Atomic writes with checksums
+- Survive power loss
+- Examples: schedules, auto-away state, energy stats
+
+### Configuration
+Stored in **JSON files** or **XML files**:
+- Human-readable
+- Can be regenerated if corrupted
+- Examples: rate plans, tuning parameters, user settings
+
+### Logs
+Stored in **text files**:
+- Rotated when size limits reached
+- Uploaded to cloud
+- Can be deleted to free space
+
+### Temporary Data
+Stored on **scratch partition**:
+- Staging area for uploads
+- Can be cleared on boot
+- Not critical for operation
+
+## Backup and Recovery
+
+### Factory Reset
+Clears all media partitions except system-config:
+- User config → Defaults
+- Data → Empty (relearns)
+- Log → Cleared
+- Scratch → Cleared
+
+### Update Process
+Preserves user data:
+- System config → Preserved
+- User config → Preserved
+- Data → Preserved
+- Log → Optionally cleared
+- Scratch → Cleared
+
+### Recovery Mode
+Can restore from:
+- Recovery files on data partition
+- Cloud backup
+- Factory defaults
+
+## Space Management
+
+### Monitoring
+System monitors partition usage:
+- Warnings at 80% full
+- Emergency cleanup at 90% full
+- Prevents complete fill
+
+### Cleanup
+Automatic cleanup procedures:
+- Log rotation
+- Old file deletion
+- Scratch partition clearing
+- Dropbox queue management
+
+### User Actions
+Users can trigger cleanup:
+- Clear logs
+- Reset to defaults
+- Factory reset
+
+## See Also
+
+- [System Config Partition](/reference/media-system-config) - System configuration files
+- [User Config Partition](/reference/media-user-config) - User preferences
+- [Data Partition](/reference/media-data) - Operational data files
+- [Log Partition](/reference/media-log) - System logs
+- [Scratch Partition](/reference/media-scratch) - Temporary storage

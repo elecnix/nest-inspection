@@ -1,0 +1,534 @@
+---
+title: User Interface
+description: 'Comprehensive analysis of the Nest Learning Thermostat user interface'
+---
+
+# User Interface
+
+The Nest Learning Thermostat features a sophisticated circular touch-and-turn interface with a high-resolution color display. The UI is rendered by the `nlclient` application and supports 9 languages with extensive localization.
+
+## Hardware Interface
+
+### Display
+- **Type**: OMAP framebuffer-based color display
+- **Interaction**: Rotary encoder ring + push button
+- **Brightness**: Auto-adjusting based on ambient light sensor
+  - **Levels**: Dark Room (130), Low (42), Medium (90), High (100), Dark (40)
+  - **Auto Mode**: Maps illuminance (0-24025 lux) to brightness (40-100%)
+
+### Input Methods
+- **Turn**: Rotate the outer ring to navigate and adjust values
+- **Push**: Press the ring to select/confirm
+- **Farsight**: Motion detection triggers display from across the room
+
+## Visual Design
+
+### Typography
+- **Font Family**: AkkuratNest
+  - `AkkuratNest-Regular.ttf` - Primary UI text
+  - `AkkuratNest-Bold.ttf` - Headers and emphasis
+
+### Display Modes
+
+#### Main Temperature Display
+Shows current temperature with contextual information:
+- Current temperature (large, centered)
+- Target temperature (when heating/cooling)
+- System status indicators
+- Time-to-temperature estimates
+- Mode indicators (HEAT, COOL, HEAT • COOL, ECO, OFF)
+
+#### Status Indicators
+- `HEATING` / `COOLING` - Active HVAC operation
+- `HEAT STAGE 2` / `COOL STAGE 2` - Multi-stage operation
+- `AUX. HEAT` / `EMERGENCY HEAT` - Auxiliary heating
+- `AIRWAVE` - Energy-saving cooling mode
+- `COOL TO DRY` - Dehumidification mode
+- `PRECOOLING` / `PREHEATING` - Early-on optimization
+- `RUSH HOUR` - Demand response event
+- `TIME OF SAVINGS` - Time-of-use rate optimization
+- `SAFETY` - Safety temperature active
+- `SYSTEM ISSUE` - Equipment problem detected
+
+#### Time Estimates
+- `IN X MIN` - Time until target temperature
+- `IN 1 HR` / `IN 1 HR X MIN` - Longer estimates
+- `IN 1½ HR` / `IN 2+ HR` - Extended estimates
+- `UNDER 10 MIN` - Nearly ready
+- `DELAYED FOR X:XX` - Compressor lockout delay
+
+## Navigation Structure
+
+### Main Menu
+Accessible by pressing the ring from the main screen:
+
+1. **Schedule** - View and edit temperature schedule
+2. **Energy History** - View usage statistics
+3. **Settings** - System configuration
+4. **Nest App** - Account connection status
+5. **Equipment** - HVAC system settings
+
+### Settings Menu
+
+#### Display
+- **Brightness**: Auto, Low, Medium, High
+- **Farsight**: What to show from across the room
+  - Current temperature
+  - Target temperature
+  - Analog clock
+  - Digital clock
+  - Weather
+
+#### Temperature
+- **Temperature Scale**: °F or °C
+- **Safety Temperatures**: Extreme weather protection
+- **Eco Temperatures**: Away mode settings
+- **Lock**: PIN protection with temperature range limits
+
+#### Equipment
+- **Setup**: HVAC configuration wizard
+- **Pro Setup**: Advanced professional settings
+- **Test**: System testing
+- **Heat Type**: Heating system configuration
+- **Heat Pump**: Heat pump settings
+- **Dual Fuel**: Alternate heating configuration
+- **Emergency Heat**: Emergency heat settings
+- **Humidifier/Dehumidifier**: Humidity control
+- **Bacteria Prevention**: Hot water tank safety
+- **Heat Link**: Wireless connection (EU models)
+
+#### Network
+- **Wi-Fi**: Network connection
+- **Network**: Advanced network settings
+
+#### Nest Sense
+Smart features that can be enabled/disabled:
+- **Auto-Schedule**: Learning schedule
+- **Home/Away Assist**: Automatic Eco mode
+- **Airwave**: AC energy savings
+- **Early-On**: Preconditioning
+- **True Radiant**: Radiant system optimization
+- **Heat Pump Balance**: Comfort vs. efficiency
+- **Sunlight Correction**: Temperature adjustment
+- **Filter Reminder**: Maintenance alerts
+
+#### Technical Info
+- Software version
+- Serial number
+- Wi-Fi MAC address
+- Display ID
+- Battery level
+- Wiring report
+
+### Schedule Interface
+
+#### Time Slots
+Schedule organized by day and time:
+- **Morning**: Typical wake-up time
+- **Midday**: Daytime settings
+- **Evening**: Return home
+- **Night**: Sleep time
+
+#### Schedule Actions
+- **NEW**: Add new temperature point
+- **CHANGE**: Modify existing point
+- **REMOVE**: Delete temperature point
+
+#### Auto-Schedule
+Learning mode that automatically creates schedule based on:
+- Manual temperature adjustments
+- Occupancy patterns
+- Time of day preferences
+
+## Localization
+
+### Supported Languages
+The thermostat supports 9 locales with complete UI translations:
+
+1. **en_US** - English (United States)
+2. **en_GB** - English (United Kingdom)
+3. **fr_FR** - French (France)
+4. **fr_CA** - French (Canada)
+5. **de_DE** - German (Germany)
+6. **it_IT** - Italian (Italy)
+7. **es_ES** - Spanish (Spain)
+8. **es_US** - Spanish (United States)
+9. **nl_NL** - Dutch (Netherlands)
+
+### Localization Files
+- **Location**: `/nestlabs/share/client/locales/`
+- **Format**: Apple `.strings` format in `.lproj` directories
+- **Size**: 1,716 strings in English locale
+- **Structure**: Key-value pairs with context identifiers
+
+Example string keys:
+```
+"templayer.heating" = "HEATING"
+"templayer.cooling" = "COOLING"
+"templayer.heatto" = "HEAT TO"
+"templayer.coolto" = "COOL TO"
+```
+
+## Setup Wizard
+
+### Initial Setup Flow
+1. **Language Selection** - Choose display language
+2. **Location** - Set timezone and location
+3. **Wi-Fi Connection** - Connect to network
+4. **Equipment Setup** - Configure HVAC system
+5. **Wiring Detection** - Automatic wire detection
+6. **System Test** - Test heating/cooling
+7. **Temperature Preferences** - Set initial temperatures
+8. **Nest App** - Optional account connection
+
+### Equipment Configuration
+
+#### Wiring Detection
+Automatic detection of connected wires:
+- **Power**: Rc, Rh, C (common)
+- **Heating**: W1, W2, W3
+- **Cooling**: Y1, Y2
+- **Fan**: G, G2, G3
+- **Heat Pump**: O/B
+- **Auxiliary**: W2/AUX, E (emergency)
+- **Accessories**: Humidifier, Dehumidifier, * wire
+
+## Field Variations
+
+### Device 02AA01AC291300SZ (inspected Nov 7 2025)
+
+- **Kernel build**: `Linux 02AA01AC291300SZ 2.6.37 #1 PREEMPT Thu Sep 12 16:00:05 UTC 2019 armv7l GNU/Linux`, indicating a 2019 firmware lineage compared to previously documented units.
+- **Version files**: `/etc/version` and `/etc/nestlabs/build.version` are absent; rely on `/etc/nestlabs/client.config` metadata when enumerating build details.
+- **Backlight profile**: `/etc/nestlabs/product.config` supplies ramp rates (`1,130,260,520,1000,2000,4000,8000`) and an exponent base of `1.05734`, confirming the auto-brightness tuning values used in production hardware.
+- **Sensor mix**: `hasproximitysensor=0` and `hasnearpirsensor=1` demonstrate Farsight’s reliance on the near PIR sensor only for this unit.
+- **Client config**: `clientversion` is presently blank, while logging (`uploadlogs=1`) and network recovery safeguards remain enabled, matching the baseline behavior described above.
+
+### System Types Supported
+- Forced air (gas, electric, oil, propane)
+- Heat pump (with auxiliary/emergency heat)
+- Dual fuel systems
+- Radiant heating (in-floor, radiators)
+- Electric baseboard
+- Boiler systems (combi, system, district heating)
+- OpenTherm modulating boilers
+- Multi-stage systems (up to 3 stages)
+
+#### Wiring Diagrams
+Visual connector images show proper wiring:
+- `Connector_2_0_X.png` - Unselected wire positions
+- `ConnectorSelected_2_0_X.png` - Selected wire positions
+- Numbered positions: 0, 1, 2, 3, 4, 5, 6, 7, 9, 11
+
+## Energy Features
+
+### Energy History
+Visual timeline showing:
+- Daily heating/cooling usage
+- Weekly average comparison
+- Contributing factors:
+  - Manual adjustments
+  - Auto-Away savings
+  - Weather impact
+  - Eco Temperatures
+  - Seasonal Savings
+  - Cool to Dry usage
+
+### Leaf Symbol
+Green leaf appears when choosing energy-efficient temperatures:
+- Encourages energy-saving choices
+- Appears during temperature selection
+- Based on typical comfort ranges
+
+### Eco Temperatures
+Energy-saving mode with separate heat/cool targets:
+- **Heating**: Lower temperature when away
+- **Cooling**: Higher temperature when away
+- **Activation**: Manual or automatic (Home/Away Assist)
+- **Multi-thermostat**: Coordinate across all Nest thermostats
+
+### Demand Response
+Integration with utility programs:
+- **Rush Hour**: Peak demand events
+- **Critical Rush Hour**: Emergency demand events
+- **Precooling/Preheating**: Prepare before event
+- **Cancellation**: Option to opt-out with warning
+
+### Time-of-Use Rates
+Optimize for variable electricity pricing:
+- **Rate Plans**: Support for TOU schedules
+- **Demand Charges**: Avoid peak demand fees
+- **Preconditioning**: Shift usage to off-peak times
+- **Savings Tracking**: Monitor cost savings
+
+## Smart Features
+
+### Auto-Away
+Occupancy detection using:
+- PIR motion sensor
+- Activity patterns
+- Schedule learning
+- Multi-thermostat coordination
+
+States:
+- **Home**: Normal operation
+- **Away**: Eco Temperatures active
+- **Auto**: System decides based on sensors
+
+### Auto-Schedule
+Learning algorithm creates schedule from:
+- Manual temperature changes
+- Time of day patterns
+- Occupancy detection
+- Seasonal adjustments
+
+Learning states:
+- **Learning**: Building schedule (first week)
+- **Ready**: Schedule established
+- **Off**: Manual schedule only
+
+### Sunlight Correction
+Compensates for direct sunlight on thermostat:
+- Detects temperature sensor bias
+- Adjusts target temperature
+- Prevents overcooling/overheating
+- Uses ambient light sensor data
+
+### True Radiant
+Optimization for radiant heating systems:
+- Early-on timing
+- Temperature modulation
+- Reduced temperature swings
+- OpenTherm integration
+
+### Airwave
+AC energy savings feature:
+- Turns off compressor early
+- Continues fan to extract cooling
+- Monitors humidity levels
+- Displays savings achieved
+
+## Remote Sensors
+
+### Temperature Sensors
+Support for Nest Temperature Sensors:
+- **Placement**: Choose which room to prioritize
+- **Schedule**: Different sensors for different times
+- **Multi-room**: Average multiple sensors
+- **Fallback**: Use thermostat if sensor unavailable
+
+### Sensor Schedule
+Configure which sensors to use:
+- **Morning**: Wake-up room
+- **Midday**: Living areas
+- **Evening**: Active rooms
+- **Night**: Bedroom
+
+## Alerts and Notifications
+
+### System Alerts
+- **Wiring Issues**: Power, connection problems
+- **Equipment Faults**: HVAC malfunction detected
+- **Furnace Heads-Up**: Short cycling detected
+- **Filter Reminder**: Time to change air filter
+- **Heat Link Battery**: Low battery warning (EU)
+- **Wi-Fi Fault**: Connection problems
+
+### Safety Alerts
+- **Nest Protect Integration**: Smoke/CO alarms
+- **Heating Shutoff**: CO alarm response
+- **Smoke Shutoff**: System shutdown during alarm
+- **Safety Temperature**: Extreme weather protection
+
+### Informational Alerts
+- **Software Updates**: Update available/in progress
+- **Demo Mode**: Store display mode
+- **Low Battery**: Charge required
+- **Pairing**: Account connection status
+
+## Advanced Features
+
+### Temperature Lock
+PIN-protected temperature control:
+- **Single Temperature**: Lock to one setting
+- **Temperature Range**: Allow range of adjustment
+- **PIN Entry**: 4-digit code required
+- **Use Cases**: Rental properties, commercial spaces, child safety
+
+### Fan Control
+Independent fan operation:
+- **Timer**: Run for X minutes/hours
+- **Schedule**: Automatic fan schedule
+- **Speed Control**: Low, Medium, High (if supported)
+- **System Speed**: Fan speed during heating/cooling
+
+### Hot Water Control (EU)
+For combi boiler systems:
+- **Schedule**: Hot water availability times
+- **Boost**: Temporary hot water on-demand
+- **Temperature**: Set hot water temperature
+- **Bacteria Prevention**: Periodic high-temperature cycle
+
+### Humidity Control
+If humidifier/dehumidifier connected:
+- **Target Humidity**: Set desired RH%
+- **Quiet Time**: Schedule quiet hours
+- **Type**: Standalone or with HVAC
+- **Cool to Dry**: AC-based dehumidification
+
+## Pro Features
+
+### Pro Setup
+Advanced configuration for HVAC professionals:
+- **Wire Configuration**: Manual wire assignment
+- **Equipment Types**: Detailed system configuration
+- **Staging**: Multi-stage system setup
+- **Thresholds**: Temperature and timing parameters
+- **Dual Fuel**: Breakpoint configuration
+- **Heat Pump**: Compressor/aux balance
+
+### Pro Contact Info
+Display installer information:
+- **Pro ID**: Nest Pro identification
+- **Contact**: Name, phone, company
+- **Display**: Show on thermostat
+- **Updates**: Automatic info updates
+
+### System Test
+Comprehensive equipment testing:
+- **Heating**: Test all heat stages
+- **Cooling**: Test all cool stages
+- **Fan**: Test fan speeds
+- **Accessories**: Test humidifier/dehumidifier
+- **Duration**: Timed tests with feedback
+- **Troubleshooting**: Links to support docs
+
+## Reset Options
+
+### Reset Types
+- **Schedule**: Clear schedule, keep settings
+- **Auto-Schedule**: Restart learning
+- **Away**: Reset occupancy detection
+- **Network**: Clear Wi-Fi settings
+- **All Settings**: Factory reset
+
+### Safety Confirmation
+- Turn ring to confirm reset
+- Countdown timer before execution
+- Cancellation option
+- Restart notification
+
+## Demo Mode
+
+Special retail display mode:
+- **Features**: Showcase capabilities
+- **Restrictions**: Limited functionality
+- **Messages**: Promotional content
+- **Compatibility**: System compatibility info
+- **Models**: Nest Thermostat E and 3rd gen
+
+## UI Implementation Details
+
+### Display Rendering
+- **Framework**: Custom graphics engine
+- **Layers**: Composited UI layers
+- **Animations**: Smooth transitions
+- **Touch**: Capacitive touch detection
+- **Encoder**: Rotary encoder with detents
+
+### Text Input
+For Wi-Fi passwords and custom labels:
+- **Encoder Wheel**: Rotate to select characters
+- **Character Sets**:
+  - `abc 123` - Lowercase and numbers
+  - `ABC 123` - Uppercase and numbers
+  - `<?; àøü` - Symbols and accents
+- **Actions**: SPACE, DELETE, SHIFT, KEYBOARD
+- **Keyboard**: Alternative input method
+
+### Color Scheme
+- **Background**: Dark (black) for OLED-like appearance
+- **Text**: White primary text
+- **Accent**: Blue for selection/active states
+- **Status**: Color-coded indicators
+  - Orange/Red: Heating
+  - Blue: Cooling
+  - Green: Eco/Energy saving
+  - Yellow: Alerts/warnings
+
+### Accessibility
+- **High Contrast**: Clear text on dark background
+- **Large Text**: Readable from distance
+- **Simple Navigation**: Intuitive turn-and-push
+- **Audio Feedback**: Click sounds on interaction
+- **Farsight**: Automatic wake from distance
+
+## Configuration Files
+
+### Brightness Calibration
+**File**: `/nestlabs/share/client/brightness/brightness.plist`
+
+Ambient light to display brightness mapping:
+- 0-40 lux → 40% brightness
+- 60-100 lux → 52-65% brightness
+- 140-435 lux → 72-85% brightness
+- 1965-24025 lux → 93-100% brightness
+
+### Wireless Calibration
+**File**: `/nestlabs/share/client/calibration/calibration.plist`
+
+6LoWPAN radio configuration:
+- **Format**: 6lowpan-silabs
+- **Driver**: EM357 chipset
+- **Power Levels**: Region-specific (US/CA vs EU/ROW)
+- **Defaults**: Fallback calibration values
+
+## User Workflows
+
+### Daily Use
+1. Approach thermostat (Farsight activates)
+2. View current temperature and status
+3. Turn ring to adjust temperature
+4. Push to confirm
+5. Display shows time-to-temperature
+
+### Schedule Adjustment
+1. Press ring → Select "Schedule"
+2. Choose day
+3. Select time slot
+4. Turn to adjust temperature
+5. Push to save
+
+### Equipment Test
+1. Press ring → "Settings" → "Equipment" → "Test"
+2. Select component to test
+3. Confirm test start
+4. Observe system operation
+5. Confirm test completion
+
+### Wi-Fi Setup
+1. Press ring → "Settings" → "Network" → "Wi-Fi"
+2. Select network from list
+3. Enter password using encoder wheel
+4. Confirm connection
+5. Wait for "Thermostat is online"
+
+## Error Messages
+
+### Common Errors
+- **E1-E99**: Wiring errors with specific codes
+- **N1-N9**: Wiring notes/warnings
+- **No Power**: Power wire issues
+- **Invalid Entry Key**: Heat Link pairing failed
+- **Wrong PIN**: Temperature lock code incorrect
+- **Can't Connect**: Network connection failed
+
+### Error Resolution
+Each error includes:
+- **Description**: What the problem is
+- **Learn More**: Link to nest.com/eXX
+- **Actions**: Troubleshooting steps
+- **Pro Contact**: Option to contact installer
+
+<Info>
+The Nest Learning Thermostat UI is designed for intuitive daily use while providing deep configuration options for advanced users and professionals. The circular interface with turn-and-push interaction creates a unique, tactile experience that sets it apart from traditional touchscreen thermostats.
+</Info>

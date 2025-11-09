@@ -1,0 +1,239 @@
+---
+title: Linux System Architecture
+description: Detailed overview of the Linux distribution and system components
+---
+
+# Linux System Architecture
+
+The Nest Learning Thermostat runs a custom Linux distribution based on OpenEmbedded, optimized for embedded systems with real-time constraints and low power consumption.
+
+## Distribution Overview
+
+### Base System
+- **Distribution**: Custom OpenEmbedded-based Linux
+- **Kernel Version**: Linux 3.x/4.x series with real-time patches
+- **Init System**: Systemd for service management
+- **C Library**: uClibc for reduced footprint
+- **Package Manager**: Opkg for lightweight package management
+
+### Key Features
+- Real-time scheduling capabilities
+- Low memory footprint (~128MB RAM usage)
+- Fast boot time (<30 seconds)
+- Power management integration
+- Security hardening
+
+## System Services
+
+### Core Services
+
+#### systemd
+- **Purpose**: System and service manager
+- **Configuration**: `/etc/systemd/`
+- **Features**: Parallel service startup, dependency management
+- **Custom Units**: Nest-specific service definitions
+
+#### D-Bus System Bus
+- **Purpose**: Inter-process communication
+- **Configuration**: `/etc/dbus-1/`
+- **Services**: System service registration and communication
+- **Security**: Policy-based access control
+
+#### ConnMan
+- **Purpose**: Network connection management
+- **Configuration**: `/var/lib/connman/`
+- **Features**: Wi-Fi, Ethernet, and cellular connectivity
+- **Integration**: Automatic network switching
+
+### Nest-Specific Services
+
+#### nlclient
+- **Purpose**: Main user interface application
+- **Process**: `/nestlabs/bin/nlclient`
+- **Dependencies**: GTK+, D-Bus, hardware drivers
+- **Features**: Touch interface, temperature display, settings management
+
+#### Thermostat Manager
+- **Purpose**: Core temperature control logic
+- **Process**: `/nestlabs/bin/thermostat-manager`
+- **Features**: Learning algorithms, schedule management
+- **Communication**: D-Bus interface for other components
+
+#### Sensor Service
+- **Purpose**: Hardware sensor management
+- **Process**: `/nestlabs/bin/sensor-service`
+- **Sensors**: Temperature, humidity, motion, light
+- **Features**: Calibration, filtering, data aggregation
+
+## File System Structure
+
+### Root Filesystem Layout
+```
+/
+├── bin/          Essential user binaries
+├── etc/          System configuration
+├── lib/          Essential libraries
+├── nestlabs/     Nest-specific applications and data
+├── opt/          Optional software packages
+├── proc/         Process information (virtual)
+├── sys/          System information (virtual)
+├── tmp/          Temporary files
+├── usr/          User programs and data
+├── var/          Variable data
+└── media/        Mounted partitions
+    ├── system-config/
+    ├── user-config/
+    ├── data/
+    ├── log/
+    └── scratch/
+```
+
+### Nest-Specific Directories
+
+#### `/nestlabs/`
+```
+nestlabs/
+├── bin/          Nest applications
+├── lib/          Nest libraries
+├── libexec/      Helper programs
+├── share/        Shared data and resources
+│   ├── client/  UI resources and locales
+│   └── sounds/  Audio files
+└── etc/          Configuration files
+```
+
+#### `/media/` Partitions
+- **system-config**: System-level configuration and calibration data
+- **user-config**: User preferences and learned settings
+- **data**: Runtime data and temporary files
+- **log**: System and application logs
+- **scratch**: Temporary working space
+
+## Kernel Configuration
+
+### Real-time Features
+- **PREEMPT_RT Patch**: Full preemption for low latency
+- **High-Resolution Timers**: Precise timing for sensor polling
+- **CPU Isolation**: Dedicated cores for real-time tasks
+- **IRQ Threading**: Interrupt handling in kernel threads
+
+### Power Management
+- **CPU Frequency Scaling**: Dynamic frequency adjustment
+- **Suspend/Resume**: Low-power sleep states
+- **Wake-on-LAN**: Network-based wake-up
+- **Device Power Management**: Peripheral power control
+
+### Security Features
+- **SELinux**: Mandatory access control
+- **Secure Boot**: Signed kernel verification
+- **Kernel Hardening**: Stack protection, address space layout
+- **Audit System**: Security event logging
+
+## Device Drivers
+
+### Display Driver
+- **Framebuffer**: Custom circular display support
+- **Touch Interface**: Capacitive touch driver
+- **Brightness Control**: PWM-based backlight control
+- **Rotation**: Display orientation management
+
+### Sensor Drivers
+- **Temperature**: I2C temperature sensor driver
+- **Humidity**: I2C humidity sensor driver
+- **Motion**: PIR motion sensor interface
+- **Ambient Light**: Light sensor for auto-brightness
+
+### Network Drivers
+- **Wi-Fi**: Wireless LAN driver with power management
+- **Zigbee**: IEEE 802.15.4 radio interface
+- **Bluetooth**: BLE module for setup and proximity
+- **Ethernet**: Optional wired network interface
+
+## Memory Management
+
+### Memory Layout
+- **Total RAM**: 256MB-512MB depending on model
+- **Kernel Space**: ~64MB reserved for kernel
+- **User Space**: ~200MB available for applications
+- **Framebuffer**: ~40MB for display buffer
+- **Shared Memory**: D-Bus and IPC communication
+
+### Optimization Strategies
+- **Memory Compression**: zswap for compressed cache
+- **Swap Management**: Limited swap space on flash
+- **Memory Pooling**: Pre-allocated memory pools
+- **Garbage Collection**: Regular memory cleanup
+
+## Process Management
+
+### Process Hierarchy
+```
+systemd (PID 1)
+├── nlclient (UI application)
+├── thermostat-manager (control logic)
+├── sensor-service (sensor management)
+├── connman (network management)
+├── dbus-daemon (IPC)
+└── Various system services
+```
+
+### Scheduling
+- **Real-time Class**: Critical control tasks
+- **Normal Class**: User interface and applications
+- **Idle Class**: Background maintenance tasks
+- **Priority Levels**: 0-99 for RT, 100-139 for normal
+
+### Resource Limits
+- **Memory Limits**: Per-process memory constraints
+- **CPU Limits**: CPU usage quotas
+- **File Limits**: Open file descriptor limits
+- **Process Limits**: Maximum process count
+
+## Logging and Monitoring
+
+### System Logging
+- **journald**: Systemd journal for structured logging
+- **syslog**: Traditional syslog compatibility
+- **Log Rotation**: Automatic log file management
+- **Persistent Storage**: Logs saved to flash memory
+
+### Performance Monitoring
+- **procfs**: Process and system information
+- **sysfs**: Kernel and device information
+- **Performance Counters**: CPU and memory usage
+- **Custom Metrics**: Nest-specific performance data
+
+## Security Architecture
+
+### Access Control
+- **User Accounts**: Limited user accounts
+- **File Permissions**: Restrictive file permissions
+- **Capability System**: Fine-grained privilege control
+- **Namespace Isolation**: Process isolation
+
+### Network Security
+- **Firewall**: iptables-based packet filtering
+- **TLS/SSL**: Encrypted network communication
+- **Certificate Management**: Device certificate handling
+- **VPN Support**: Secure remote access
+
+## Development Environment
+
+### Cross-Compilation
+- **Toolchain**: ARM cross-compilation tools
+- **Build System**: BitBake and OpenEmbedded
+- **Package Management**: Opkg package system
+- **Debugging**: GDB remote debugging support
+
+### Testing Framework
+- **Unit Tests**: Component-level testing
+- **Integration Tests**: System-level testing
+- **Hardware-in-Loop**: Real hardware testing
+- **Simulation**: Software-based testing environment
+
+## Related Documentation
+
+- [Boot Process](./boot-process.mdx)
+- [Hardware Overview](../hardware/overview.mdx)
+- [Software Components](../software/overview.mdx)
+- [System Management](../software/system/monitoring.mdx)

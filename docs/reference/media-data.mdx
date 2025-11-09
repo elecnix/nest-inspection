@@ -1,0 +1,641 @@
+---
+title: Data Partition
+description: 'Complete reference of /media/data operational files'
+---
+
+# Data Partition (/media/data)
+
+**Device**: mtdblock12  
+**Size**: 20MB  
+**Usage**: 6% (1.2MB used)  
+**Mount**: Read-write JFFS2  
+**Purpose**: Thermostat operational data and state
+
+## Overview
+
+The data partition contains 29 files storing critical thermostat operational state, learning data, and runtime information. Files use two formats:
+
+- **`.recovery`** - Binary format with checksums for critical state
+- **`.json`** - Human-readable JSON for configuration
+
+## File Listing
+
+```
+/media/data/
+├── airwave.recovery                  # Airwave feature state
+├── autoaway.recovery                 # Auto-away detection
+├── autodehum.json                    # Auto-dehumidification
+├── boilerfilter.json                 # Boiler filter management
+├── crystalsubspaceid.recovery        # Device identity
+├── demandcharge.json                 # Demand charge management
+├── drmanager.json                    # Demand response manager
+├── energystats.recovery              # Energy usage statistics
+├── fleetrhr.json                     # Fleet runtime history
+├── furnaceshutdown.recovery          # Furnace shutdown protection
+├── goosemgr.recovery                 # Goose manager state
+├── nlclient.crash                    # Crash dump
+├── nlclient.maps                     # Memory maps
+├── overundershoot.json               # Temperature compensation
+├── predictionmanager.json            # Prediction models (JSON)
+├── predictionmanager.recovery        # Prediction models (recovery)
+├── radiantcontrol.recovery           # Radiant heating control
+├── rateplan.json                     # Utility rate plan
+├── rcsmanager.json                   # Remote control system
+├── schedulemanager.recovery          # Schedule state
+├── schedulescore.COOL.recovery       # Cooling schedule scores
+├── schedulescore.HEAT.recovery       # Heating schedule scores
+├── schedulescore.RANGE.recovery      # Range mode schedule scores
+├── sensorhistory.recovery            # Sensor history data
+├── smartthermostatmanager.json       # Smart features
+├── sunlightcorrection.recovery       # Sunlight correction
+├── toumanager.json                   # Time-of-use manager
+└── tuneupmanager.json                # System tuning
+```
+
+## Schedule Management
+
+### schedulemanager.recovery
+**Format**: Binary recovery  
+**Size**: ~50KB  
+**Purpose**: Current schedule state and active schedule slots
+
+**Contains**:
+- Active schedule entries
+- Current schedule slot
+- Next scheduled transition
+- Schedule learning state
+- User modifications
+
+**Updated**: On schedule changes, transitions, and learning events
+
+**Critical**: Yes - Loss causes schedule reset
+
+### schedulescore.HEAT.recovery
+**Format**: Binary recovery  
+**Size**: ~20KB  
+**Purpose**: Heating schedule learning scores
+
+**Contains**:
+- Learning scores for each schedule slot
+- Historical performance metrics
+- Confidence levels
+- Optimization data
+
+**Updated**: During learning and schedule execution
+
+### schedulescore.COOL.recovery
+**Format**: Binary recovery  
+**Size**: ~20KB  
+**Purpose**: Cooling schedule learning scores
+
+**Contains**: Same structure as HEAT, for cooling mode
+
+### schedulescore.RANGE.recovery
+**Format**: Binary recovery  
+**Size**: ~20KB  
+**Purpose**: Range mode (heat-cool) schedule learning scores
+
+**Contains**: Same structure as HEAT, for range mode
+
+## Occupancy & Auto-Away
+
+### autoaway.recovery
+**Format**: Binary recovery  
+**Size**: ~30KB  
+**Purpose**: Auto-away detection state and history
+
+**Contains**:
+- Current occupancy state (home/away)
+- Motion detection history
+- Occupancy prediction model
+- Auto-away triggers
+- Last action and actor (user/auto)
+- Learning data
+
+**Updated**: On motion events, state changes, and predictions
+
+**Critical**: Yes - Loss causes auto-away reset
+
+**Key Data**:
+- `away_state` - Current state
+- `last_action` - Last occupancy action
+- `last_action_by` - Source (user/schedule/auto)
+- Motion sensor history
+- Prediction confidence
+
+## Energy Management
+
+### energystats.recovery
+**Format**: Binary recovery  
+**Size**: ~100KB  
+**Purpose**: Energy usage statistics and tracking
+
+**Contains**:
+- Historical energy consumption
+- Runtime by HVAC stage
+- Efficiency metrics
+- Cost calculations
+- Usage patterns
+
+**Updated**: Continuously during HVAC operation
+
+**Critical**: Yes - Loss causes energy history reset
+
+### rateplan.json
+**Format**: JSON  
+**Size**: ~2KB (empty: `{}`)  
+**Purpose**: Utility rate plan configuration
+
+**Contains** (when configured):
+```json
+{
+  "id": "rate_plan_id",
+  "description": "Rate plan name",
+  "tiers": [...],
+  "peak_hours": [...],
+  "rates": {...}
+}
+```
+
+**Updated**: When user configures rate plan
+
+**Critical**: No - Can be reconfigured
+
+### toumanager.json
+**Format**: JSON  
+**Size**: ~5KB  
+**Purpose**: Time-of-use rate management
+
+**Contains**:
+```json
+{
+  "last_pricing_change_processed": "2019-09-12T10:00:00Z",
+  "active_pricing_schedule": {...},
+  "cost_optimization_settings": {...}
+}
+```
+
+**Updated**: On rate changes and optimization decisions
+
+### demandcharge.json
+**Format**: JSON  
+**Size**: ~3KB  
+**Purpose**: Demand charge management for commercial rates
+
+**Contains**:
+```json
+{
+  "peak_demand_tracking": {...},
+  "demand_limiting_settings": {...},
+  "historical_demand_patterns": [...]
+}
+```
+
+**Updated**: During demand response events
+
+### fleetrhr.json
+**Format**: JSON  
+**Size**: ~2KB  
+**Purpose**: Fleet runtime history
+
+**Contains**:
+```json
+{
+  "fleet_rhr": {...},
+  "equipment_runtime": {...}
+}
+```
+
+**Updated**: During HVAC operation
+
+## Prediction & Learning
+
+### predictionmanager.json
+**Format**: JSON  
+**Size**: ~15KB  
+**Purpose**: Temperature prediction models (JSON format)
+
+**Contains**:
+```json
+{
+  "predicted_completion_time_utc": "2019-09-12T15:30:00Z",
+  "predicted_afterglow_end_time_utc": "2019-09-12T15:45:00Z",
+  "predicted_expiration_time_utc": "2019-09-12T16:00:00Z",
+  "OnOffModel": {
+    "heating": {...},
+    "cooling": {...}
+  },
+  "ModulationModel": {...},
+  "AutoTuneModel": {...},
+  "AlgoLearnerStates": [...]
+}
+```
+
+**Key Fields**:
+- `predicted_completion_time_utc` - Time to reach setpoint
+- `predicted_afterglow_end_time_utc` - System coast time
+- `OnOffModel` - On/off HVAC model parameters
+- `ModulationModel` - Modulating HVAC model
+- `AutoTuneModel` - Auto-tuning parameters
+- `AlgoLearnerStates` - Learning algorithm states
+
+**Updated**: Continuously during operation
+
+### predictionmanager.recovery
+**Format**: Binary recovery  
+**Size**: ~20KB  
+**Purpose**: Prediction models (recovery format)
+
+**Contains**: Binary version of prediction models for reliability
+
+**Updated**: Periodically and on significant changes
+
+### sunlightcorrection.recovery
+**Format**: Binary recovery  
+**Size**: ~10KB  
+**Purpose**: Sunlight correction algorithm state
+
+**Contains**:
+- Temperature correction factors
+- Sunlight exposure history
+- Calibration parameters
+- Time-of-day adjustments
+
+**Updated**: During temperature readings and corrections
+
+**Critical**: Yes - Loss degrades temperature accuracy
+
+## HVAC Control
+
+### radiantcontrol.recovery
+**Format**: Binary recovery  
+**Size**: ~15KB  
+**Purpose**: Radiant heating system control state
+
+**Contains**:
+- Radiant system parameters
+- Control algorithms
+- Temperature curves
+- Timing parameters
+
+**Updated**: During radiant heating operation
+
+**Critical**: Yes for radiant systems
+
+### furnaceshutdown.recovery
+**Format**: Binary recovery  
+**Size**: ~5KB  
+**Purpose**: Furnace shutdown protection state
+
+**Contains**:
+- Last bacteria prevention cycle timestamp
+- Safety shutdown conditions
+- Furnace protection parameters
+- Maintenance tracking
+
+**Key Field**:
+- `last_bacteria_cycle_epoch` - Last bacteria cycle
+
+**Updated**: During furnace operation
+
+**Critical**: Yes - Protects furnace health
+
+### autodehum.json
+**Format**: JSON  
+**Size**: ~3KB  
+**Purpose**: Automatic dehumidification control
+
+**Contains**:
+```json
+{
+  "auto_dehum_state": "active",
+  "humidity_control_parameters": {...},
+  "dehumidification_schedule": [...]
+}
+```
+
+**Updated**: During dehumidification operation
+
+### airwave.recovery
+**Format**: Binary recovery  
+**Size**: ~8KB  
+**Purpose**: Airwave feature state (fan-only cooling)
+
+**Contains**:
+- Airwave activation conditions
+- Energy savings calculations
+- Usage history
+- Effectiveness metrics
+
+**Updated**: During cooling operation
+
+## Smart Features
+
+### smartthermostatmanager.json
+**Format**: JSON  
+**Size**: ~10KB  
+**Purpose**: Smart thermostat features coordination
+
+**Contains**:
+```json
+{
+  "multi_room_visible": true,
+  "associated_sensor_info": [...],
+  "active_sensors": [...],
+  "smart_feature_states": {...}
+}
+```
+
+**Key Fields**:
+- `multi_room_visible` - Multi-room sensor visibility
+- `associated_sensor_info` - Connected sensor data
+- `active_sensors` - Currently active sensors
+
+**Updated**: On sensor events and configuration changes
+
+### rcsmanager.json
+**Format**: JSON  
+**Size**: ~8KB  
+**Purpose**: Remote Control System management
+
+**Contains**:
+```json
+{
+  "rcs_control_setting": "enabled",
+  "RemoteModels": [...],
+  "sensor_coordination": {...}
+}
+```
+
+**Updated**: On remote sensor activity
+
+### tuneupmanager.json
+**Format**: JSON  
+**Size**: ~5KB  
+**Purpose**: System tuning and optimization
+
+**Contains**:
+```json
+{
+  "presenting_tuneup_time_utc": "2019-09-12T08:00:00Z",
+  "qualification_results": {...},
+  "optimization_parameters": {...}
+}
+```
+
+**Updated**: During system tuning
+
+### overundershoot.json
+**Format**: JSON  
+**Size**: ~12KB  
+**Purpose**: Temperature overshoot/undershoot compensation
+
+**Contains**:
+```json
+{
+  "actual_temp_change": 2.5,
+  "actual_results_stage_index": 1,
+  "heating_adjustments": [...],
+  "cooling_adjustments": [...],
+  "range_adjustments": [...]
+}
+```
+
+**Key Fields**:
+- `actual_temp_change` - Measured temperature changes
+- `actual_results_stage_index` - HVAC stage performance
+- `heating_adjustments` - Heating compensation factors
+- `cooling_adjustments` - Cooling compensation factors
+
+**Updated**: After each HVAC cycle
+
+### sensorhistory.recovery
+**Format**: Binary recovery  
+**Size**: ~50KB  
+**Purpose**: Historical sensor data
+
+**Contains**:
+- Temperature history
+- Humidity history
+- Motion events
+- Sensor readings over time
+
+**Updated**: Continuously
+
+## System State
+
+### crystalsubspaceid.recovery
+**Format**: Binary recovery  
+**Size**: ~1KB  
+**Purpose**: Device identity and subspace identifier
+
+**Contains**:
+- Unique device identifier
+- Nest service subspace ID
+- Device registration data
+
+**Updated**: Rarely (during pairing)
+
+**Critical**: Yes - Required for cloud communication
+
+### goosemgr.recovery
+**Format**: Binary recovery  
+**Size**: ~5KB  
+**Purpose**: Goose manager state (internal feature)
+
+**Contains**:
+- Internal state management
+- Feature coordination data
+
+**Updated**: During operation
+
+### drmanager.json
+**Format**: JSON  
+**Size**: ~4KB  
+**Purpose**: Demand response manager
+
+**Contains**:
+```json
+{
+  "dr_events": [...],
+  "participation_settings": {...},
+  "event_history": [...]
+}
+```
+
+**Updated**: During demand response events
+
+### boilerfilter.json
+**Format**: JSON  
+**Size**: ~2KB  
+**Purpose**: Boiler filter management (for HeatLink)
+
+**Contains**:
+```json
+{
+  "filter_status": "clean",
+  "last_maintenance": "2019-08-01",
+  "maintenance_schedule": {...}
+}
+```
+
+**Updated**: During boiler operation
+
+## Debugging Files
+
+### nlclient.crash
+**Format**: Text/Binary  
+**Size**: Variable (0-1MB)  
+**Purpose**: Crash dump information
+
+**Contains**:
+- Stack traces
+- Register dumps
+- Crash context
+- Timestamp
+- Version information
+
+**Created**: When nlclient crashes
+
+**Usage**: Uploaded to cloud for debugging
+
+### nlclient.maps
+**Format**: Text  
+**Size**: ~100KB  
+**Purpose**: Memory map information
+
+**Contains**:
+- Memory layout
+- Library mappings
+- Symbol information
+- Address ranges
+
+**Created**: With crash dumps
+
+**Usage**: Debugging crash dumps
+
+## File Characteristics
+
+### Recovery Files (.recovery)
+
+**Format**: Binary with checksums  
+**Features**:
+- Atomic writes
+- Power-loss protection
+- Corruption detection
+- Automatic recovery
+
+**Structure**:
+```
+[Header: Magic + Version + Checksum]
+[Data: Binary serialized data]
+[Footer: Checksum]
+```
+
+**Advantages**:
+- Survives power loss
+- Detects corruption
+- Fast read/write
+
+**Disadvantages**:
+- Not human-readable
+- Requires special tools to inspect
+
+### JSON Files (.json)
+
+**Format**: Human-readable JSON  
+**Features**:
+- Easy to inspect
+- Can be manually edited
+- Standard format
+
+**Advantages**:
+- Human-readable
+- Easy to debug
+- Standard tools
+
+**Disadvantages**:
+- No power-loss protection
+- Larger file size
+- Slower parsing
+
+## Data Persistence
+
+### Critical Data (Recovery Files)
+**Backup**: Uploaded to cloud periodically  
+**Recovery**: Restored from cloud or rebuilt from defaults  
+**Loss Impact**: Feature reset, relearning required
+
+### Configuration (JSON Files)
+**Backup**: Uploaded to cloud  
+**Recovery**: Restored from cloud or defaults  
+**Loss Impact**: Reconfiguration required
+
+### Debugging (Crash Files)
+**Backup**: Uploaded once  
+**Recovery**: Not recovered  
+**Loss Impact**: None (diagnostic only)
+
+## Common Operations
+
+### Viewing JSON Files
+```bash
+cat /media/data/rateplan.json | jq .
+cat /media/data/smartthermostatmanager.json | jq .
+```
+
+### Listing All Data Files
+```bash
+ls -lh /media/data/
+```
+
+### Checking File Sizes
+```bash
+du -h /media/data/*
+```
+
+### Backing Up Data Partition
+```bash
+tar czf /media/scratch/data-backup.tar.gz /media/data/
+```
+
+### Finding JSON Files
+```bash
+find /media/data -name "*.json" -exec cat {} \;
+```
+
+## Troubleshooting
+
+### Corrupted Recovery Files
+
+**Symptoms**: Feature not working, error logs  
+**Cause**: Power loss during write, flash corruption  
+**Solution**:
+1. System attempts automatic recovery
+2. Restored from cloud backup
+3. Rebuilt from defaults if necessary
+
+### Missing Data Files
+
+**Symptoms**: Features reset, relearning required  
+**Cause**: Partition corruption, failed update  
+**Solution**:
+1. Check partition integrity
+2. Restore from backup
+3. Allow system to rebuild
+
+### Large Crash Files
+
+**Symptoms**: Data partition filling up  
+**Cause**: Repeated crashes  
+**Solution**:
+1. Upload crash files to cloud
+2. Delete old crash files
+3. Investigate crash cause
+
+## Related Documentation
+
+- [Data Files Reference](/data-files) - Detailed field descriptions
+- [Recovery System](/troubleshooting/recovery-tiers) - Recovery mechanisms
+- [Media Partitions Overview](/reference/media-overview) - Partition structure
+- [Backup and Restore](/troubleshooting/backup-restore) - Data backup procedures

@@ -1,0 +1,212 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Nest Thermostat Knowledge Base",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#0D9373",
+    "light": "#07C983",
+    "dark": "#0D9373",
+    "anchors": {
+      "from": "#0D9373",
+      "to": "#07C983"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Support",
+      "url": "mailto:support@example.com"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "GitHub",
+    "url": "https://github.com/example/nest-firmware"
+  },
+  "tabs": [
+    {
+      "name": "Hardware",
+      "url": "hardware"
+    },
+    {
+      "name": "Software",
+      "url": "software"
+    },
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Documentation",
+      "icon": "book-open-cover",
+      "url": "https://mintlify.com/docs"
+    },
+    {
+      "name": "Community",
+      "icon": "slack",
+      "url": "https://mintlify.com/community"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "system-overview",
+        "exfiltration-summary",
+        "analysis-summary"
+      ]
+    },
+    {
+      "group": "Filesystem Reference",
+      "pages": [
+        "reference/index",
+        "reference/filesystem-root",
+        "reference/nestlabs",
+        {
+          "group": "Media Partitions",
+          "pages": [
+            "reference/media-overview",
+            "reference/media-system-config",
+            "reference/media-user-config",
+            "reference/media-data",
+            "reference/media-log",
+            "reference/media-scratch"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Technical Analysis",
+      "pages": [
+        "reference/binary-analysis",
+        "reference/learning-algorithms",
+        "reference/boot-and-update",
+        "reference/protocols"
+      ]
+    },
+    {
+      "group": "Architecture",
+      "pages": [
+        "architecture/overview",
+        "architecture/linux-system",
+        "filesystem-structure",
+        "architecture/boot-process",
+        "architecture/ui-backplate-communication"
+      ]
+    },
+    {
+      "group": "Hardware",
+      "pages": [
+        "hardware/overview",
+        "hardware/processor",
+        "hardware/sensors",
+        "hardware/display",
+        "hardware/backplate",
+        "hardware/heatlink",
+        "hardware/zigbee"
+      ]
+    },
+    {
+      "group": "Software Components",
+      "pages": [
+        "software/overview",
+        "software-components",
+        "software/nlclient",
+        "user-interface",
+        "software/system-services",
+        "software/libraries",
+        "software/binaries"
+      ]
+    },
+    {
+      "group": "Network & Connectivity",
+      "pages": [
+        "software/network/overview",
+        "software/network/wifi",
+        "software/network/lowpan",
+        "software/network/weave-protocol",
+        "software/network/connman"
+      ]
+    },
+    {
+      "group": "Data & Configuration",
+      "pages": [
+        "software/data/overview",
+        "data-files",
+        "software/data/configuration-files",
+        "software/data/thermostat-data",
+        "software/data/recovery-files",
+        "software/data/user-settings"
+      ]
+    },
+    {
+      "group": "Thermostat Logic",
+      "pages": [
+        "software/thermostat/overview",
+        "software/thermostat/prediction-manager",
+        "software/thermostat/schedule-manager",
+        "software/thermostat/auto-away",
+        "software/thermostat/energy-stats",
+        "software/thermostat/sunlight-correction"
+      ]
+    },
+    {
+      "group": "System Management",
+      "pages": [
+        "software/system/monitoring",
+        "software/system/logging",
+        "software/system/watchdog",
+        "software/system/heartbeat",
+        "software/system/sleep-management"
+      ]
+    },
+    {
+      "group": "Firmware & Updates",
+      "pages": [
+        "software/firmware/overview",
+        "software/firmware/osm",
+        "software/firmware/backplate-updates",
+        "software/firmware/heatlink-updates",
+        "software/firmware/zigbee-updates"
+      ]
+    },
+    {
+      "group": "Recovery & Troubleshooting",
+      "pages": [
+        "troubleshooting/overview",
+        "troubleshooting/recovery-tiers",
+        "troubleshooting/factory-reset",
+        "troubleshooting/common-issues",
+        "troubleshooting/log-analysis"
+      ]
+    },
+    {
+      "group": "Development",
+      "pages": [
+        "development/ssh-access",
+        "development/debugging",
+        "development/file-system-access",
+        "development/process-management"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/introduction",
+        "api-reference/dbus-interfaces",
+        "api-reference/configuration-schema",
+        "api-reference/data-formats"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/example/nest-firmware",
+    "linkedin": "https://www.linkedin.com/company/example"
+  }
+}

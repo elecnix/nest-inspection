@@ -1,0 +1,241 @@
+---
+title: Low-Power Wireless (802.15.4)
+description: Low-power wireless communication and IEEE 802.15.4 implementation
+---
+
+# Low-Power Wireless (802.15.4)
+
+The Nest Learning Thermostat implements IEEE 802.15.4 low-power wireless communication as the foundation for Zigbee networking and other low-power wireless protocols. This provides reliable, low-power communication for smart home devices and sensor networks.
+
+## IEEE 802.15.4 Overview
+
+### Physical Layer Characteristics
+- **Frequency**: 2.4GHz ISM band (primary), 868/915MHz (optional)
+- **Data Rate**: 250kbps at 2.4GHz, 20/40kbps at sub-GHz
+- **Modulation**: O-QPSK with DSSS (Direct Sequence Spread Spectrum)
+- **Channel Spacing**: 5MHz channel spacing at 2.4GHz
+- **Range**: 10-100m indoor, up to 1km line-of-sight
+
+### Channel Allocation
+| Band | Frequency Range | Channels | Data Rate |
+|------|------------------|----------|-----------|
+| 2.4GHz | 2405-2480MHz | 11-26 (16 channels) | 250kbps |
+| 915MHz | 902-928MHz | 1-10 (10 channels) | 40kbps |
+| 868MHz | 868-868.6MHz | 0 (1 channel) | 20kbps |
+
+## Radio Hardware
+
+### Radio Module Specifications
+- **Chipset**: TI CC253x series or similar
+- **Output Power**: +4.5dBm maximum (adjustable)
+- **Receiver Sensitivity**: -97dBm typical
+- **Antenna**: Internal PCB antenna or external connector
+- **Interface**: SPI or UART to host processor
+
+### RF Performance
+- **Adjacent Channel Rejection**: 30dB typical
+- **Alternate Channel Rejection**: 45dB typical
+- **Blocker Performance**: >0dBm at 3MHz offset
+- **Frequency Accuracy**: ±40ppm
+- **Phase Noise**: -90dBc/Hz at 1MHz offset
+
+## MAC Layer Features
+
+### MAC Capabilities
+- **CSMA/CA**: Carrier Sense Multiple Access with Collision Avoidance
+- **ACK**: Optional acknowledgments for reliability
+- **RTS/CTS**: Request to Send/Clear to Send for hidden nodes
+- **Beacon**: Beacon-enabled networks for synchronization
+- **Security**: AES-128 encryption at MAC layer
+
+### Frame Types
+- **Beacon Frame**: Network synchronization and information
+- **Data Frame**: Data transmission between devices
+- **ACK Frame**: Acknowledgment of received frames
+- **Command Frame**: Network control and management commands
+- **Beacon Request**: Beacon request for network discovery
+
+### Frame Structure
+```
++--------+--------+--------+--------+--------+--------+--------+
+| Preamble | SFD | Frame Length | Frame Control | Sequence Number |
++--------+--------+--------+--------+--------+--------+--------+
+| Addressing Fields | Payload | FCS |
++--------+--------+--------+--------+--------+
+```
+
+## Network Topologies
+
+### Star Topology
+- **Coordinator**: Central network coordinator
+- **End Devices**: Direct communication with coordinator
+- **Range**: Limited to coordinator's radio range
+- **Power**: Low power consumption for end devices
+- **Use Case**: Simple sensor networks
+
+### Peer-to-Peer Topology
+- **Direct Communication**: Devices communicate directly
+- **No Coordinator**: No central coordinator required
+- **Range**: Limited to direct radio range
+- **Flexibility**: Flexible network formation
+- **Use Case**: Simple device-to-device communication
+
+### Mesh Topology (with Zigbee)
+- **Multi-hop**: Data can hop through multiple nodes
+- **Self-healing**: Automatic route repair
+- **Extended Range**: Network range beyond single hop
+- **Complexity**: More complex network management
+- **Use Case**: Large-scale smart home networks
+
+## Power Management
+
+### Power Saving Modes
+- **Active Mode**: Radio always on for communication
+- **Idle Mode**: Radio on but not transmitting
+- **Sleep Mode**: Radio powered down for power saving
+- **Deep Sleep**: Maximum power saving mode
+
+### Power Consumption
+| Mode | Current Consumption | Description |
+|------|---------------------|-------------|
+| Transmit | 25mA | Data transmission |
+| Receive | 25mA | Data reception |
+| Idle | 1mA | Radio idle, ready to receive |
+| Sleep | 1μA | Radio powered down |
+
+### Battery Optimization
+- **Duty Cycling**: Intermittent radio activation
+- **Beacon Tracking**: Synchronized wake-up intervals
+- **Low Duty Cycling**: Extended sleep periods
+- **Energy Detection**: Energy-based wake-up
+
+## Security Features
+
+### AES-128 Encryption
+- **Encryption**: AES-128 block cipher
+- **Key Management**: Secure key distribution
+- **Authentication**: Message authentication codes
+- **Integrity**: Data integrity protection
+
+### Security Modes
+- **No Security**: No encryption or authentication
+- **AES-CTR**: Counter mode encryption
+- **AES-CBC-MAC**: Cipher block chaining with MAC
+- **AES-CCM**: Counter with CBC-MAC mode
+
+### Security Configuration
+```c
+// Security configuration structure
+typedef struct {
+    uint8_t key[16];             // AES-128 encryption key
+    security_level_t level;      // Security level
+    key_id_mode_t key_mode;      // Key identifier mode
+    frame_counter_t frame_counter; // Frame counter for replay protection
+} ieee802154_security_t;
+```
+
+## Performance Optimization
+
+### Link Quality
+- **LQI**: Link Quality Indicator for link assessment
+- **RSSI**: Received Signal Strength Indicator
+- **Packet Error Rate**: Packet loss monitoring
+- **Retransmission**: Automatic retransmission on failure
+
+### Throughput Optimization
+- **Packet Size**: Optimal packet size selection
+- **Backoff**: Optimized CSMA/CA backoff parameters
+- **Channel Selection**: Intelligent channel selection
+- **Interference Avoidance**: Interference detection and avoidance
+
+### Range Optimization
+- **Transmit Power**: Adaptive power control
+- **Data Rate**: Variable data rate selection
+- **Antenna Design**: Optimized antenna design
+- **Path Loss**: Path loss compensation
+
+## Development and Integration
+
+### Driver Interface
+```c
+// IEEE 802.15.4 driver interface
+typedef struct {
+    int (*init)(void);
+    int (*send)(uint8_t *data, uint16_t length);
+    int (*receive)(uint8_t *data, uint16_t *length);
+    int (*set_channel)(uint8_t channel);
+    int (*set_power)(int8_t power);
+    int (*get_rssi)(void);
+    int (*sleep)(void);
+    int (*wakeup)(void);
+} ieee802154_driver_t;
+```
+
+### Integration with Zigbee
+- **PHY Layer**: IEEE 802.15.4 provides physical layer
+- **MAC Layer**: Zigbee builds on 802.15.4 MAC
+- **Network Layer**: Zigbee network layer implementation
+- **Application Layer**: Zigbee application profiles
+
+## Testing and Certification
+
+### Testing Procedures
+- **RF Testing**: Radio frequency performance testing
+- **Protocol Testing**: IEEE 802.15.4 protocol compliance
+- **Interoperability**: Multi-vendor interoperability testing
+- **Performance**: Range, throughput, and reliability testing
+
+### Certification Requirements
+- **FCC Part 15**: FCC certification for US market
+- **CE RED**: CE certification for European market
+- **IC RSS-210**: Industry Canada certification
+- **IEEE 802.15.4**: Standard compliance certification
+
+## Troubleshooting
+
+### Common Issues
+- **Connection Problems**: Association and authentication failures
+- **Range Issues**: Limited communication range
+- **Interference**: RF interference from other devices
+- **Power Issues**: Excessive power consumption
+
+### Diagnostic Tools
+- **Spectrum Analyzer**: RF spectrum analysis
+- **Packet Sniffer**: IEEE 802.15.4 packet capture
+- **Link Quality Monitor**: Real-time link quality monitoring
+- **Power Monitor**: Power consumption analysis
+
+## Applications and Use Cases
+
+### Smart Home
+- **Sensor Networks**: Temperature, humidity, motion sensors
+- **Lighting Control**: Smart lighting systems
+- **Security Systems**: Security sensors and alarms
+- **Energy Management**: Energy monitoring and control
+
+### Industrial IoT
+- **Building Automation**: Building management systems
+- **Industrial Monitoring**: Equipment monitoring
+- **Asset Tracking**: Asset and personnel tracking
+- **Environmental Monitoring**: Environmental sensing
+
+## Future Developments
+
+### IEEE 802.15.4g
+- **Smart Utility Networks**: Utility network optimizations
+- **Extended Range**: Improved range and coverage
+- **Higher Data Rates**: Enhanced throughput capabilities
+- **Frequency Hopping**: Frequency hopping spread spectrum
+
+### IEEE 802.15.4e
+- **Time Slotted Channel Hopping**: TSCH for industrial applications
+- **Deterministic Communication**: Guaranteed latency and reliability
+- **Multi-hop Synchronization**: Network-wide time synchronization
+- **Industrial IoT**: Industrial IoT optimizations
+
+## Related Documentation
+
+- [Network Overview](./overview.mdx)
+- [Zigbee Interface](./zigbee.mdx)
+- [Weave Protocol](./weave-protocol.mdx)
+- [Hardware Radio](../../hardware/zigbee.mdx)

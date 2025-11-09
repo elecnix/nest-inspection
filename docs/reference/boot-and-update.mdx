@@ -1,0 +1,551 @@
+---
+title: Boot and Update Process
+description: 'Boot sequence, update mechanism, and recovery procedures'
+---
+
+# Boot and Update Process
+
+This document details the boot sequence, software update mechanism, and recovery procedures of the Nest Learning Thermostat.
+
+## Boot Sequence
+
+### Hardware Boot Stages
+
+The Nest thermostat uses a multi-stage boot process typical of embedded ARM systems:
+
+```
+Power On → IPL → SPL → U-Boot → Linux Kernel → Init System → Applications
+```
+
+### 1. IPL (Initial Program Loader)
+
+**Partition**: `/dev/mtd1` (256 KB)  
+**File**: `x-load.bin.ift`  
+**Purpose**: First-stage bootloader
+
+- Loaded by ROM bootloader in SoC
+- Minimal code to initialize DRAM
+- Loads SPL from NAND flash
+- No redundancy (critical failure point)
+
+### 2. SPL (Secondary Program Loader)
+
+**Partitions**: 
+- Primary: `/dev/mtd2` (1.5 MB)
+- Secondary: `/dev/mtd3` (1.5 MB)
+
+**Purpose**: Second-stage bootloader
+
+- Initializes additional hardware
+- Loads U-Boot bootloader
+- **Dual-copy for redundancy**
+
+### 3. U-Boot Environment
+
+**Partitions**:
+- env0: `/dev/mtd4` (384 KB)
+- env1: `/dev/mtd5` (384 KB)
+
+**Purpose**: Boot configuration storage
+
+- Stores boot parameters
+- Kernel command line
+- Active partition selection
+- **Dual-copy with alternating updates**
+
+Configuration file: `/etc/fw_env.config`
+
+### 4. U-Boot Bootloader
+
+**Partitions**:
+- boot0: `/dev/mtd6` (8 MB)
+- boot1: `/dev/mtd8` (8 MB)
+
+**Purpose**: Main bootloader
+
+- Loads Linux kernel
+- Passes device tree
+- Supports network boot (TFTP)
+- **Dual-copy for redundancy**
+
+### 5. Linux Kernel
+
+**Partitions**:
+- root0: `/dev/mtd7` (46 MB) → `/dev/mtdblock7`
+- root1: `/dev/mtd9` (46 MB) → `/dev/mtdblock9`
+
+**Filesystem**: JFFS2 (Journaling Flash File System 2)  
+**Mount Options**: `noatime` (no access time updates)
+
+**Dual Root Partitions**:
+- Primary: Active root filesystem
+- Secondary: Backup/update target
+- Atomic switching via U-Boot environment
+
+### 6. Init System
+
+**Init**: BusyBox init  
+**Config**: `/etc/inittab`
+
+**Startup Script**: `/etc/init.d/rcS`
+
+```bash
+#!/bin/sh
+# System initialization sequence
+${INITDIR}/announce start
+${INITDIR}/start
+${INITDIR}/hwclock restore
+${INITDIR}/sysctl start
+${INITDIR}/udev start
+${INITDIR}/mountfs start
+${INITDIR}/timezone check
+${INITDIR}/hostname start
+${INITDIR}/syslog start
+${INITDIR}/watchdog start
+${INITDIR}/nlmetrics start
+${INITDIR}/orderly_reboot start
+${INITDIR}/dbus start
+${INITDIR}/heartbeat start
+${INITDIR}/nlsleep start
+${INITDIR}/nlshutdown start
+${INITDIR}/networking start
+${INITDIR}/sshd start
+${INITDIR}/nestlabs start
+${INITDIR}/monit start
+```
+
+### 7. Application Launch
+
+**Service**: `/etc/init.d/nestlabs`  
+**Binary**: `/nestlabs/sbin/nlclient`  
+**Manager**: Monit (process monitoring)
+
+The nlclient application is started with configuration files:
+```bash
+/nestlabs/sbin/nlclient \
+  -config /nestlabs/etc/nestlabs.config \
+  -config /nestlabs/etc/client.config \
+  -config /nestlabs/etc/product.config \
+  -config /nestlabs/etc/demo.config  # if present
+```
+
+## OSM (Operating System Manager)
+
+### Architecture
+
+The OSM is Nest's custom software update system that manages:
+- Software package downloads
+- Partition updates
+- Rollback capability
+- Multi-component updates
+
+**Binary**: `/nestlabs/sbin/osm` (325 KB)  
+**Config**: `/etc/nestlabs/osm/destinations.plist`
+
+### Update Groups
+
+OSM defines two update groups for A/B partition switching:
+
+#### Primary Group
+```
+bp           - Backplate firmware
+spl0         - SPL partition 0
+boot0        - U-Boot partition 0
+root0        - Root filesystem 0
+system-config
+user-config
+data
+log
+scratch
+```
+
+#### Secondary Group
+```
+bp           - Backplate firmware
+spl1         - SPL partition 1
+boot1        - U-Boot partition 1
+root1        - Root filesystem 1
+system-config
+user-config
+data
+log
+scratch
+```
+
+### Update Destinations
+
+OSM manages multiple update destinations:
+
+| Destination | Type | Device | Size | Format |
+|-------------|------|--------|------|--------|
+| bp | Program | nlbpupdater | N/A | Binary |
+| ipl | Stream | /dev/mtd1 | 256 KB | Raw |
+| spl0/spl1 | Stream | /dev/mtd2-3 | 1.5 MB | Raw |
+| env0/env1 | Stream | /dev/mtd4-5 | 384 KB | Raw |
+| boot0/boot1 | Stream | /dev/mtd6,8 | 8 MB | Raw |
+| root0/root1 | Image | /dev/mtd7,9 | 46 MB | JFFS2 |
+| system-config | Image | /dev/mtd10 | 4 MB | JFFS2 |
+| user-config | Image | /dev/mtd11 | 8 MB | JFFS2 |
+| data | Image | /dev/mtd12 | 20 MB | JFFS2 |
+| log | Image | /dev/mtd13 | 20 MB | JFFS2 |
+| scratch | Image | /dev/mtd14 | 92 MB | JFFS2 |
+
+### Software Package Format
+
+**Extension**: `.nlsw` (Nest Labs Software)  
+**Format**: Apple-style bundle with Manifest.plist
+
+**Example**: `Nest-Learning-Thermostat-5.9.4-5-j49-0NXR.nlsw`
+
+**Package Structure**:
+```
+Nest-Learning-Thermostat-5.9.4-5-j49-0NXR.nlsw/
+├── Manifest.plist          # Package metadata
+└── Contents/
+    ├── Installations/      # Installation scripts
+    └── Triggers/           # Update triggers
+```
+
+**Manifest Contents**:
+- **ImageID**: Unique package identifier
+- **Version**: Software version (5.9.4-5)
+- **MinimumVersion**: Minimum compatible version (4.5d1-a)
+- **ImageApplicability**: Device model regex
+- **WhiteList**: Compatible device models
+- **BlackList**: Incompatible device models
+- **CreationTimestamp**: Build timestamp
+- **Host**: Build server
+- **User**: Build user
+
+**Build Info** (from manifest):
+- Built on: `jenkins-agent-052-v17-emb-prod.c.nest-devinfra.internal`
+- Built by: `jenkins-slave`
+- Package: `Nest-Learning-Thermostat-5.9.4-5-j49-0NXR`
+
+## Update Process
+
+### 1. Update Discovery
+
+Updates are discovered via:
+- **Cloud polling**: Regular checks to Nest servers
+- **Manual trigger**: User-initiated update check
+- **Push notification**: Server-initiated update
+
+**Service**: `/nestlabs/sbin/nlswupdate`
+
+### 2. Download
+
+**Service**: `/nestlabs/sbin/dropbox`
+
+- Downloads .nlsw package to `/media/scratch/`
+- Verifies package signature
+- Checks device compatibility
+- Validates minimum version requirements
+
+### 3. Installation
+
+**Manager**: OSM (`/nestlabs/sbin/osm`)
+
+#### A/B Partition Strategy
+
+1. **Determine Active Partition**: Read U-Boot environment
+2. **Select Target**: Choose inactive partition (A→B or B→A)
+3. **Write Update**: Flash new image to inactive partition
+4. **Verify**: Check written data integrity
+5. **Switch**: Update U-Boot environment to boot from new partition
+6. **Reboot**: System reboots into new partition
+
+#### Update Sequence
+
+```
+Current: root0 (active) + boot0 + spl0
+Target:  root1 (inactive) + boot1 + spl1
+
+1. Download package to /media/scratch/
+2. Extract and verify package
+3. Flash root1 with new filesystem
+4. Flash boot1 with new kernel
+5. Flash spl1 with new bootloader (if needed)
+6. Update U-Boot env to boot from partition 1
+7. Reboot
+8. Verify boot success
+9. Mark update as successful
+10. Keep root0 as rollback
+```
+
+### 4. Component Updates
+
+#### Backplate Firmware Update
+
+**Updater**: `/nestlabs/sbin/nlbpupdater` (201 KB)  
+**Config**: `/etc/nestlabs/bpupdater.config`  
+**Timeout**: 180 seconds
+
+Updates the backplate microcontroller firmware via serial connection.
+
+#### ZigBee Radio Update
+
+**Updater**: `/nestlabs/sbin/nlzbupdater` (11 KB)
+
+Updates the ZigBee/Thread radio firmware (EM357 chip).
+
+#### IPL Bootloader Update
+
+**Updater**: `/nestlabs/sbin/nliplupdater` (8 KB)
+
+Updates the IPL (Initial Program Loader) - **high risk operation**.
+
+### 5. Verification
+
+After reboot, the system performs:
+
+1. **Boot Check**: Verify system booted successfully
+2. **Service Check**: Verify all services started
+3. **Connectivity Check**: Verify cloud connectivity
+4. **Heartbeat**: Send success signal to cloud
+
+**Service**: `/nestlabs/sbin/nlheartbeatd`
+
+If verification fails:
+- System attempts automatic rollback
+- Reverts U-Boot environment
+- Reboots into previous partition
+
+## Recovery Mechanisms
+
+### 1. Watchdog Recovery
+
+**Service**: `/nestlabs/sbin/watchdogd` (29 KB)  
+**Config**: `/etc/watchdogd.options`
+
+- Hardware watchdog timer
+- Automatic reboot on system hang
+- Configurable timeout (typically 60 seconds)
+- Requires periodic heartbeat from nlclient
+
+### 2. Partition Rollback
+
+If new partition fails to boot:
+
+1. **Boot Failure Detection**: U-Boot detects boot failure
+2. **Automatic Switch**: U-Boot switches to backup partition
+3. **Boot Backup**: System boots from previous working partition
+4. **Recovery Mode**: System enters recovery mode
+
+### 3. Factory Reset
+
+**Tool**: `/nestlabs/sbin/client_recovery` (2.3 KB)
+
+Factory reset procedure:
+1. Stop all services
+2. Erase user-config partition
+3. Erase data partition
+4. Reset system-config to defaults
+5. Reboot
+
+**Data Preserved**:
+- Root filesystem
+- Bootloader
+- System configuration (SSH keys, etc.)
+
+**Data Erased**:
+- User schedules
+- Learning data
+- Network configuration
+- All operational data
+
+### 4. Emergency Recovery
+
+If both partitions are corrupted:
+
+**Serial Console Access**:
+- Connect to UART console
+- Interrupt U-Boot boot
+- Manual partition recovery
+- Network boot via TFTP
+
+**Network Recovery**:
+```
+U-Boot> setenv serverip 192.168.1.100
+U-Boot> setenv ipaddr 192.168.1.200
+U-Boot> tftp 0x82000000 nest-recovery.img
+U-Boot> nand erase.part root0
+U-Boot> nand write 0x82000000 root0 ${filesize}
+U-Boot> boot
+```
+
+### 5. NAND Health Monitoring
+
+**Tool**: `/nestlabs/sbin/nand_ecc_check` (8 KB)
+
+Monitors NAND flash health:
+- ECC error rate
+- Bad block count
+- Wear leveling status
+- Predictive failure detection
+
+## Update Safety Features
+
+### 1. Dual Partition System
+
+- **Zero Downtime**: Update inactive partition while running
+- **Instant Rollback**: Revert to previous partition on failure
+- **No Bricking**: Always have working partition
+
+### 2. Signature Verification
+
+- All packages signed by Nest
+- Public key verification
+- Prevents unauthorized firmware
+
+### 3. Version Checking
+
+- Minimum version enforcement
+- Prevents downgrade attacks
+- Compatibility verification
+
+### 4. Atomic Updates
+
+- All-or-nothing updates
+- No partial installations
+- Consistent system state
+
+### 5. Incremental Updates
+
+- Delta updates supported
+- Reduces download size
+- Faster update process
+
+## Shutdown Coordination
+
+**Service**: `/nestlabs/sbin/nlshutdownd` (31 KB)
+
+Coordinates orderly shutdown:
+
+1. **Shutdown Signal**: Received from power button or command
+2. **Service Notification**: Notify all services
+3. **Data Sync**: Flush all data to flash
+4. **Service Stop**: Stop services in reverse order
+5. **Filesystem Sync**: Final filesystem sync
+6. **Power Off**: Cut power or reboot
+
+**Graceful Shutdown Time**: Up to 180 seconds for HVAC safety
+
+## Power Management
+
+**Service**: `/nestlabs/sbin/nlsleepd` (61 KB)
+
+Manages power states:
+- **Active**: Display on, full processing
+- **Idle**: Display dimmed, reduced processing
+- **Sleep**: Display off, minimal processing
+- **Deep Sleep**: Maximum power saving
+
+**Wake Sources**:
+- User interaction (touch, proximity)
+- Scheduled events
+- HVAC state changes
+- Network activity
+
+## Monitoring and Diagnostics
+
+### Monit Process Monitoring
+
+**Config**: `/etc/monitrc`  
+**Service**: Monit daemon
+
+Monitors:
+- nlclient process health
+- Memory usage
+- CPU usage
+- Filesystem space
+- Service availability
+
+**Actions**:
+- Automatic service restart
+- Alert generation
+- Log collection
+- Diagnostic upload
+
+### Heartbeat System
+
+**Service**: `/nestlabs/sbin/nlheartbeatd` (97 KB)  
+**Config**: `/etc/nestlabs/nlheartbeat.plist`
+
+Periodic health checks:
+- System vitals
+- Service status
+- Error conditions
+- Performance metrics
+
+Sends to cloud for:
+- Remote monitoring
+- Predictive maintenance
+- Update eligibility
+- Support diagnostics
+
+## Security Considerations
+
+### Secure Boot Chain
+
+1. **ROM Bootloader**: Verifies IPL signature (in SoC ROM)
+2. **IPL**: Verifies SPL signature
+3. **SPL**: Verifies U-Boot signature
+4. **U-Boot**: Verifies kernel signature
+5. **Kernel**: Verifies root filesystem
+
+**Note**: Actual signature verification depends on SoC capabilities and may not be fully implemented.
+
+### Update Security
+
+- **HTTPS**: All downloads over encrypted connection
+- **Signature Verification**: Package signatures verified
+- **Rollback Protection**: Prevents downgrade to vulnerable versions
+- **Secure Storage**: Private keys in secure storage
+
+### Attack Surface
+
+**Potential Vulnerabilities**:
+- Unsigned IPL (no ROM signature verification)
+- Physical UART access
+- JTAG debug interface
+- Network services (SSH, HTTP)
+- Cloud communication
+
+## Development and Debugging
+
+### Serial Console
+
+**Port**: UART on debug header  
+**Baud**: 115200 8N1  
+**Access**: U-Boot and Linux console
+
+### SSH Access
+
+**Service**: `/etc/init.d/sshd`  
+**Port**: 22  
+**Keys**: `/media/system-config/ssh/`
+
+**Note**: SSH may be disabled in production firmware.
+
+### Debug Logs
+
+**Location**: `/media/log/`  
+**Service**: syslog  
+**Rotation**: Automatic log rotation
+
+### Core Dumps
+
+**Location**: `/media/scratch/`  
+**Tool**: `/nestlabs/sbin/configcoredump`
+
+Crash dumps uploaded to Nest for analysis.
+
+## Next Steps
+
+- [ ] Analyze update package format in detail
+- [ ] Extract and examine installation scripts
+- [ ] Study rollback mechanism implementation
+- [ ] Test recovery procedures
+- [ ] Document secure boot chain
+- [ ] Analyze signature verification

@@ -1,0 +1,523 @@
+---
+title: Nest Labs Directory (/nestlabs)
+description: 'Complete reference of Nest Labs proprietary software'
+---
+
+# Nest Labs Directory (/nestlabs)
+
+The `/nestlabs` directory contains all Nest-proprietary software, libraries, and resources.
+
+## Directory Structure
+
+```
+/nestlabs/
+├── bin/          # User-level binaries (2 files)
+├── sbin/         # System daemons (19 files)
+├── lib/          # Shared libraries (24 files)
+└── share/        # Resources and data
+    ├── bp/       # Backplate firmware
+    ├── client/   # Client resources
+    ├── fonts/    # UI fonts
+    ├── fw/       # Bootloader firmware
+    ├── heatlink/ # HeatLink firmware
+    └── images/   # UI graphics
+```
+
+## Binaries (/nestlabs/bin)
+
+### wirelessregcal
+**Purpose**: Wireless regulatory calibration tool
+
+**Description**: Configures WiFi regulatory domain, transmit power limits, and channel restrictions based on geographic location.
+
+**Usage**: Typically run during manufacturing or region changes.
+
+### zb-loader
+**Purpose**: ZigBee firmware loader
+
+**Description**: Loads firmware to the ZigBee radio chip. Used during manufacturing and firmware updates.
+
+**Usage**: Bootstraps ZigBee stack on the 802.15.4 radio.
+
+## System Daemons (/nestlabs/sbin)
+
+### nlclient (4.9MB)
+**Purpose**: Main thermostat application
+
+**Description**: The core application that implements all thermostat functionality including UI, HVAC control, learning algorithms, and cloud communication.
+
+**Key Responsibilities**:
+- Display rendering and user interface
+- Temperature sensor fusion
+- HVAC control logic
+- Schedule management and learning
+- Auto-away occupancy detection
+- Energy statistics tracking
+- Cloud communication via Weave
+- Remote sensor coordination
+
+**Process**: Runs continuously, managed by OSM
+
+→ See [nlclient Reference](/reference/nlclient) for detailed documentation
+
+### osm
+**Purpose**: Open Service Manager
+
+**Description**: Service orchestration and lifecycle management. Controls startup, shutdown, and state transitions for all system services.
+
+**Key Responsibilities**:
+- Service dependency management
+- State machine coordination (boot, init, running, update, recovery)
+- Service health monitoring
+- Coordinated shutdown
+
+**Process**: First service started after init
+
+### watchdogd
+**Purpose**: Hardware watchdog daemon
+
+**Description**: Manages the hardware watchdog timer to detect system hangs and trigger automatic recovery.
+
+**Key Responsibilities**:
+- Periodic watchdog timer reset
+- System health checks
+- Automatic reboot on hang/crash
+- Coordination with nlheartbeatd
+
+**Process**: Critical system service
+
+### nlheartbeatd
+**Purpose**: Service heartbeat monitoring
+
+**Description**: Monitors health of critical services through heartbeat signals.
+
+**Key Responsibilities**:
+- Collect heartbeats from services
+- Detect service failures
+- Trigger recovery actions
+- Report status to watchdogd
+
+**Process**: Runs continuously
+
+### nlheartbeat
+**Purpose**: Heartbeat utility
+
+**Description**: Command-line tool to send heartbeat signals for testing.
+
+**Usage**: Debugging and testing heartbeat infrastructure
+
+### nlmetricsd
+**Purpose**: Metrics collection daemon
+
+**Description**: Collects system and application metrics for monitoring and diagnostics.
+
+**Key Responsibilities**:
+- CPU and memory usage tracking
+- System event logging
+- Performance metrics
+- Metric aggregation for upload
+
+**Process**: Runs continuously
+
+### nlsleepd
+**Purpose**: Sleep management daemon
+
+**Description**: Coordinates system sleep states for power management.
+
+**Key Responsibilities**:
+- Schedule sleep/wake cycles
+- Coordinate with services before sleep
+- Manage wake events
+- Optimize power consumption
+
+**Process**: Runs continuously
+
+### nlshutdownd
+**Purpose**: Shutdown coordination daemon
+
+**Description**: Ensures graceful system shutdown with proper data persistence.
+
+**Key Responsibilities**:
+- Coordinate shutdown sequence
+- Notify services of pending shutdown
+- Ensure data is flushed to disk
+- Manage shutdown timing
+
+**Process**: Runs continuously
+
+### dropbox
+**Purpose**: Cloud upload service
+
+**Description**: Manages upload of logs, crash dumps, and diagnostics to Nest cloud services.
+
+**Key Responsibilities**:
+- Stage files in /media/scratch/
+- Upload queue management
+- Retry logic for failed uploads
+- Bandwidth management
+
+**Process**: Runs continuously
+
+### nlswupdate
+**Purpose**: Software update manager
+
+**Description**: Orchestrates firmware updates for the main system.
+
+**Key Responsibilities**:
+- Download firmware updates
+- Verify update signatures
+- Install updates safely
+- Manage rollback on failure
+- Coordinate with other updaters
+
+**Process**: Runs during updates
+
+### nlbpupdater
+**Purpose**: Backplate firmware updater
+
+**Description**: Updates the backplate microcontroller firmware.
+
+**Key Responsibilities**:
+- Flash backplate firmware
+- Verify backplate version
+- Coordinate with nlswupdate
+
+**Process**: Runs during updates
+
+### nlzbupdater
+**Purpose**: ZigBee radio firmware updater
+
+**Description**: Updates the ZigBee/802.15.4 radio firmware.
+
+**Key Responsibilities**:
+- Flash ZigBee radio firmware
+- Verify radio version
+- Maintain radio configuration
+
+**Process**: Runs during updates
+
+### nliplupdater
+**Purpose**: Initial Program Loader (bootloader) updater
+
+**Description**: Updates the bootloader (x-loader).
+
+**Key Responsibilities**:
+- Flash bootloader updates
+- Ensure bootloader integrity
+- Critical low-level updates
+
+**Process**: Runs during updates (rare)
+
+### client_recovery
+**Purpose**: Client application recovery tool
+
+**Description**: Recovers nlclient from failures and corrupted state.
+
+**Key Responsibilities**:
+- Detect nlclient failures
+- Restore from recovery files
+- Rebuild corrupted data
+- Fallback to safe defaults
+
+**Process**: Runs on nlclient failure
+
+### configcoredump
+**Purpose**: Core dump configuration
+
+**Description**: Configures core dump generation for crash analysis.
+
+**Key Responsibilities**:
+- Configure core dump settings
+- Manage core dump storage
+- Prepare dumps for upload
+
+**Process**: Runs at startup
+
+### monit-resource-logger
+**Purpose**: Resource usage logger
+
+**Description**: Logs detailed resource usage for diagnostics.
+
+**Key Responsibilities**:
+- Log CPU usage per process
+- Log memory usage
+- Track resource trends
+- Detect resource exhaustion
+
+**Process**: Runs periodically
+
+### nand_ecc_check
+**Purpose**: NAND flash health checker
+
+**Description**: Monitors NAND flash for errors and predicts failures.
+
+**Key Responsibilities**:
+- Check ECC error rates
+- Monitor flash health
+- Predict flash failures
+- Log flash statistics
+
+**Process**: Runs periodically
+
+### upgrade-ip-modem-app
+**Purpose**: IP modem firmware updater
+
+**Description**: Updates modem firmware if present (not used on all models).
+
+**Key Responsibilities**:
+- Update modem firmware
+- Manage modem configuration
+
+**Process**: Runs during updates (if applicable)
+
+## Shared Libraries (/nestlabs/lib)
+
+### Core Application Libraries
+
+#### libnlappcore.so
+**Purpose**: Core application framework
+
+**Provides**: Application lifecycle, event loop, state management
+
+#### libnlappdbus.so
+**Purpose**: Application D-Bus integration
+
+**Provides**: D-Bus client/server for application IPC
+
+#### libnlappkit.so
+**Purpose**: Application toolkit
+
+**Provides**: UI widgets, display management, input handling
+
+#### libnlapputils.so
+**Purpose**: Application utilities
+
+**Provides**: Common application functions, data structures
+
+### System Libraries
+
+#### libnlsystem.so
+**Purpose**: System utilities and abstractions
+
+**Provides**: File I/O, process management, system calls
+
+#### libnlcore.so
+**Purpose**: Core Nest functionality
+
+**Provides**: Fundamental Nest system functions
+
+### Network Libraries
+
+#### libnlnetworkmanager.so
+**Purpose**: Network management
+
+**Provides**: Network interface control, connection management
+
+#### libnlweavetools.a
+**Purpose**: Weave protocol implementation (static library)
+
+**Provides**: 
+- Weave message encoding/decoding
+- Secure communication
+- Device pairing
+- Service discovery
+- Group key management
+
+#### libnlwebservice.so
+**Purpose**: Web service client
+
+**Provides**: HTTP/HTTPS client, REST API access
+
+### IPC and Communication
+
+#### libnldbus.so
+**Purpose**: D-Bus integration
+
+**Provides**: D-Bus client/server, service discovery
+
+#### libnlpathobserver.so
+**Purpose**: File path observation
+
+**Provides**: File system monitoring, change notifications
+
+### Monitoring and Diagnostics
+
+#### libnlmetrics.so
+**Purpose**: Metrics collection
+
+**Provides**: Metric recording, aggregation, formatting
+
+#### libnlheartbeat.so
+**Purpose**: Heartbeat functionality
+
+**Provides**: Heartbeat signal generation and monitoring
+
+#### libnldropbox.so
+**Purpose**: Dropbox upload functionality
+
+**Provides**: File staging, upload queue management
+
+### Third-Party Libraries
+
+#### libNuovationsUtilities.so
+**Purpose**: Core utilities (Nuovations vendor library)
+
+**Provides**: Low-level system utilities
+
+#### libCFUtilities.so
+**Purpose**: CoreFoundation-style utilities
+
+**Provides**: Data structures, string handling
+
+#### libLogUtilities.so
+**Purpose**: Logging utilities
+
+**Provides**: Structured logging, log formatting
+
+#### libIntegrity.so
+**Purpose**: Data integrity checking
+
+**Provides**: Checksums, signatures, verification
+
+#### libArchive.so
+**Purpose**: Archive handling
+
+**Provides**: TAR creation/extraction, compression
+
+#### libUrlAccess.so
+**Purpose**: URL/HTTP access
+
+**Provides**: HTTP client, URL fetching
+
+#### libu-boot.so
+**Purpose**: U-Boot integration
+
+**Provides**: Bootloader communication, environment variables
+
+#### libVersion.so
+**Purpose**: Version information
+
+**Provides**: Software version tracking
+
+## Resources (/nestlabs/share)
+
+### Backplate Firmware (/nestlabs/share/bp)
+
+```
+bp/data/firmware/
+└── nlbpfirmware.plist  # Backplate firmware metadata
+```
+
+**nlbpfirmware.plist**: Property list describing backplate firmware versions and update procedures.
+
+### Client Resources (/nestlabs/share/client)
+
+#### Brightness Calibration
+```
+client/brightness/
+└── brightness.plist  # Display brightness calibration data
+```
+
+**brightness.plist**: Ambient light sensor to display brightness mapping.
+
+#### Thermal Calibration
+```
+client/calibration/
+└── calibration.plist  # Thermal sensor calibration data
+```
+
+**calibration.plist**: Temperature sensor calibration coefficients and offsets.
+
+#### Localization
+```
+client/locales/
+├── Info.plist                        # Locale metadata
+├── de_DE.lproj/Localizable.strings  # German (Germany)
+├── en_GB.lproj/Localizable.strings  # English (UK)
+├── en_US.lproj/Localizable.strings  # English (US)
+├── es_ES.lproj/Localizable.strings  # Spanish (Spain)
+├── es_US.lproj/Localizable.strings  # Spanish (US)
+├── fr_CA.lproj/Localizable.strings  # French (Canada)
+├── fr_FR.lproj/Localizable.strings  # French (France)
+├── it_IT.lproj/Localizable.strings  # Italian
+└── nl_NL.lproj/Localizable.strings  # Dutch
+```
+
+**Localizable.strings**: UI text translations in Apple .strings format.
+
+**Info.plist**: Locale configuration and metadata.
+
+### Fonts (/nestlabs/share/fonts)
+
+```
+fonts/
+├── AkkuratNest-Bold.ttf     # Bold font
+└── AkkuratNest-Regular.ttf  # Regular font
+```
+
+Custom Akkurat typeface optimized for the Nest display.
+
+### Firmware Images (/nestlabs/share/fw)
+
+```
+fw/x-loader/
+└── x-load.bin.ift  # Initial bootloader (x-loader)
+```
+
+**x-load.bin.ift**: First-stage bootloader loaded by ROM code.
+
+### HeatLink Firmware (/nestlabs/share/heatlink)
+
+```
+heatlink/data/firmware/
+├── nlhlfirmware.plist           # HeatLink firmware metadata
+└── production/
+    └── heatlink.elf             # HeatLink firmware binary
+```
+
+**heatlink.elf**: Firmware for HeatLink accessory (boiler control).
+
+**nlhlfirmware.plist**: HeatLink firmware version and update metadata.
+
+### UI Images (/nestlabs/share/images)
+
+```
+images/
+├── a1_heatlink_blank.png         # HeatLink status icon (blank)
+├── a1_heatlink_green.png         # HeatLink status icon (active)
+├── appsetupicon-idle.png         # App setup icon (idle)
+├── appsetupicon-initial.png      # App setup icon (initial)
+├── Connector_2_0_*.png           # HVAC connector diagrams (12 files)
+├── ConnectorSelected_2_0_*.png   # Selected connector diagrams (12 files)
+└── G_legal_42px.png              # Legal/Google logo
+```
+
+**Connector images**: Visual guides for HVAC wiring during installation. Numbers indicate wire configurations (0-11).
+
+**HeatLink icons**: Status indicators for HeatLink accessory.
+
+**Setup icons**: Used during initial device setup.
+
+## File Sizes
+
+| Category | Count | Total Size |
+|----------|-------|------------|
+| Binaries (bin) | 2 | ~500KB |
+| Daemons (sbin) | 19 | ~12MB |
+| Libraries (lib) | 24 | ~8MB |
+| Resources (share) | 60+ | ~5MB |
+| **Total** | **105+** | **~25MB** |
+
+## Permissions
+
+All files in `/nestlabs` are owned by root:root with the following typical permissions:
+
+- Binaries: `rwxr-xr-x` (755)
+- Libraries: `rwxr-xr-x` (755)
+- Resources: `rw-r--r--` (644)
+
+## See Also
+
+- [Software Components](/software-components) - Detailed component documentation
+- [Root Filesystem](/reference/filesystem-root) - Root directory structure
+- [Media Partitions](/reference/media) - Writable data partitions

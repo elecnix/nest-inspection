@@ -1,0 +1,519 @@
+---
+title: Thermostat Data
+description: Thermostat-specific data structures and operational data
+---
+
+# Thermostat Data
+
+The Nest Learning Thermostat maintains extensive operational data including temperature readings, HVAC control states, learned patterns, and performance metrics. This document details the thermostat-specific data structures and management.
+
+## Temperature Data
+
+### Current Temperature Readings
+Real-time temperature data from multiple sensors with calibration and filtering.
+
+```c
+// Temperature data structure
+typedef struct {
+    float current_temperature;   // Current temperature reading
+    float target_temperature;    // Target setpoint temperature
+    float outdoor_temperature;   // Outdoor temperature (if available)
+    float humidity;              // Current humidity reading
+    timestamp_t last_update;     // Last sensor update time
+    sensor_status_t status;      // Sensor status
+    calibration_data_t calibration; // Calibration data
+} temperature_data_t;
+
+// Temperature history for learning
+typedef struct {
+    timestamp_t timestamp;       // Reading timestamp
+    float temperature;           // Temperature value
+    float humidity;              // Humidity value
+    bool occupancy;              // Occupancy state
+    hvac_mode_t mode;            // HVAC mode at time of reading
+    user_action_t user_action;   // User action (if any)
+} temperature_history_point_t;
+```
+
+### Temperature Data Storage
+```json
+{
+  "temperature_data": {
+    "current": {
+      "temperature": 68.5,
+      "humidity": 45.2,
+      "last_update": "2023-11-15T10:30:00Z",
+      "sensor_status": "normal",
+      "calibration_offset": -0.2
+    },
+    "target": {
+      "heat_setpoint": 70.0,
+      "cool_setpoint": 76.0,
+      "mode": "heat",
+      "schedule_active": true
+    },
+    "history": [
+      {
+        "timestamp": "2023-11-15T10:30:00Z",
+        "temperature": 68.5,
+        "humidity": 45.2,
+        "occupancy": true,
+        "mode": "heat"
+      }
+    ]
+  }
+}
+```
+
+## HVAC Control Data
+
+### Control State Data
+Current HVAC system state and control parameters.
+
+```c
+// HVAC control state
+typedef struct {
+    hvac_mode_t mode;            // Current HVAC mode
+    hvac_state_t state;          // Current HVAC state
+    fan_state_t fan_state;       // Fan control state
+    float heat_setpoint;         // Heating setpoint
+    float cool_setpoint;         // Cooling setpoint
+    float deadband_heat;         // Heating deadband
+    float deadband_cool;         // Cooling deadband
+    timestamp_t last_change;     // Last state change time
+    control_output_t outputs;    // Control output values
+} hvac_control_data_t;
+
+// Control outputs
+typedef struct {
+    bool heat_relay;             // Heat relay state
+    bool cool_relay;             // Cool relay state
+    bool fan_relay;              // Fan relay state
+    bool aux_heat_relay;         // Auxiliary heat relay
+    float modulation_level;      // Modulation level (0-100%)
+    timestamp_t last_update;     // Last output update
+} control_output_t;
+```
+
+### PID Control Data
+PID controller parameters and state for temperature control.
+
+```c
+// PID controller data
+typedef struct {
+    float kp;                    // Proportional gain
+    float ki;                    // Integral gain
+    float kd;                    // Derivative gain
+    float integral;              // Integral accumulator
+    float prev_error;            // Previous error
+    float output_min;            // Minimum output limit
+    float output_max;            // Maximum output limit
+    timestamp_t last_update;     // Last control update
+    performance_metrics_t metrics; // Control performance
+} pid_control_data_t;
+
+// Control performance metrics
+typedef struct {
+    float steady_state_error;    // Steady state error
+    float settling_time;         // Settling time in seconds
+    float overshoot;             // Maximum overshoot
+    float stability_index;       // Stability index
+    int oscillations;            // Number of oscillations
+} performance_metrics_t;
+```
+
+## Schedule Data
+
+### Temperature Schedule
+Time-based temperature scheduling with day-specific programs.
+
+```c
+// Schedule data structure
+typedef struct {
+    bool enabled;                // Schedule enabled flag
+    bool auto_schedule;          // Auto-schedule learning enabled
+    schedule_day_t days[7];      // Daily schedule data
+    away_settings_t away;        // Away mode settings
+    vacation_settings_t vacation; // Vacation settings
+    schedule_stats_t stats;      // Schedule statistics
+} schedule_data_t;
+
+// Daily schedule
+typedef struct {
+    day_of_week_t day;           // Day of week
+    schedule_entry_t heat_entries[MAX_ENTRIES]; // Heat schedule
+    schedule_entry_t cool_entries[MAX_ENTRIES]; // Cool schedule
+    int heat_count;              // Number of heat entries
+    int cool_count;              // Number of cool entries
+} schedule_day_t;
+
+// Schedule entry
+typedef struct {
+    time_of_day_t time;          // Time of day
+    float temperature;           // Target temperature
+    schedule_mode_t mode;        // Schedule mode
+    bool active;                 // Entry active flag
+} schedule_entry_t;
+```
+
+### Schedule Data Format
+```json
+{
+  "schedule_data": {
+    "enabled": true,
+    "auto_schedule": true,
+    "current_schedule": {
+      "day": "monday",
+      "active_period": {
+        "start": "06:30",
+        "end": "08:00",
+        "temperature": 70,
+        "mode": "home"
+      }
+    },
+    "weekly_schedule": {
+      "monday": [
+        {
+          "time": "06:30",
+          "temperature": 70,
+          "mode": "home"
+        },
+        {
+          "time": "08:00",
+          "temperature": 62,
+          "mode": "away"
+        }
+      ]
+    },
+    "away_mode": {
+      "active": false,
+      "auto_away": true,
+      "away_temperature_heat": 62,
+      "away_temperature_cool": 84
+    }
+  }
+}
+```
+
+## Learning Data
+
+### User Pattern Learning
+Machine learning data for user behavior patterns and preferences.
+
+```c
+// Learning data structure
+typedef struct {
+    learning_model_t model;      // Learning model
+    pattern_data_t patterns;     // Learned patterns
+    user_preferences_t prefs;    // Learned preferences
+    adaptation_data_t adaptation; // Adaptation data
+    learning_stats_t stats;      // Learning statistics
+} learning_data_t;
+
+// Learning model
+typedef struct {
+    model_type_t type;           // Model type (neural network, decision tree)
+    float accuracy;              // Model accuracy
+    timestamp_t last_trained;    // Last training timestamp
+    int training_iterations;     // Number of training iterations
+    model_parameters_t params;   // Model parameters
+} learning_model_t;
+
+// User patterns
+typedef struct {
+    time_pattern_t time_patterns[MAX_PATTERNS]; // Time-based patterns
+    temperature_pattern_t temp_patterns[MAX_PATTERNS]; // Temperature patterns
+    occupancy_pattern_t occupancy_patterns[MAX_PATTERNS]; // Occupancy patterns
+    int pattern_count;           // Number of learned patterns
+    float confidence;            // Pattern confidence level
+} pattern_data_t;
+```
+
+### Learning Data Storage
+```json
+{
+  "learning_data": {
+    "model": {
+      "type": "neural_network",
+      "accuracy": 0.92,
+      "last_trained": "2023-11-15T02:00:00Z",
+      "training_iterations": 1000
+    },
+    "patterns": {
+      "time_patterns": [
+        {
+          "pattern_id": "morning_routine",
+          "start_time": "06:30",
+          "end_time": "08:00",
+          "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+          "confidence": 0.95,
+          "temperature_preference": 70
+        }
+      ],
+      "temperature_preferences": {
+        "comfort_range_heat": [68, 72],
+        "comfort_range_cool": [74, 78],
+        "sleep_temperature": 64,
+        "away_temperature": 62
+      }
+    },
+    "adaptation": {
+      "last_adaptation": "2023-11-14T20:00:00Z",
+      "adaptation_rate": 0.1,
+      "user_feedback_score": 0.88
+    }
+  }
+}
+```
+
+## Energy Data
+
+### Energy Consumption Tracking
+Energy usage data and efficiency metrics.
+
+```c
+// Energy data structure
+typedef struct {
+    energy_usage_t usage;        // Energy usage data
+    efficiency_metrics_t efficiency; // Efficiency metrics
+    cost_data_t cost;            // Energy cost data
+    carbon_footprint_t carbon;   // Carbon footprint data
+    energy_goals_t goals;        // Energy saving goals
+} energy_data_t;
+
+// Energy usage data
+typedef struct {
+    float daily_usage_kwh;       // Daily energy usage in kWh
+    float monthly_usage_kwh;     // Monthly energy usage in kWh
+    float yearly_usage_kwh;      // Yearly energy usage in kWh
+    usage_breakdown_t breakdown; // Usage breakdown by system
+    timestamp_t last_reset;      // Last reset timestamp
+} energy_usage_t;
+
+// Usage breakdown
+typedef struct {
+    float heating_usage;         // Heating energy usage
+    float cooling_usage;         // Cooling energy usage
+    float fan_usage;             // Fan energy usage
+    float standby_usage;         // Standby power usage
+    float total_usage;           // Total energy usage
+} usage_breakdown_t;
+```
+
+### Energy Data Format
+```json
+{
+  "energy_data": {
+    "current_usage": {
+      "daily_kwh": 12.5,
+      "monthly_kwh": 375.2,
+      "yearly_kwh": 4502.4,
+      "last_reset": "2023-11-01T00:00:00Z"
+    },
+    "usage_breakdown": {
+      "heating_kwh": 8.2,
+      "cooling_kwh": 3.1,
+      "fan_kwh": 0.8,
+      "standby_kwh": 0.4
+    },
+    "efficiency": {
+      "cop_heating": 3.2,
+      "cop_cooling": 4.1,
+      "seasonal_efficiency": 0.85,
+      "performance_index": 92.5
+    },
+    "cost_data": {
+      "daily_cost": 1.87,
+      "monthly_cost": 56.28,
+      "rate_plan": "time_of_use",
+      "peak_rate": 0.25,
+      "off_peak_rate": 0.15
+    },
+    "savings": {
+      "vs_baseline": 15.2,
+      "leaf_achievements": 23,
+      "eco_savings": 8.7,
+      "total_savings_kwh": 685.3
+    }
+  }
+}
+```
+
+## Performance Data
+
+### System Performance Metrics
+Real-time performance monitoring and historical data.
+
+```c
+// Performance data structure
+typedef struct {
+    system_metrics_t system;     // System performance metrics
+    sensor_metrics_t sensors;    // Sensor performance data
+    control_metrics_t control;   // Control system performance
+    network_metrics_t network;   // Network performance data
+    reliability_metrics_t reliability; // Reliability metrics
+} performance_data_t;
+
+// System metrics
+typedef struct {
+    float cpu_usage;             // CPU usage percentage
+    float memory_usage;          // Memory usage percentage
+    float storage_usage;         // Storage usage percentage
+    int uptime_seconds;          // System uptime in seconds
+    int process_count;           // Number of running processes
+    temperature_metrics_t temps; // Temperature metrics
+} system_metrics_t;
+
+// Sensor metrics
+typedef struct {
+    sensor_accuracy_t temperature; // Temperature sensor accuracy
+    sensor_accuracy_t humidity;   // Humidity sensor accuracy
+    sensor_accuracy_t motion;     // Motion sensor accuracy
+    sensor_accuracy_t light;      // Light sensor accuracy
+    calibration_status_t calibration; // Calibration status
+} sensor_metrics_t;
+```
+
+## Diagnostic Data
+
+### System Diagnostics
+Diagnostic information for troubleshooting and maintenance.
+
+```c
+// Diagnostic data structure
+typedef struct {
+    hardware_diagnostics_t hardware; // Hardware diagnostics
+    software_diagnostics_t software; // Software diagnostics
+    network_diagnostics_t network;   // Network diagnostics
+    error_log_t error_log;           // Error log data
+    health_status_t health;          // System health status
+} diagnostic_data_t;
+
+// Hardware diagnostics
+typedef struct {
+    component_status_t display;  // Display component status
+    component_status_t sensors;  // Sensor component status
+    component_status_t touch;    // Touch interface status
+    component_status_t wifi;     // Wi-Fi module status
+    component_status_t zigbee;   // Zigbee radio status
+    power_metrics_t power;       // Power system metrics
+} hardware_diagnostics_t;
+
+// Component status
+typedef struct {
+    component_type_t type;       // Component type
+    bool operational;            // Operational status
+    float performance_score;     // Performance score (0-100)
+    timestamp_t last_test;       // Last test timestamp
+    error_count_t errors;        // Error count data
+} component_status_t;
+```
+
+### Diagnostic Data Format
+```json
+{
+  "diagnostic_data": {
+    "hardware": {
+      "display": {
+        "operational": true,
+        "performance_score": 98.5,
+        "last_test": "2023-11-15T09:00:00Z",
+        "error_count": 0
+      },
+      "sensors": {
+        "temperature": {
+          "operational": true,
+          "performance_score": 99.2,
+          "last_test": "2023-11-15T09:00:00Z",
+          "error_count": 0
+        },
+        "humidity": {
+          "operational": true,
+          "performance_score": 97.8,
+          "last_test": "2023-11-15T09:00:00Z",
+          "error_count": 0
+        }
+      }
+    },
+    "software": {
+      "nlclient": {
+        "status": "running",
+        "uptime": 172800,
+        "memory_usage": 45.2,
+        "cpu_usage": 8.5
+      },
+      "thermostat_manager": {
+        "status": "running",
+        "uptime": 172800,
+        "memory_usage": 12.8,
+        "cpu_usage": 3.2
+      }
+    },
+    "network": {
+      "wifi": {
+        "connected": true,
+        "signal_strength": -45,
+        "data_rate": 54,
+        "error_rate": 0.1
+      },
+      "cloud": {
+        "connected": true,
+        "latency": 85,
+        "last_sync": "2023-11-15T10:29:00Z"
+      }
+    }
+  }
+}
+```
+
+## Data Management
+
+### Data Collection
+Automated data collection and storage processes.
+
+```c
+// Data collection manager
+typedef struct {
+    collection_config_t config;  // Collection configuration
+    data_buffer_t buffer;        // Data buffer
+    storage_policy_t storage;    // Storage policy
+    collection_stats_t stats;    // Collection statistics
+} data_collection_manager_t;
+
+// Collection configuration
+typedef struct {
+    int sampling_interval;       // Sampling interval in seconds
+    int buffer_size;             // Buffer size
+    compression_enabled;         // Compression enabled
+    encryption_enabled;          // Encryption enabled
+    retention_period;            // Data retention period
+} collection_config_t;
+```
+
+### Data Analysis
+Real-time and batch data analysis for insights and optimization.
+
+```c
+// Data analysis framework
+typedef struct {
+    analysis_config_t config;    // Analysis configuration
+    analysis_engine_t engine;    // Analysis engine
+    insights_t insights;         // Generated insights
+    recommendations_t recommendations; // Recommendations
+} data_analysis_t;
+
+// Analysis results
+typedef struct {
+    trend_data_t trends;         // Trend analysis data
+    anomaly_data_t anomalies;    // Anomaly detection data
+    prediction_data_t predictions; // Prediction data
+    optimization_data_t optimization; // Optimization suggestions
+} analysis_results_t;
+```
+
+## Related Documentation
+
+- [Data Overview](./overview.mdx)
+- [Configuration Files](./configuration-files.mdx)
+- [User Settings](./user-settings.mdx)
+- [Recovery Files](./recovery-files.mdx)

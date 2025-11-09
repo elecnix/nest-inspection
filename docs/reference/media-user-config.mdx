@@ -1,0 +1,306 @@
+---
+title: User Config Partition
+description: 'Complete reference of /media/user-config files'
+---
+
+# User Config Partition (/media/user-config)
+
+**Device**: mtdblock11  
+**Size**: 8MB  
+**Usage**: 7% (592KB used)  
+**Mount**: Read-write JFFS2  
+**Purpose**: User preferences and network configuration
+
+## Directory Structure
+
+```
+/media/user-config/
+├── connman/                    # Connection Manager data
+│   ├── settings                # ConnMan global settings
+│   └── wifi_*/                 # WiFi network profiles
+│       ├── data                # Network data
+│       └── settings            # Network settings
+├── localtime                   # Timezone symlink
+└── settings.config             # User settings (XML)
+```
+
+## Files
+
+### settings.config
+**Type**: XML configuration file  
+**Size**: ~8KB  
+**Purpose**: User preferences and thermostat settings
+
+**Description**: Main user configuration file containing all user-modifiable settings and preferences.
+
+**Format**: XML with key-value pairs
+```xml
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<settings>
+  <s key="fan_mode" value="AUTOMATICALLY"/>
+  <s key="temperature_scale" value="F"/>
+  <s key="learning_completed" value="1"/>
+  ...
+</settings>
+```
+
+**Key Settings**:
+
+#### HVAC Configuration
+- `fan_mode` - Fan operation mode (AUTOMATICALLY, ON, SCHEDULE)
+- `hvac_partner_timestamp` - HVAC system pairing timestamp
+- `location_set` - Location configured (0/1)
+
+#### Temperature Settings
+- `safety_temperature_low` - Minimum safety temperature (encoded)
+- `safety_temperature_high` - Maximum safety temperature (encoded)
+- `temperature_lock_min` - Temperature lock minimum
+- `temperature_lock_max` - Temperature lock maximum
+- `temperature_scale` - Display units (F/C)
+
+#### Learning and Auto-Away
+- `learning_completed` - Learning mode completed (0/1)
+- `autoaway_mode` - Auto-away enabled (-1=auto, 0=off, 1=on)
+- `auto_dehum_enabled` - Auto-dehumidification (0/1)
+
+#### Account and Pairing
+- `assigned_cred_id` - Device credential ID (e.g., "a.02AA01AC481302W4")
+- `startup_account_pairing_complete` - Account pairing status (0/1)
+
+#### Eco and Vacation
+- `eco_mode_touched_by` - Last eco mode interaction
+- `vacation_mode` - Vacation mode active (0/1)
+
+#### Setup Status
+- `oob_temps_completed` - Out-of-box temperature setup (0/1)
+- `location_set` - Location configured (0/1)
+
+#### Version Tracking
+- `shared_version` - Shared settings version number
+- `where_version` - Location/structure version
+- `servicegroup_version` - Service group version
+- `swupdatefailedversion` - Failed update version (if any)
+
+**Modification**: Modified by nlclient when user changes settings
+
+**Backup**: Preserved during firmware updates
+
+### localtime
+**Type**: Symlink  
+**Purpose**: Timezone configuration
+
+**Description**: Symlink to timezone data file in /usr/share/zoneinfo/
+
+**Example**:
+```bash
+localtime -> /usr/share/zoneinfo/America/New_York
+```
+
+**Usage**: Used by system to determine local time from UTC
+
+**Modification**: Set during initial setup or when user changes timezone
+
+## Connection Manager (/media/user-config/connman)
+
+### settings
+**Type**: Text configuration file  
+**Size**: ~200 bytes  
+**Purpose**: ConnMan global settings
+
+**Description**: Connection Manager global configuration.
+
+**Format**: Key-value pairs
+```
+[global]
+OfflineMode=false
+```
+
+**Settings**:
+- `OfflineMode` - Airplane mode (true/false)
+- Network preferences
+- Connection policies
+
+### WiFi Network Profiles (/media/user-config/connman/wifi_*)
+
+Each WiFi network gets a directory named with the format:
+```
+wifi_[MAC]_[SSID_hex]_managed_psk/
+```
+
+**Example**: `wifi_18b43029c8f7_4d65726c6f74_managed_psk/`
+- MAC: 18:b4:30:29:c8:f7 (device MAC)
+- SSID: 4d65726c6f74 (hex for "Merlot")
+- Type: managed_psk (WPA/WPA2 Personal)
+
+#### data
+**Type**: Binary data file  
+**Size**: ~100 bytes  
+**Purpose**: Network credentials and data
+
+**Description**: Contains encrypted WiFi password and network-specific data.
+
+**Format**: Binary (encrypted)
+
+**Security**: Password is encrypted, not stored in plaintext
+
+#### settings
+**Type**: Text configuration file  
+**Size**: ~500 bytes  
+**Purpose**: Network configuration
+
+**Description**: Network-specific settings and metadata.
+
+**Format**: INI-style configuration
+```ini
+[wifi_18b43029c8f7_4d65726c6f74_managed_psk]
+Name=Merlot
+SSID=4d65726c6f74
+Frequency=2437
+Favorite=true
+AutoConnect=true
+Modified=2019-09-12T14:23:45Z
+IPv4.method=dhcp
+IPv4.DHCP.LastAddress=192.168.2.18
+IPv6.method=auto
+```
+
+**Key Fields**:
+- `Name` - Human-readable network name
+- `SSID` - Network SSID (hex encoded)
+- `Frequency` - WiFi frequency in MHz
+- `Favorite` - User marked as favorite (true/false)
+- `AutoConnect` - Auto-connect enabled (true/false)
+- `Modified` - Last modification timestamp
+- `IPv4.method` - IPv4 configuration (dhcp/manual)
+- `IPv4.DHCP.LastAddress` - Last assigned IP
+- `IPv6.method` - IPv6 configuration (auto/manual)
+
+**Additional Fields**:
+- Signal strength history
+- Connection statistics
+- Roaming preferences
+
+## Characteristics
+
+### Persistence
+- **Survives**: Firmware updates
+- **Cleared by**: Factory reset, user-initiated reset
+
+### Backup
+- Backed up to cloud (encrypted)
+- Can be restored after factory reset
+- WiFi passwords encrypted in backup
+
+### Modification
+- Modified by user actions through UI or app
+- Modified by network manager (connmand)
+- Modified by nlclient for settings
+
+### Recovery
+If user-config is corrupted:
+1. Settings restored from cloud backup (if available)
+2. Otherwise, reset to factory defaults
+3. User must reconfigure WiFi and preferences
+
+## Security Considerations
+
+<Warning>
+  WiFi passwords are stored encrypted in the `data` files. However, the encryption key is device-specific and stored on the device, so physical access to the device allows password recovery.
+</Warning>
+
+**Best Practices**:
+- Use strong WiFi passwords
+- Change WiFi password if device is compromised
+- Factory reset before selling/disposing device
+
+## Common Operations
+
+### Viewing User Settings
+```bash
+cat /media/user-config/settings.config
+```
+
+### Checking Timezone
+```bash
+ls -l /media/user-config/localtime
+date
+```
+
+### Listing WiFi Networks
+```bash
+ls -l /media/user-config/connman/wifi_*/
+```
+
+### Viewing Network Configuration
+```bash
+cat /media/user-config/connman/wifi_*/settings
+```
+
+### Backing Up User Config
+```bash
+tar czf /media/scratch/user-config-backup.tar.gz /media/user-config/
+```
+
+## Troubleshooting
+
+### WiFi Connection Issues
+
+**Problem**: Cannot connect to WiFi  
+**Possible Causes**:
+- Corrupted network profile
+- Wrong password
+- Network settings changed
+
+**Solutions**:
+1. Delete network profile directory
+2. Reconfigure WiFi through UI
+3. Check connman logs
+
+### Settings Not Persisting
+
+**Problem**: Settings reset after reboot  
+**Cause**: Corrupted settings.config  
+**Solution**: 
+1. Check file integrity
+2. Restore from backup
+3. Factory reset if necessary
+
+### Timezone Issues
+
+**Problem**: Wrong time displayed  
+**Cause**: Incorrect localtime symlink  
+**Solution**:
+```bash
+rm /media/user-config/localtime
+ln -s /usr/share/zoneinfo/America/New_York /media/user-config/localtime
+```
+
+## File Encoding Notes
+
+### SSID Encoding
+SSIDs in directory names are hex-encoded:
+- "Merlot" → "4d65726c6f74"
+- "MyNetwork" → "4d794e6574776f726b"
+
+To decode:
+```bash
+echo "4d65726c6f74" | xxd -r -p
+```
+
+To encode:
+```bash
+echo -n "Merlot" | xxd -p
+```
+
+### Temperature Encoding
+Temperatures in settings.config are encoded in a proprietary format:
+- Values are scaled integers
+- Exact encoding varies by field
+- Use nlclient APIs for proper encoding/decoding
+
+## Related Documentation
+
+- [Network Configuration](/software/network/overview) - WiFi setup
+- [User Settings](/configuration/user-settings) - Setting descriptions
+- [Media Partitions Overview](/reference/media-overview) - Partition structure
+- [Factory Reset](/troubleshooting/factory-reset) - Reset procedures

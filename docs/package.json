@@ -1,0 +1,19 @@
+{
+  "name": "nest-thermostat-docs",
+  "version": "1.0.0",
+  "description": "Nest Learning Thermostat Knowledge Base",
+  "scripts": {
+    "dev": "mintlify dev",
+    "build": "mintlify build",
+    "preview": "mintlify preview"
+  },
+  "keywords": [
+    "nest",
+    "thermostat",
+    "documentation",
+    "embedded",
+    "linux"
+  ],
+  "author": "",
+  "license": "MIT"
+}

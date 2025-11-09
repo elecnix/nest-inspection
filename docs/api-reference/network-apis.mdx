@@ -1,0 +1,659 @@
+---
+title: Network APIs
+description: Network communication APIs for Wi-Fi, Zigbee, and Weave protocol management
+---
+
+# Network APIs
+
+The Nest Learning Thermostat Network APIs provide comprehensive access to network communication including Wi-Fi management, Zigbee mesh networking, and Weave protocol operations. This document details all network APIs with their functions, parameters, and usage examples.
+
+## Wi-Fi API
+
+### Overview
+The Wi-Fi API manages wireless network connections, scanning, and configuration.
+
+```c
+// Wi-Fi API structure
+typedef struct {
+    // Wi-Fi management
+    wifi_handle_t (*open_wifi)(wifi_config_t *config);
+    int (*close_wifi)(wifi_handle_t handle);
+    int (*configure_wifi)(wifi_handle_t handle, wifi_config_t *config);
+    
+    // Network scanning and connection
+    int (*scan_networks)(wifi_handle_t handle, network_scan_t *scan);
+    int (*connect_network)(wifi_handle_t handle, network_config_t *network);
+    int (*disconnect_network)(wifi_handle_t handle);
+    
+    // Connection monitoring
+    wifi_status_t (*get_wifi_status)(wifi_handle_t handle);
+    connection_info_t (*get_connection_info)(wifi_handle_t handle);
+    signal_strength_t (*get_signal_strength)(wifi_handle_t handle);
+    
+    // Advanced features
+    int (*enable_wifi_direct)(wifi_handle_t handle, bool enabled);
+    int (*setup_access_point)(wifi_handle_t handle, ap_config_t *config);
+    int (*enable_power_saving)(wifi_handle_t handle, power_save_mode_t mode);
+} wifi_api_t;
+
+// Wi-Fi configuration
+typedef struct {
+    interface_mode_t mode;                 // Interface mode
+    security_type_t security;               // Security type
+    channel_t channel;                     // Channel configuration
+    power_level_t power_level;             // Power level
+    timeout_t connection_timeout;          // Connection timeout
+    retry_policy_t retry_policy;           // Retry policy
+} wifi_config_t;
+
+// Network scan result
+typedef struct {
+    network_info_t networks[MAX_NETWORKS]; // Found networks
+    int network_count;                     // Number of networks
+    scan_metadata_t metadata;              // Scan metadata
+    timestamp_t timestamp;                 // Scan timestamp
+} network_scan_t;
+
+// Network information
+typedef struct {
+    char ssid[33];                         // Network SSID
+    char bssid[18];                        // BSSID
+    security_type_t security;               // Security type
+    signal_strength_t signal_strength;     // Signal strength
+    channel_t channel;                     // Channel
+    frequency_t frequency;                 // Frequency
+    network_type_t type;                   // Network type
+} network_info_t;
+
+// Wi-Fi initialization example
+wifi_handle_t initialize_wifi_interface(void) {
+    wifi_api_t *wifi_api = get_wifi_api();
+    
+    wifi_config_t config = {
+        .mode = INTERFACE_MODE_STATION,
+        .security = SECURITY_TYPE_AUTO,
+        .channel = CHANNEL_AUTO,
+        .power_level = POWER_LEVEL_HIGH,
+        .connection_timeout = 30000,       // 30 seconds
+        .retry_policy = {
+            .max_retries = 3,
+            .retry_interval = 5000         // 5 seconds
+        }
+    };
+    
+    return wifi_api->open_wifi(&config);
+}
+```
+
+### Network Connection Management
+Advanced network connection management with automatic reconnection and roaming.
+
+```c
+// Connection management API
+typedef struct {
+    connection_handle_t (*create_connection)(connection_config_t *config);
+    int (*destroy_connection)(connection_handle_t handle);
+    
+    // Connection control
+    int (*connect_to_network)(connection_handle_t handle, 
+                             network_credentials_t *credentials);
+    int (*disconnect_from_network)(connection_handle_t handle);
+    int (*reconnect_network)(connection_handle_t handle);
+    
+    // Connection monitoring
+    connection_status_t (*get_connection_status)(connection_handle_t handle);
+    connection_metrics_t (*get_connection_metrics)(connection_handle_t handle);
+    
+    // Roaming and handover
+    int (*enable_roaming)(connection_handle_t handle, roaming_config_t *config);
+    int (*trigger_roaming)(connection_handle_t handle);
+    roaming_status_t (*get_roaming_status)(connection_handle_t handle);
+} connection_management_api_t;
+
+// Connection configuration
+typedef struct {
+    network_priority_t priority;           // Network priority
+    roaming_policy_t roaming_policy;       // Roaming policy
+    handover_threshold_t threshold;        // Handover threshold
+    load_balancing_t load_balancing;       // Load balancing
+    failover_config_t failover;            // Failover configuration
+} connection_config_t;
+
+// Connection metrics
+typedef struct {
+    signal_strength_t signal_strength;     // Current signal strength
+    data_rate_t data_rate;                 // Data rate
+    latency_t latency;                     // Connection latency
+    packet_loss_t packet_loss;             // Packet loss
+    throughput_t throughput;               // Throughput
+    uptime_t uptime;                       // Connection uptime
+    timestamp_t timestamp;                 // Metrics timestamp
+} connection_metrics_t;
+
+// Smart connection example
+connection_handle_t setup_smart_connection(void) {
+    connection_management_api_t *conn_api = get_connection_management_api();
+    
+    connection_config_t config = {
+        .priority = NETWORK_PRIORITY_SIGNAL_STRENGTH,
+        .roaming_policy = ROAMING_POLICY_AGGRESSIVE,
+        .threshold = {
+            .signal_threshold = -70,        // -70 dBm threshold
+            .quality_threshold = 30         // 30% quality threshold
+        },
+        .load_balancing = {
+            .enabled = true,
+            .algorithm = LOAD_BALANCE_ROUND_ROBIN
+        },
+        .failover = {
+            .enabled = true,
+            .max_failures = 3,
+            .recovery_interval = 10000      // 10 seconds
+        }
+    };
+    
+    return conn_api->create_connection(&config);
+}
+```
+
+## Zigbee API
+
+### Overview
+The Zigbee API manages mesh networking, device coordination, and low-power wireless communication.
+
+```c
+// Zigbee API structure
+typedef struct {
+    // Zigbee management
+    zigbee_handle_t (*open_zigbee)(zigbee_config_t *config);
+    int (*close_zigbee)(zigbee_handle_t handle);
+    int (*configure_zigbee)(zigbee_handle_t handle, zigbee_config_t *config);
+    
+    // Network formation and joining
+    int (*form_network)(zigbee_handle_t handle, network_config_t *config);
+    int (*join_network)(zigbee_handle_t handle, join_config_t *config);
+    int (*leave_network)(zigbee_handle_t handle);
+    
+    // Device management
+    device_handle_t (*add_device)(zigbee_handle_t handle, device_info_t *device);
+    int (*remove_device)(zigbee_handle_t handle, device_handle_t device);
+    device_list_t (*get_connected_devices)(zigbee_handle_t handle);
+    
+    // Messaging
+    int (*send_message)(zigbee_handle_t handle, message_t *message);
+    message_t (*receive_message)(zigbee_handle_t handle);
+    int (*broadcast_message)(zigbee_handle_t handle, broadcast_t *broadcast);
+} zigbee_api_t;
+
+// Zigbee configuration
+typedef struct {
+    network_role_t role;                   // Network role
+    channel_t channel;                     // Operating channel
+    pan_id_t pan_id;                       // PAN ID
+    extended_pan_id_t extended_pan_id;     // Extended PAN ID
+    security_config_t security;            // Security configuration
+    power_config_t power;                  // Power configuration
+} zigbee_config_t;
+
+// Network roles
+typedef enum {
+    ZIGBEE_ROLE_COORDINATOR,               // Network coordinator
+    ZIGBEE_ROLE_ROUTER,                    // Router
+    ZIGBEE_ROLE_END_DEVICE                 // End device
+} network_role_t;
+
+// Device information
+typedef struct {
+    device_address_t address;              // Device address
+    device_type_t type;                    // Device type
+    manufacturer_t manufacturer;           // Manufacturer
+    model_t model;                         // Model
+    capabilities_t capabilities;          // Device capabilities
+    network_status_t status;               // Network status
+} device_info_t;
+
+// Zigbee coordinator setup example
+zigbee_handle_t setup_zigbee_coordinator(void) {
+    zigbee_api_t *zigbee_api = get_zigbee_api();
+    
+    zigbee_config_t config = {
+        .role = ZIGBEE_ROLE_COORDINATOR,
+        .channel = CHANNEL_11,              // Channel 11
+        .pan_id = 0x1234,
+        .extended_pan_id = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
+        .security = {
+            .enabled = true,
+            .network_key = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF},
+            .link_key = {0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10}
+        },
+        .power = {
+            .transmit_power = TX_POWER_0_DBM,
+            .receive_sensitivity = -85      // -85 dBm sensitivity
+        }
+    };
+    
+    zigbee_handle_t handle = zigbee_api->open_zigbee(&config);
+    
+    // Form network
+    network_config_t network_config = {
+        .network_name = "Nest_Thermostat",
+        .max_devices = 50,
+        .permit_joining = true,
+        .join_timeout = 60                 // 60 seconds join timeout
+    };
+    
+    zigbee_api->form_network(handle, &network_config);
+    
+    return handle;
+}
+```
+
+### Mesh Network Management
+Advanced mesh network management with routing optimization and self-healing.
+
+```c
+// Mesh management API
+typedef struct {
+    mesh_handle_t (*create_mesh)(mesh_config_t *config);
+    int (*destroy_mesh)(mesh_handle_t handle);
+    
+    // Routing management
+    int (*add_route)(mesh_handle_t handle, route_t *route);
+    int (*remove_route)(mesh_handle_t handle, route_t *route);
+    route_table_t (*get_routing_table)(mesh_handle_t handle);
+    
+    // Network topology
+    topology_map_t (*get_network_topology)(mesh_handle_t handle);
+    int (*optimize_routing)(mesh_handle_t handle);
+    
+    // Self-healing
+    int (*enable_self_healing)(mesh_handle_t handle, healing_config_t *config);
+    healing_status_t (*get_healing_status)(mesh_handle_t handle);
+} mesh_management_api_t;
+
+// Mesh configuration
+typedef struct {
+    routing_protocol_t protocol;           // Routing protocol
+    mesh_depth_t max_depth;                // Maximum mesh depth
+    routing_table_size_t table_size;       // Routing table size
+    beacon_interval_t beacon_interval;     // Beacon interval
+    parent_selection_t parent_selection;   // Parent selection policy
+} mesh_config_t;
+
+// Network topology
+typedef struct {
+    device_node_t nodes[MAX_NODES];        // Network nodes
+    link_t links[MAX_LINKS];                // Network links
+    int node_count;                        // Number of nodes
+    int link_count;                        // Number of links
+    topology_metrics_t metrics;            // Topology metrics
+} topology_map_t;
+
+// Mesh optimization example
+void optimize_mesh_network(zigbee_handle_t zigbee) {
+    mesh_management_api_t *mesh_api = get_mesh_management_api();
+    
+    // Create mesh management instance
+    mesh_config_t config = {
+        .protocol = ROUTING_PROTOCOL_AODV,
+        .max_depth = 5,
+        .table_size = 100,
+        .beacon_interval = 15000,           // 15 seconds
+        .parent_selection = PARENT_SELECT_STRONGEST_LINK
+    };
+    
+    mesh_handle_t mesh = mesh_api->create_mesh(&config);
+    
+    // Enable self-healing
+    healing_config_t healing = {
+        .enabled = true,
+        .healing_interval = 30000,          // 30 seconds
+        .max_attempts = 3,
+        .failure_threshold = 2
+    };
+    
+    mesh_api->enable_self_healing(mesh, &healing);
+    
+    // Optimize routing
+    mesh_api->optimize_routing(mesh);
+    
+    // Get network topology
+    topology_map_t topology = mesh_api->get_network_topology(mesh);
+    analyze_network_topology(topology);
+}
+```
+
+## Weave Protocol API
+
+### Overview
+The Weave API manages Nest's proprietary communication protocol for device-to-device and device-to-cloud communication.
+
+```c
+// Weave API structure
+typedef struct {
+    // Weave stack management
+    weave_handle_t (*open_weave)(weave_config_t *config);
+    int (*close_weave)(weave_handle_t handle);
+    int (*start_weave_stack)(weave_handle_t handle);
+    int (*stop_weave_stack)(weave_handle_t handle);
+    
+    // Device provisioning
+    int (*provision_device)(weave_handle_t handle, provisioning_config_t *config);
+    provisioning_status_t (*get_provisioning_status)(weave_handle_t handle);
+    
+    // Messaging
+    int (*send_weave_message)(weave_handle_t handle, weave_message_t *message);
+    weave_message_t (*receive_weave_message)(weave_handle_t handle);
+    int (*broadcast_weave_message)(weave_handle_t handle, weave_broadcast_t *broadcast);
+    
+    // Session management
+    session_handle_t (*create_session)(weave_handle_t handle, session_config_t *config);
+    int (*close_session)(session_handle_t session);
+    session_status_t (*get_session_status)(session_handle_t session);
+} weave_api_t;
+
+// Weave configuration
+typedef struct {
+    device_role_t role;                    // Device role
+    fabric_config_t fabric;                 // Fabric configuration
+    security_config_t security;            // Security configuration
+    transport_config_t transport;          // Transport configuration
+    application_config_t application;      // Application configuration
+} weave_config_t;
+
+// Device roles
+typedef enum {
+    WEAVE_ROLE_CLIENT,                     // Weave client
+    WEAVE_ROLE_SERVER,                     // Weave server
+    WEAVE_ROLE_ROUTER,                     // Weave router
+    WEAVE_ROLE_BORDER_ROUTER               // Weave border router
+} device_role_t;
+
+// Weave message structure
+typedef struct {
+    message_type_t type;                   // Message type
+    message_id_t message_id;               // Message ID
+    source_address_t source;               // Source address
+    destination_address_t destination;     // Destination address
+    payload_t payload;                     // Message payload
+    security_header_t security;            // Security header
+    timestamp_t timestamp;                 // Message timestamp
+} weave_message_t;
+
+// Weave stack initialization example
+weave_handle_t initialize_weave_stack(void) {
+    weave_api_t *weave_api = get_weave_api();
+    
+    weave_config_t config = {
+        .role = WEAVE_ROLE_CLIENT,
+        .fabric = {
+            .fabric_id = 0x12345678,
+            .vendor_id = 0x235A,
+            .product_id = 0x0001
+        },
+        .security = {
+            .encryption_enabled = true,
+            .authentication_required = true,
+            .certificate_enabled = true
+        },
+        .transport = {
+            .tcp_enabled = true,
+            .udp_enabled = true,
+            .weave_over_ip = true
+        },
+        .application = {
+            .application_id = 0x1234,
+            .version_major = 1,
+            .version_minor = 0
+        }
+    };
+    
+    weave_handle_t handle = weave_api->open_weave(&config);
+    weave_api->start_weave_stack(handle);
+    
+    return handle;
+}
+```
+
+### Device-to-Device Communication
+Secure device-to-device communication using Weave protocol.
+
+```c
+// Device communication API
+typedef struct {
+    communication_handle_t (*create_communication)(comm_config_t *config);
+    int (*destroy_communication)(communication_handle_t handle);
+    
+    // Device discovery
+    device_list_t (*discover_devices)(communication_handle_t handle, 
+                                     discovery_filter_t *filter);
+    int (*start_device_advertising)(communication_handle_t handle, 
+                                   advertising_config_t *config);
+    int (*stop_device_advertising)(communication_handle_t handle);
+    
+    // Pairing and authentication
+    pairing_result_t (*pair_with_device)(communication_handle_t handle, 
+                                        device_address_t address);
+    int (*unpair_device)(communication_handle_t handle, device_address_t address);
+    paired_device_list_t (*get_paired_devices)(communication_handle_t handle);
+    
+    // Data exchange
+    int (*send_data)(communication_handle_t handle, device_address_t address, 
+                    data_packet_t *packet);
+    data_packet_t (*receive_data)(communication_handle_t handle);
+} device_communication_api_t;
+
+// Communication configuration
+typedef struct {
+    discovery_mode_t discovery_mode;       // Discovery mode
+    pairing_method_t pairing_method;       // Pairing method
+    security_level_t security_level;       // Security level
+    transport_protocol_t protocol;         // Transport protocol
+    timeout_t operation_timeout;           // Operation timeout
+} comm_config_t;
+
+// Data packet
+typedef struct {
+    packet_id_t packet_id;                 // Packet ID
+    data_type_t type;                      // Data type
+    size_t data_size;                      // Data size
+    void *data;                            // Data payload
+    priority_t priority;                   // Packet priority
+    reliability_t reliability;             // Reliability requirements
+} data_packet_t;
+
+// Device communication example
+communication_handle_t setup_device_communication(void) {
+    device_communication_api_t *comm_api = get_device_communication_api();
+    
+    comm_config_t config = {
+        .discovery_mode = DISCOVERY_MODE_ACTIVE,
+        .pairing_method = PAIRING_METHOD_PASSCODE,
+        .security_level = SECURITY_LEVEL_HIGH,
+        .protocol = TRANSPORT_PROTOCOL_TCP,
+        .operation_timeout = 30000         // 30 seconds
+    };
+    
+    communication_handle_t comm = comm_api->create_communication(&config);
+    
+    // Start device advertising
+    advertising_config_t adv_config = {
+        .advertisement_interval = 5000,    // 5 seconds
+        .discovery_timeout = 60000,        // 60 seconds
+        .device_info_enabled = true,
+        .services_enabled = true
+    };
+    
+    comm_api->start_device_advertising(comm, &adv_config);
+    
+    return comm;
+}
+```
+
+## Network Monitoring API
+
+### Overview
+The Network Monitoring API provides real-time monitoring of network performance, connectivity, and health.
+
+```c
+// Network monitoring API structure
+typedef struct {
+    monitoring_handle_t (*start_monitoring)(monitoring_config_t *config);
+    int (*stop_monitoring)(monitoring_handle_t handle);
+    
+    // Metrics collection
+    network_metrics_t (*get_network_metrics)(monitoring_handle_t handle);
+    interface_metrics_t (*get_interface_metrics)(monitoring_handle_t handle, 
+                                                interface_type_t type);
+    
+    // Performance monitoring
+    performance_report_t (*generate_performance_report)(monitoring_handle_t handle);
+    int (*set_performance_thresholds)(monitoring_handle_t handle, 
+                                     performance_thresholds_t *thresholds);
+    
+    // Alerts and notifications
+    alert_handle_t (*create_network_alert)(alert_config_t *config);
+    int (*set_alert_callback)(monitoring_handle_t handle, alert_callback_t callback);
+} network_monitoring_api_t;
+
+// Network metrics
+typedef struct {
+    connectivity_metrics_t connectivity;   // Connectivity metrics
+    performance_metrics_t performance;     // Performance metrics
+    quality_metrics_t quality;             // Quality metrics
+    security_metrics_t security;           // Security metrics
+    timestamp_t timestamp;                 // Metrics timestamp
+} network_metrics_t;
+
+// Connectivity metrics
+typedef struct {
+    connection_status_t wifi_status;       // Wi-Fi connection status
+    connection_status_t zigbee_status;     // Zigbee connection status
+    connection_status_t weave_status;      // Weave connection status
+    uptime_t total_uptime;                 // Total uptime
+    downtime_t total_downtime;             // Total downtime
+    reconnection_count_t reconnections;    // Reconnection count
+} connectivity_metrics_t;
+
+// Performance metrics
+typedef struct {
+    throughput_t wifi_throughput;          // Wi-Fi throughput
+    latency_t wifi_latency;                // Wi-Fi latency
+    packet_loss_t wifi_packet_loss;        // Wi-Fi packet loss
+    throughput_t zigbee_throughput;        // Zigbee throughput
+    latency_t zigbee_latency;              // Zigbee latency
+    signal_strength_t signal_strength;     // Signal strength
+} performance_metrics_t;
+
+// Network monitoring example
+monitoring_handle_t setup_network_monitoring(void) {
+    network_monitoring_api_t *monitor = get_network_monitoring_api();
+    
+    monitoring_config_t config = {
+        .sampling_interval = 5000,         // 5 seconds
+        .metrics_mask = METRICS_CONNECTIVITY | METRICS_PERFORMANCE | METRICS_QUALITY,
+        .buffer_size = 1000,
+        .enable_history = true
+    };
+    
+    monitoring_handle_t handle = monitor->start_monitoring(&config);
+    
+    // Set performance thresholds
+    performance_thresholds_t thresholds = {
+        .wifi_throughput_min = 1000000,    // 1 Mbps minimum
+        .wifi_latency_max = 100,           // 100ms maximum
+        .packet_loss_max = 5.0,            // 5% maximum packet loss
+        .signal_strength_min = -70         // -70 dBm minimum
+    };
+    
+    monitor->set_performance_thresholds(handle, &thresholds);
+    
+    return handle;
+}
+```
+
+### Network Diagnostics
+Comprehensive network diagnostics and troubleshooting capabilities.
+
+```c
+// Network diagnostics API
+typedef struct {
+    diagnostic_handle_t (*start_diagnostics)(diagnostic_config_t *config);
+    int (*stop_diagnostics)(diagnostic_handle_t handle);
+    
+    // Diagnostic tests
+    diagnostic_result_t (*run_connectivity_test)(diagnostic_handle_t handle);
+    diagnostic_result_t (*run_performance_test)(diagnostic_handle_t handle);
+    diagnostic_result_t (*run_security_test)(diagnostic_handle_t handle);
+    
+    // Network analysis
+    network_analysis_t (*analyze_network_health)(diagnostic_handle_t handle);
+    issue_report_t (*identify_network_issues)(diagnostic_handle_t handle);
+    recommendation_list_t (*get_recommendations)(diagnostic_handle_t handle);
+} network_diagnostics_api_t;
+
+// Diagnostic configuration
+typedef struct {
+    test_suite_t test_suite;               // Test suite to run
+    test_parameters_t parameters;          // Test parameters
+    logging_config_t logging;              // Logging configuration
+    reporting_config_t reporting;          // Reporting configuration
+} diagnostic_config_t;
+
+// Diagnostic result
+typedef struct {
+    test_type_t test_type;                 // Test type
+    test_status_t status;                  // Test status
+    test_metrics_t metrics;                // Test metrics
+    issue_list_t issues;                   // Identified issues
+    timestamp_t timestamp;                 // Test timestamp
+    duration_t duration;                   // Test duration
+} diagnostic_result_t;
+
+// Network diagnostics example
+void run_network_diagnostics(void) {
+    network_diagnostics_api_t *diagnostics = get_network_diagnostics_api();
+    
+    diagnostic_config_t config = {
+        .test_suite = TEST_SUITE_COMPLETE,
+        .parameters = {
+            .connectivity_timeout = 10000,  // 10 seconds
+            .performance_duration = 30000,  // 30 seconds
+            .security_scan_enabled = true
+        },
+        .logging = {
+            .level = LOG_LEVEL_DEBUG,
+            .output_file = "/var/log/network_diagnostics.log"
+        },
+        .reporting = {
+            .format = REPORT_FORMAT_JSON,
+            .output_file = "/tmp/network_diagnostic_report.json"
+        }
+    };
+    
+    diagnostic_handle_t handle = diagnostics->start_diagnostics(&config);
+    
+    // Run diagnostic tests
+    diagnostic_result_t connectivity = diagnostics->run_connectivity_test(handle);
+    diagnostic_result_t performance = diagnostics->run_performance_test(handle);
+    diagnostic_result_t security = diagnostics->run_security_test(handle);
+    
+    // Analyze results
+    network_analysis_t analysis = diagnostics->analyze_network_health(handle);
+    issue_report_t issues = diagnostics->identify_network_issues(handle);
+    recommendation_list_t recommendations = diagnostics->get_recommendations(handle);
+    
+    // Generate report
+    generate_diagnostic_report(connectivity, performance, security, 
+                             analysis, issues, recommendations);
+    
+    diagnostics->stop_diagnostics(handle);
+}
+```
+
+## Related Documentation
+
+- [API Reference Overview](./overview.mdx)
+- [System APIs](./system-apis.mdx)
+- [Hardware APIs](./hardware-apis.mdx)
+- [Data APIs](./data-apis.mdx)

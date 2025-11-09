@@ -1,0 +1,778 @@
+---
+title: Data APIs
+description: Data management APIs for configuration, user data, and logging
+---
+
+# Data APIs
+
+The Nest Learning Thermostat Data APIs provide comprehensive access to data storage, configuration management, user data handling, and system logging. This document details all data APIs with their functions, parameters, and usage examples.
+
+## Configuration API
+
+### Overview
+The Configuration API manages system and user configuration settings with persistence and validation.
+
+```c
+// Configuration API structure
+typedef struct {
+    // Configuration management
+    config_handle_t (*open_config)(const char* config_name, access_mode_t mode);
+    int (*close_config)(config_handle_t handle);
+    int (*save_config)(config_handle_t handle);
+    int (*reload_config)(config_handle_t handle);
+    
+    // Configuration value access
+    int (*get_config_value)(config_handle_t handle, const char* key, 
+                          config_value_t *value);
+    int (*set_config_value)(config_handle_t handle, const char* key, 
+                          config_value_t *value);
+    int (*delete_config_value)(config_handle_t handle, const char* key);
+    
+    // Configuration sections
+    config_section_t (*get_config_section)(config_handle_t handle, 
+                                          const char* section_name);
+    int (*create_config_section)(config_handle_t handle, 
+                                const char* section_name);
+    int (*delete_config_section)(config_handle_t handle, 
+                                const char* section_name);
+    
+    // Configuration validation
+    validation_result_t (*validate_config)(config_handle_t handle);
+    int (*set_validation_schema)(config_handle_t handle, 
+                                validation_schema_t *schema);
+    
+    // Configuration backup and restore
+    int (*backup_config)(config_handle_t handle, const char* backup_path);
+    int (*restore_config)(config_handle_t handle, const char* backup_path);
+} configuration_api_t;
+
+// Configuration value types
+typedef enum {
+    CONFIG_TYPE_STRING,                    // String value
+    CONFIG_TYPE_INTEGER,                   // Integer value
+    CONFIG_TYPE_FLOAT,                     // Float value
+    CONFIG_TYPE_BOOLEAN,                   // Boolean value
+    CONFIG_TYPE_BINARY,                    // Binary data
+    CONFIG_TYPE_ARRAY,                     // Array value
+    CONFIG_TYPE_OBJECT                     // Object value
+} config_value_type_t;
+
+// Configuration value structure
+typedef struct {
+    config_value_type_t type;              // Value type
+    union {
+        char string_value[256];            // String value
+        int64_t integer_value;             // Integer value
+        double float_value;                // Float value
+        bool boolean_value;                // Boolean value
+        struct {
+            void* data;                    // Binary data
+            size_t size;                   // Data size
+        } binary_value;
+        struct {
+            config_value_t* elements;      // Array elements
+            size_t count;                  // Element count
+        } array_value;
+        struct {
+            config_pair_t* pairs;          // Object pairs
+            size_t count;                  // Pair count
+        } object_value;
+    } value;
+} config_value_t;
+
+// Thermostat configuration example
+void configure_thermostat_settings(void) {
+    configuration_api_t *config_api = get_configuration_api();
+    
+    // Open thermostat configuration
+    config_handle_t handle = config_api->open_config("thermostat_settings", 
+                                                   ACCESS_MODE_READ_WRITE);
+    
+    // Set temperature range
+    config_value_t temp_range = {
+        .type = CONFIG_TYPE_OBJECT,
+        .value.object_value = {
+            .pairs = (config_pair_t[]){
+                {"min", {.type = CONFIG_TYPE_FLOAT, .value.float_value = 16.0}},
+                {"max", {.type = CONFIG_TYPE_FLOAT, .value.float_value = 30.0}},
+                {"unit", {.type = CONFIG_TYPE_STRING, .value.string_value = "celsius"}}
+            },
+            .count = 3
+        }
+    };
+    config_api->set_config_value(handle, "temperature_range", &temp_range);
+    
+    // Set schedule configuration
+    config_value_t schedule = {
+        .type = CONFIG_TYPE_BOOLEAN,
+        .value.boolean_value = true
+    };
+    config_api->set_config_value(handle, "schedule_enabled", &schedule);
+    
+    // Set update interval
+    config_value_t update_interval = {
+        .type = CONFIG_TYPE_INTEGER,
+        .value.integer_value = 30
+    };
+    config_api->set_config_value(handle, "update_interval_seconds", &update_interval);
+    
+    // Validate configuration
+    validation_result_t validation = config_api->validate_config(handle);
+    if (validation.valid) {
+        config_api->save_config(handle);
+    }
+    
+    config_api->close_config(handle);
+}
+```
+
+### Configuration Templates
+Predefined configuration templates for common thermostat setups.
+
+```c
+// Configuration template API
+typedef struct {
+    template_handle_t (*load_template)(const char* template_name);
+    int (*save_template)(template_handle_t handle, const char* template_name);
+    
+    // Template application
+    int (*apply_template)(config_handle_t config, template_handle_t template);
+    int (*merge_template)(config_handle_t config, template_handle_t template);
+    
+    // Template customization
+    int (*customize_template)(template_handle_t template, 
+                             customization_t *customization);
+    template_info_t (*get_template_info)(template_handle_t template);
+} configuration_template_api_t;
+
+// Template structure
+typedef struct {
+    template_id_t template_id;             // Template ID
+    char name[128];                        // Template name
+    char description[512];                 // Template description
+    config_section_t sections[MAX_SECTIONS]; // Template sections
+    int section_count;                     // Number of sections
+    template_metadata_t metadata;          // Template metadata
+} configuration_template_t;
+
+// Template example
+void setup_heating_system_template(void) {
+    configuration_template_api_t *template_api = get_configuration_template_api();
+    
+    // Load heating system template
+    template_handle_t template = template_api->load_template("heating_system");
+    
+    // Customize template for specific setup
+    customization_t customization = {
+        .overrides = (config_override_t[]){
+            {"system_type", {.type = CONFIG_TYPE_STRING, .value.string_value = "gas_furnace"}},
+            {"max_heating_temp", {.type = CONFIG_TYPE_FLOAT, .value.float_value = 35.0}},
+            {"heating_stages", {.type = CONFIG_TYPE_INTEGER, .value.integer_value = 2}}
+        },
+        .override_count = 3
+    };
+    
+    template_api->customize_template(template, &customization);
+    
+    // Apply to current configuration
+    configuration_api_t *config_api = get_configuration_api();
+    config_handle_t config = config_api->open_config("thermostat_settings", 
+                                                   ACCESS_MODE_READ_WRITE);
+    
+    template_api->apply_template(config, template);
+    config_api->save_config(config);
+    
+    template_api->save_template(template, "custom_heating_system");
+    
+    config_api->close_config(config);
+    template_api->save_template(template, NULL);
+}
+```
+
+## User Data API
+
+### Overview
+The User Data API manages user-specific data including preferences, schedules, and learned behavior.
+
+```c
+// User data API structure
+typedef struct {
+    // Data storage management
+    data_handle_t (*open_user_data)(const char* data_path, access_mode_t mode);
+    int (*close_user_data)(data_handle_t handle);
+    
+    // Data read/write operations
+    ssize_t (*read_user_data)(data_handle_t handle, void* buffer, size_t size);
+    ssize_t (*write_user_data)(data_handle_t handle, const void* buffer, size_t size);
+    int (*seek_user_data)(data_handle_t handle, off_t offset, seek_origin_t origin);
+    
+    // Data synchronization
+    int (*sync_user_data)(data_handle_t handle);
+    int (*backup_user_data)(data_handle_t handle, const char* backup_path);
+    int (*restore_user_data)(data_handle_t handle, const char* backup_path);
+    
+    // Data encryption and security
+    int (*encrypt_user_data)(data_handle_t handle, encryption_key_t *key);
+    int (*decrypt_user_data)(data_handle_t handle, encryption_key_t *key);
+    int (*set_data_permissions)(data_handle_t handle, permissions_t permissions);
+    
+    // Data information
+    data_info_t (*get_user_data_info)(data_handle_t handle);
+    data_stats_t (*get_user_data_stats)(data_handle_t handle);
+} user_data_api_t;
+
+// User data types
+typedef enum {
+    USER_DATA_PREFERENCES,                 // User preferences
+    USER_DATA_SCHEDULE,                    // Schedule data
+    USER_DATA_LEARNED_BEHAVIOR,            // Learned behavior data
+    USER_DATA_ENERGY_HISTORY,              // Energy history
+    USER_DATA_USAGE_STATISTICS,            // Usage statistics
+    USER_DATA_CUSTOM                       // Custom user data
+} user_data_type_t;
+
+// User data info
+typedef struct {
+    user_data_type_t type;                 // Data type
+    size_t size;                           // Data size
+    timestamp_t created;                   // Creation timestamp
+    timestamp_t modified;                  // Last modification timestamp
+    access_count_t access_count;           // Access count
+    checksum_t checksum;                   // Data checksum
+    encryption_status_t encryption;        // Encryption status
+} data_info_t;
+
+// User preferences example
+void save_user_preferences(user_preferences_t *preferences) {
+    user_data_api_t *user_data_api = get_user_data_api();
+    
+    // Open user preferences data
+    data_handle_t handle = user_data_api->open_user_data("/data/user/preferences", 
+                                                       ACCESS_MODE_READ_WRITE);
+    
+    // Serialize preferences
+    size_t serialized_size;
+    void* serialized_data = serialize_user_preferences(preferences, &serialized_size);
+    
+    // Write preferences to storage
+    ssize_t written = user_data_api->write_user_data(handle, serialized_data, 
+                                                   serialized_size);
+    
+    if (written == serialized_size) {
+        // Sync data to persistent storage
+        user_data_api->sync_user_data(handle);
+        
+        // Encrypt sensitive data
+        encryption_key_t key = get_user_encryption_key();
+        user_data_api->encrypt_user_data(handle, &key);
+    }
+    
+    // Cleanup
+    free(serialized_data);
+    user_data_api->close_user_data(handle);
+}
+
+user_preferences_t* load_user_preferences(void) {
+    user_data_api_t *user_data_api = get_user_data_api();
+    
+    // Open user preferences data
+    data_handle_t handle = user_data_api->open_user_data("/data/user/preferences", 
+                                                       ACCESS_MODE_READ);
+    
+    // Get data info
+    data_info_t info = user_data_api->get_user_data_info(handle);
+    
+    // Allocate buffer and read data
+    void* buffer = malloc(info.size);
+    ssize_t read = user_data_api->read_user_data(handle, buffer, info.size);
+    
+    user_preferences_t* preferences = NULL;
+    
+    if (read == info.size) {
+        // Decrypt if needed
+        if (info.encryption == ENCRYPTION_ENABLED) {
+            encryption_key_t key = get_user_encryption_key();
+            user_data_api->decrypt_user_data(handle, &key);
+        }
+        
+        // Deserialize preferences
+        preferences = deserialize_user_preferences(buffer, info.size);
+    }
+    
+    // Cleanup
+    free(buffer);
+    user_data_api->close_user_data(handle);
+    
+    return preferences;
+}
+```
+
+### Schedule Data Management
+Advanced schedule data management with versioning and conflict resolution.
+
+```c
+// Schedule data API
+typedef struct {
+    schedule_handle_t (*open_schedule)(const char* schedule_name, access_mode_t mode);
+    int (*close_schedule)(schedule_handle_t handle);
+    
+    // Schedule operations
+    int (*add_schedule_entry)(schedule_handle_t handle, schedule_entry_t *entry);
+    int (*remove_schedule_entry)(schedule_handle_t handle, entry_id_t entry_id);
+    int (*update_schedule_entry)(schedule_handle_t handle, schedule_entry_t *entry);
+    
+    // Schedule querying
+    schedule_entry_t (*get_schedule_entry)(schedule_handle_t handle, entry_id_t entry_id);
+    schedule_list_t (*get_schedule_entries)(schedule_handle_t handle, time_range_t *range);
+    schedule_entry_t (*get_active_schedule)(schedule_handle_t handle, timestamp_t time);
+    
+    // Schedule synchronization
+    int (*sync_schedule)(schedule_handle_t handle);
+    int (*merge_schedule)(schedule_handle_t target, schedule_handle_t source);
+    conflict_resolution_t (*resolve_conflicts)(schedule_handle_t handle, 
+                                              conflict_resolution_strategy_t strategy);
+} schedule_data_api_t;
+
+// Schedule entry
+typedef struct {
+    entry_id_t entry_id;                   // Entry ID
+    time_range_t time_range;               // Time range
+    temperature_setpoint_t setpoint;       // Temperature setpoint
+    schedule_type_t type;                  // Schedule type
+    priority_t priority;                   // Entry priority
+    metadata_t metadata;                   // Entry metadata
+    timestamp_t created;                   // Creation timestamp
+    timestamp_t modified;                  // Last modification timestamp
+} schedule_entry_t;
+
+// Schedule management example
+void create_weekly_schedule(void) {
+    schedule_data_api_t *schedule_api = get_schedule_data_api();
+    
+    // Open weekly schedule
+    schedule_handle_t schedule = schedule_api->open_schedule("weekly_schedule", 
+                                                          ACCESS_MODE_READ_WRITE);
+    
+    // Create weekday schedule entries
+    for (int day = 0; day < 5; day++) {
+        // Morning entry
+        schedule_entry_t morning = {
+            .entry_id = generate_entry_id(),
+            .time_range = {
+                .start = {.hour = 6, .minute = 0, .day_of_week = day},
+                .end = {.hour = 8, .minute = 30, .day_of_week = day}
+            },
+            .setpoint = {.temperature = 20.0, .type = SETPOINT_TYPE_HEATING},
+            .type = SCHEDULE_TYPE_REGULAR,
+            .priority = PRIORITY_NORMAL
+        };
+        schedule_api->add_schedule_entry(schedule, &morning);
+        
+        // Evening entry
+        schedule_entry_t evening = {
+            .entry_id = generate_entry_id(),
+            .time_range = {
+                .start = {.hour = 17, .minute = 0, .day_of_week = day},
+                .end = {.hour = 23, .minute = 0, .day_of_week = day}
+            },
+            .setpoint = {.temperature = 22.0, .type = SETPOINT_TYPE_HEATING},
+            .type = SCHEDULE_TYPE_REGULAR,
+            .priority = PRIORITY_NORMAL
+        };
+        schedule_api->add_schedule_entry(schedule, &evening);
+    }
+    
+    // Sync schedule to persistent storage
+    schedule_api->sync_schedule(schedule);
+    schedule_api->close_schedule(schedule);
+}
+```
+
+## Logging API
+
+### Overview
+The Logging API provides comprehensive system logging with multiple log levels, filtering, and rotation.
+
+```c
+// Logging API structure
+typedef struct {
+    // Log management
+    log_handle_t (*open_log)(const char* log_name, log_config_t *config);
+    int (*close_log)(log_handle_t handle);
+    
+    // Log writing
+    int (*write_log)(log_handle_t handle, log_level_t level, const char* message);
+    int (*write_log_formatted)(log_handle_t handle, log_level_t level, 
+                              const char* format, ...);
+    int (*write_log_with_context)(log_handle_t handle, log_level_t level, 
+                                 const char* message, log_context_t *context);
+    
+    // Log reading
+    log_entry_t (*read_log)(log_handle_t handle);
+    log_entry_t (*read_log_by_timestamp)(log_handle_t handle, timestamp_t timestamp);
+    log_list_t (*read_log_range)(log_handle_t handle, time_range_t *range);
+    
+    // Log filtering and searching
+    int (*set_log_filter)(log_handle_t handle, log_filter_t *filter);
+    log_list_t (*search_logs)(log_handle_t handle, search_criteria_t *criteria);
+    
+    // Log management
+    int (*rotate_log)(log_handle_t handle);
+    int (*compress_log)(log_handle_t handle);
+    int (*clear_log)(log_handle_t handle);
+    log_stats_t (*get_log_stats)(log_handle_t handle);
+} logging_api_t;
+
+// Log levels
+typedef enum {
+    LOG_LEVEL_DEBUG,                       // Debug messages
+    LOG_LEVEL_INFO,                        // Informational messages
+    LOG_LEVEL_WARNING,                     // Warning messages
+    LOG_LEVEL_ERROR,                       // Error messages
+    LOG_LEVEL_CRITICAL                     // Critical error messages
+} log_level_t;
+
+// Log entry
+typedef struct {
+    entry_id_t entry_id;                   // Entry ID
+    log_level_t level;                     // Log level
+    timestamp_t timestamp;                 // Entry timestamp
+    char message[1024];                    // Log message
+    log_context_t context;                 // Log context
+    source_info_t source;                  // Source information
+} log_entry_t;
+
+// Log context
+typedef struct {
+    char component[64];                    // Component name
+    char function[128];                    // Function name
+    char file[256];                        // Source file
+    int line;                              // Source line
+    thread_id_t thread_id;                 // Thread ID
+    process_id_t process_id;               // Process ID
+} log_context_t;
+
+// Logging configuration
+typedef struct {
+    log_level_t min_level;                 // Minimum log level
+    size_t max_file_size;                  // Maximum file size
+    int max_file_count;                    // Maximum file count
+    rotation_policy_t rotation_policy;     // Rotation policy
+    compression_enabled_t compression;     // Compression enabled
+    format_type_t format;                  // Log format
+} log_config_t;
+
+// System logging example
+void setup_system_logging(void) {
+    logging_api_t *log_api = get_logging_api();
+    
+    // Configure system log
+    log_config_t config = {
+        .min_level = LOG_LEVEL_INFO,
+        .max_file_size = 10 * 1024 * 1024,  // 10MB
+        .max_file_count = 5,
+        .rotation_policy = ROTATION_POLICY_SIZE_BASED,
+        .compression = COMPRESSION_ENABLED,
+        .format = FORMAT_TYPE_JSON
+    };
+    
+    log_handle_t system_log = log_api->open_log("system", &config);
+    
+    // Store log handle for global use
+    set_global_log_handle(system_log);
+    
+    // Log system startup
+    log_api->write_log_formatted(system_log, LOG_LEVEL_INFO, 
+                               "System logging initialized with max file size %zu", 
+                               config.max_file_size);
+}
+```
+
+### Structured Logging
+Advanced structured logging with metadata and correlation IDs.
+
+```c
+// Structured logging API
+typedef struct {
+    // Structured log writing
+    int (*write_structured_log)(log_handle_t handle, structured_log_t *log);
+    int (*write_event_log)(log_handle_t handle, event_t *event);
+    int (*write_metric_log)(log_handle_t handle, metric_t *metric);
+    
+    // Log correlation
+    correlation_id_t (*start_correlation)(const char* correlation_name);
+    int (*end_correlation)(correlation_id_t correlation_id);
+    int (*add_to_correlation)(correlation_id_t correlation_id, log_handle_t handle);
+    
+    // Log aggregation
+    aggregated_log_t (*aggregate_logs)(log_handle_t handle, 
+                                      aggregation_config_t *config);
+    int (*export_logs)(log_handle_t handle, export_config_t *config);
+} structured_logging_api_t;
+
+// Structured log entry
+typedef struct {
+    log_level_t level;                     // Log level
+    timestamp_t timestamp;                 // Timestamp
+    char event_type[64];                   // Event type
+    char component[64];                    // Component name
+    correlation_id_t correlation_id;       // Correlation ID
+    metadata_t metadata;                   // Event metadata
+    char message[512];                     // Human-readable message
+} structured_log_t;
+
+// Event metadata
+typedef struct {
+    metadata_pair_t pairs[MAX_METADATA_PAIRS]; // Metadata pairs
+    int pair_count;                        // Number of pairs
+} metadata_t;
+
+// Metadata pair
+typedef struct {
+    char key[128];                         // Metadata key
+    char value[256];                       // Metadata value
+    value_type_t type;                     // Value type
+} metadata_pair_t;
+
+// Structured logging example
+void log_temperature_control_event(float target_temp, float current_temp, 
+                                  control_action_t action) {
+    structured_logging_api_t *structured_log = get_structured_logging_api();
+    log_handle_t system_log = get_global_log_handle();
+    
+    // Create structured log entry
+    structured_log_t log = {
+        .level = LOG_LEVEL_INFO,
+        .timestamp = get_current_timestamp(),
+        .event_type = "temperature_control",
+        .component = "thermostat_controller",
+        .correlation_id = get_current_correlation_id(),
+        .metadata = {
+            .pairs = (metadata_pair_t[]){
+                {"target_temperature", "20.5", VALUE_TYPE_FLOAT},
+                {"current_temperature", "19.8", VALUE_TYPE_FLOAT},
+                {"control_action", "heating_on", VALUE_TYPE_STRING},
+                {"sensor_id", "temp_sensor_01", VALUE_TYPE_STRING}
+            },
+            .pair_count = 4
+        },
+        .message = "Temperature control action executed"
+    };
+    
+    structured_log->write_structured_log(system_log, &log);
+}
+```
+
+## Data Analytics API
+
+### Overview
+The Data Analytics API provides tools for analyzing thermostat data, generating insights, and creating reports.
+
+```c
+// Data analytics API structure
+typedef struct {
+    // Analytics session management
+    analytics_handle_t (*create_analytics_session)(analytics_config_t *config);
+    int (*destroy_analytics_session)(analytics_handle_t handle);
+    
+    // Data analysis
+    analysis_result_t (*analyze_energy_usage)(analytics_handle_t handle, 
+                                             time_range_t *range);
+    analysis_result_t (*analyze_temperature_patterns)(analytics_handle_t handle, 
+                                                    time_range_t *range);
+    analysis_result_t (*analyze_user_behavior)(analytics_handle_t handle, 
+                                              time_range_t *range);
+    
+    // Report generation
+    report_handle_t (*generate_report)(analytics_handle_t handle, 
+                                     report_config_t *config);
+    int (*export_report)(report_handle_t handle, export_format_t format, 
+                        const char* output_path);
+    
+    // Predictive analytics
+    prediction_result_t (*predict_energy_consumption)(analytics_handle_t handle, 
+                                                    prediction_request_t *request);
+    prediction_result_t (*predict_temperature_trends)(analytics_handle_t handle, 
+                                                    prediction_request_t *request);
+} data_analytics_api_t;
+
+// Analytics configuration
+typedef struct {
+    data_source_t data_source;             // Data source
+    analysis_type_t analysis_types;         // Analysis types to perform
+    time_range_t default_range;            // Default time range
+    aggregation_level_t aggregation;       // Aggregation level
+    machine_learning_config_t ml_config;   // Machine learning configuration
+} analytics_config_t;
+
+// Analysis result
+typedef struct {
+    analysis_type_t type;                  // Analysis type
+    time_range_t analyzed_range;           // Analyzed time range
+    insights_t insights;                   // Generated insights
+    metrics_t metrics;                     // Analysis metrics
+    recommendations_t recommendations;      // Recommendations
+    confidence_level_t confidence;         // Result confidence
+    timestamp_t generated_at;              // Generation timestamp
+} analysis_result_t;
+
+// Energy usage analysis example
+void analyze_monthly_energy_usage(void) {
+    data_analytics_api_t *analytics = get_data_analytics_api();
+    
+    // Create analytics session
+    analytics_config_t config = {
+        .data_source = DATA_SOURCE_USER_DATA,
+        .analysis_types = ANALYSIS_ENERGY | ANALYSIS_TEMPERATURE | ANALYSIS_BEHAVIOR,
+        .default_range = {
+            .start = get_month_start(),
+            .end = get_month_end()
+        },
+        .aggregation = AGGREGATION_DAILY,
+        .ml_config = {
+            .enabled = true,
+            .model_type = MODEL_TYPE_LINEAR_REGRESSION,
+            .training_data_size = 30
+        }
+    };
+    
+    analytics_handle_t session = analytics->create_analytics_session(&config);
+    
+    // Analyze energy usage
+    analysis_result_t energy_analysis = analytics->analyze_energy_usage(session, 
+                                                                       &config.default_range);
+    
+    // Process insights
+    for (int i = 0; i < energy_analysis.insights.count; i++) {
+        process_energy_insight(&energy_analysis.insights.insights[i]);
+    }
+    
+    // Generate report
+    report_config_t report_config = {
+        .type = REPORT_TYPE_ENERGY_SUMMARY,
+        .format = REPORT_FORMAT_PDF,
+        .include_charts = true,
+        .include_recommendations = true
+    };
+    
+    report_handle_t report = analytics->generate_report(session, &report_config);
+    analytics->export_report(report, EXPORT_FORMAT_PDF, 
+                            "/tmp/monthly_energy_report.pdf");
+    
+    // Cleanup
+    analytics->destroy_analytics_session(session);
+}
+```
+
+## Data Backup and Recovery API
+
+### Overview
+The Data Backup and Recovery API provides automated backup creation, restoration, and disaster recovery capabilities.
+
+```c
+// Data backup and recovery API structure
+typedef struct {
+    // Backup management
+    backup_handle_t (*create_backup)(backup_config_t *config);
+    int (*delete_backup)(backup_id_t backup_id);
+    backup_list_t (*list_backups)(backup_filter_t *filter);
+    backup_info_t (*get_backup_info)(backup_id_t backup_id);
+    
+    // Backup operations
+    int (*execute_backup)(backup_handle_t handle);
+    int (*schedule_backup)(backup_schedule_t *schedule);
+    int (*cancel_scheduled_backup)(schedule_id_t schedule_id);
+    
+    // Recovery operations
+    recovery_handle_t (*start_recovery)(backup_id_t backup_id);
+    int (*execute_recovery)(recovery_handle_t handle);
+    recovery_status_t (*get_recovery_status)(recovery_handle_t handle);
+    
+    // Backup verification
+    verification_result_t (*verify_backup)(backup_id_t backup_id);
+    int (*test_recovery)(backup_id_t backup_id);
+} data_backup_recovery_api_t;
+
+// Backup configuration
+typedef struct {
+    backup_type_t type;                    // Backup type
+    data_scope_t scope;                    // Data scope
+    compression_t compression;             // Compression settings
+    encryption_t encryption;               // Encryption settings
+    storage_config_t storage;              // Storage configuration
+    retention_policy_t retention;          // Retention policy
+} backup_config_t;
+
+// Backup types
+typedef enum {
+    BACKUP_TYPE_FULL,                      // Full backup
+    BACKUP_TYPE_INCREMENTAL,                // Incremental backup
+    BACKUP_TYPE_DIFFERENTIAL,               // Differential backup
+    BACKUP_TYPE_CUSTOM                      // Custom backup
+} backup_type_t;
+
+// Data scope
+typedef enum {
+    DATA_SCOPE_CONFIGURATION,              // Configuration only
+    DATA_SCOPE_USER_DATA,                  // User data only
+    DATA_SCOPE_LOGS,                       // Logs only
+    DATA_SCOPE_ALL                         // All data
+} data_scope_t;
+
+// Automated backup example
+void setup_automated_backups(void) {
+    data_backup_recovery_api_t *backup_api = get_data_backup_recovery_api();
+    
+    // Configure daily backup
+    backup_config_t config = {
+        .type = BACKUP_TYPE_INCREMENTAL,
+        .scope = DATA_SCOPE_ALL,
+        .compression = {
+            .enabled = true,
+            .algorithm = COMPRESSION_ALGORITHM_GZIP,
+            .level = COMPRESSION_LEVEL_BALANCED
+        },
+        .encryption = {
+            .enabled = true,
+            .algorithm = ENCRYPTION_ALGORITHM_AES256,
+            .key_source = KEY_SOURCE_DERIVED
+        },
+        .storage = {
+            .type = STORAGE_TYPE_LOCAL,
+            .path = "/backup/thermostat",
+            .max_storage_size = 1024 * 1024 * 1024  // 1GB
+        },
+        .retention = {
+            .policy = RETENTION_POLICY_TIME_BASED,
+            .max_age = 30 * 24 * 60 * 60,    // 30 days
+            .max_count = 50
+        }
+    };
+    
+    // Create backup schedule
+    backup_schedule_t schedule = {
+        .backup_config = config,
+        .schedule_type = SCHEDULE_TYPE_DAILY,
+        .execution_time = {.hour = 2, .minute = 0}, // 2:00 AM
+        .retry_policy = {
+            .max_retries = 3,
+            .retry_interval = 3600         // 1 hour
+        },
+        .notification_config = {
+            .on_success = false,
+            .on_failure = true,
+            .notification_method = NOTIFICATION_EMAIL
+        }
+    };
+    
+    schedule_id_t schedule_id = backup_api->schedule_backup(&schedule);
+    set_backup_schedule_id(schedule_id);
+}
+```
+
+## Related Documentation
+
+- [API Reference Overview](./overview.mdx)
+- [System APIs](./system-apis.mdx)
+- [Hardware APIs](./hardware-apis.mdx)
+- [Network APIs](./network-apis.mdx)

@@ -1,0 +1,176 @@
+---
+title: Introduction
+description: 'Welcome to the Nest Learning Thermostat Knowledge Base'
+---
+
+# Nest Learning Thermostat Knowledge Base
+
+Comprehensive documentation for the Nest Learning Thermostat embedded system.
+
+## Data Source
+
+This documentation is based on data exfiltrated from a live Nest Learning Thermostat (Serial: 02AA01AC481302W4) on November 7, 2025. The exfiltrated data includes:
+
+- Complete directory trees from `/media` and `/nestlabs`
+- Raw partition images of all 6 MTD flash partitions (196MB total)
+- 26+ operational data files (JSON and recovery formats)
+- 19 system service binaries
+- 22 shared libraries
+- Firmware images, localization files, and calibration data
+
+All information has been verified against the actual device and exfiltrated data.
+
+## About This Device
+
+The Nest Learning Thermostat is an embedded Linux-based smart thermostat that combines sophisticated hardware with intelligent software to provide automated climate control.
+
+**Key Specifications:**
+- **Operating System**: Linux kernel 3.10.53
+- **Architecture**: ARMv7l
+- **Device Serial**: 02AA01AC481302W4
+- **Total Storage**: 196MB across 6 MTD partitions
+  - Root: 46MB (mtdblock9, 58% used)
+  - System Config: 4MB (mtdblock10, 11% used)
+  - User Config: 8MB (mtdblock11, 7% used)
+  - Data: 20MB (mtdblock12, 6% used)
+  - Log: 20MB (mtdblock13, 4% used)
+  - Scratch: 92MB (mtdblock14, 4% used)
+
+## Documentation Structure
+
+This knowledge base is organized into the following sections:
+
+### Getting Started
+- Introduction and overview
+- Quick start guide (development and device access)
+- System architecture overview
+- Exfiltration summary (data extraction details)
+
+### Architecture
+- Linux system details
+- Filesystem structure (complete partition layout)
+- Boot process
+- Storage organization (MTD partitions)
+- UI-Backplate communication backend
+
+### Hardware
+- Processor and memory
+- Sensors and peripherals
+- Display system
+- Backplate and HeatLink
+- ZigBee radio
+
+### Software Components
+- nlclient main application (4.9MB binary)
+- System services and daemons (19 services documented)
+- Libraries and dependencies (22 libraries)
+- Binary utilities
+- Complete software component reference
+
+### Network & Connectivity
+- WiFi configuration
+- LowPAN/ZigBee networking
+- Weave protocol
+- Connection management
+
+### Data & Configuration
+- Configuration file formats
+- Thermostat operational data (26+ files documented)
+- Recovery files (.recovery format)
+- User settings
+- Complete data files reference
+
+### Thermostat Logic
+- Prediction algorithms
+- Schedule management
+- Auto-away functionality
+- Energy statistics
+- Sunlight correction
+
+### System Management
+- Monitoring and metrics
+- Logging system
+- Watchdog service
+- Heartbeat mechanism
+- Sleep management
+
+### Firmware & Updates
+- OSM (Open Service Manager)
+- Backplate firmware updates
+- HeatLink firmware updates
+- ZigBee firmware updates
+
+### Recovery & Troubleshooting
+- Multi-tier recovery system
+- Factory reset procedures
+- Common issues
+- Log analysis
+
+### Development
+- SSH access and debugging
+- File system navigation
+- Process management
+
+### API Reference
+- D-Bus interfaces
+- Configuration schemas
+- Data format specifications
+
+## What You'll Find Here
+
+<CardGroup cols={2}>
+  <Card
+    title="Hardware Documentation"
+    icon="microchip"
+    href="/hardware/overview"
+  >
+    Learn about the physical components, sensors, and interfaces
+  </Card>
+  <Card
+    title="Software Architecture"
+    icon="code"
+    href="/software/overview"
+  >
+    Explore the software stack, services, and applications
+  </Card>
+  <Card
+    title="Network & Connectivity"
+    icon="wifi"
+    href="/software/network/overview"
+  >
+    Understand WiFi, LowPAN, and Weave protocol integration
+  </Card>
+  <Card
+    title="Troubleshooting"
+    icon="wrench"
+    href="/troubleshooting/overview"
+  >
+    Recovery procedures and common issue resolution
+  </Card>
+</CardGroup>
+
+## Quick Links
+
+<CardGroup cols={3}>
+  <Card
+    title="SSH Access"
+    icon="terminal"
+    href="/development/ssh-access"
+  >
+    Connect to the device
+  </Card>
+  <Card
+    title="File System"
+    icon="folder-tree"
+    href="/architecture/filesystem-structure"
+  >
+    Navigate the directory structure
+  </Card>
+  <Card
+    title="Recovery Tiers"
+    icon="life-ring"
+    href="/troubleshooting/recovery-tiers"
+  >
+    Emergency recovery procedures
+  </Card>
+</CardGroup>

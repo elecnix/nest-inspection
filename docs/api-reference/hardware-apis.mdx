@@ -1,0 +1,661 @@
+---
+title: Hardware APIs
+description: Hardware abstraction APIs for sensor access, display control, and input handling
+---
+
+# Hardware APIs
+
+The Nest Learning Thermostat Hardware APIs provide comprehensive access to hardware components including sensors, display, input devices, and power management. This document details all hardware APIs with their functions, parameters, and usage examples.
+
+## Sensor API
+
+### Overview
+The Sensor API manages access to all environmental and motion sensors in the thermostat.
+
+```c
+// Sensor API structure
+typedef struct {
+    // Sensor management
+    sensor_handle_t (*open_sensor)(sensor_type_t type, sensor_config_t *config);
+    int (*close_sensor)(sensor_handle_t handle);
+    int (*configure_sensor)(sensor_handle_t handle, sensor_config_t *config);
+    
+    // Data acquisition
+    sensor_reading_t (*read_sensor)(sensor_handle_t handle);
+    int (*start_continuous_reading)(sensor_handle_t handle, 
+                                   reading_callback_t callback);
+    int (*stop_continuous_reading)(sensor_handle_t handle);
+    
+    // Sensor information and calibration
+    sensor_info_t (*get_sensor_info)(sensor_handle_t handle);
+    int (*calibrate_sensor)(sensor_handle_t handle, calibration_data_t *data);
+    calibration_status_t (*get_calibration_status)(sensor_handle_t handle);
+    
+    // Sensor monitoring and diagnostics
+    sensor_status_t (*get_sensor_status)(sensor_handle_t handle);
+    diagnostic_result_t (*run_sensor_diagnostics)(sensor_handle_t handle);
+} sensor_api_t;
+
+// Sensor types
+typedef enum {
+    SENSOR_TYPE_TEMPERATURE,               // Temperature sensor
+    SENSOR_TYPE_HUMIDITY,                  // Humidity sensor
+    SENSOR_TYPE_AMBIENT_LIGHT,             // Ambient light sensor
+    SENSOR_TYPE_MOTION,                    // Motion sensor
+    SENSOR_TYPE_PROXIMITY,                 // Proximity sensor
+    SENSOR_TYPE_PRESSURE,                  // Pressure sensor
+    SENSOR_TYPE_VOLTAGE,                   // Voltage sensor
+    SENSOR_TYPE_CURRENT,                   // Current sensor
+    SENSOR_TYPE_POWER                      // Power sensor
+} sensor_type_t;
+
+// Sensor reading structure
+typedef struct {
+    sensor_type_t type;                    // Sensor type
+    union {
+        float temperature;                 // Temperature in Celsius
+        float humidity;                    // Humidity in percentage
+        float light_level;                 // Light level in lux
+        bool motion_detected;              // Motion detection status
+        float proximity;                   // Proximity distance
+        float pressure;                    // Pressure in hPa
+        float voltage;                     // Voltage in volts
+        float current;                     // Current in amperes
+        float power;                       // Power in watts
+    } value;
+    timestamp_t timestamp;                 // Reading timestamp
+    sensor_status_t status;                // Sensor status
+    quality_indicator_t quality;           // Data quality indicator
+} sensor_reading_t;
+
+// Temperature sensor example
+sensor_handle_t open_temperature_sensor(void) {
+    sensor_api_t *sensor_api = get_sensor_api();
+    
+    sensor_config_t config = {
+        .type = SENSOR_TYPE_TEMPERATURE,
+        .sampling_rate = 1000,              // 1 Hz sampling
+        .resolution = 0.1,                 // 0.1°C resolution
+        .range = {.min = -40.0, .max = 125.0}, // -40°C to 125°C
+        .filtering = FILTER_TYPE_KALMAN,
+        .calibration_enabled = true
+    };
+    
+    return sensor_api->open_sensor(SENSOR_TYPE_TEMPERATURE, &config);
+}
+
+float read_room_temperature(sensor_handle_t temp_sensor) {
+    sensor_api_t *sensor_api = get_sensor_api();
+    
+    sensor_reading_t reading = sensor_api->read_sensor(temp_sensor);
+    
+    if (reading.status == SENSOR_STATUS_OK && 
+        reading.quality >= QUALITY_GOOD) {
+        return reading.value.temperature;
+    }
+    
+    return INVALID_TEMPERATURE;
+}
+```
+
+### Multi-Sensor Coordination
+Coordinated reading from multiple sensors for comprehensive environmental monitoring.
+
+```c
+// Multi-sensor API
+typedef struct {
+    multi_sensor_handle_t (*create_sensor_group)(sensor_type_t *types, 
+                                                int count);
+    int (*destroy_sensor_group)(multi_sensor_handle_t handle);
+    multi_reading_t (*read_all_sensors)(multi_sensor_handle_t handle);
+    int (*start_synchronized_reading)(multi_sensor_handle_t handle, 
+                                     multi_callback_t callback);
+    int (*stop_synchronized_reading)(multi_sensor_handle_t handle);
+} multi_sensor_api_t;
+
+// Multi-sensor reading
+typedef struct {
+    sensor_reading_t readings[MAX_SENSORS]; // Individual sensor readings
+    int reading_count;                      // Number of readings
+    timestamp_t timestamp;                 // Synchronized timestamp
+    synchronization_status_t sync_status;  // Synchronization status
+} multi_reading_t;
+
+// Environmental monitoring example
+multi_sensor_handle_t setup_environmental_monitoring(void) {
+    multi_sensor_api_t *multi_api = get_multi_sensor_api();
+    
+    sensor_type_t environmental_sensors[] = {
+        SENSOR_TYPE_TEMPERATURE,
+        SENSOR_TYPE_HUMIDITY,
+        SENSOR_TYPE_AMBIENT_LIGHT,
+        SENSOR_TYPE_MOTION
+    };
+    
+    return multi_api->create_sensor_group(environmental_sensors, 4);
+}
+
+void monitor_environmental_conditions(multi_sensor_handle_t env_group) {
+    multi_sensor_api_t *multi_api = get_multi_sensor_api();
+    
+    while (true) {
+        multi_reading_t reading = multi_api->read_all_sensors(env_group);
+        
+        if (reading.sync_status == SYNC_STATUS_OK) {
+            for (int i = 0; i < reading.reading_count; i++) {
+                process_sensor_reading(&reading.readings[i]);
+            }
+        }
+        
+        sleep(5); // Read every 5 seconds
+    }
+}
+```
+
+## Display API
+
+### Overview
+The Display API controls the circular LCD display, backlight, and visual effects.
+
+```c
+// Display API structure
+typedef struct {
+    // Display management
+    display_handle_t (*open_display)(display_config_t *config);
+    int (*close_display)(display_handle_t handle);
+    int (*configure_display)(display_handle_t handle, display_config_t *config);
+    
+    // Rendering and updates
+    int (*update_display)(display_handle_t handle, display_buffer_t *buffer);
+    int (*update_region)(display_handle_t handle, region_t *region, 
+                        display_buffer_t *buffer);
+    int (*clear_display)(display_handle_t handle);
+    
+    // Backlight and brightness control
+    int (*set_brightness)(display_handle_t handle, brightness_t level);
+    brightness_t (*get_brightness)(display_handle_t handle);
+    int (*enable_auto_brightness)(display_handle_t handle, bool enabled);
+    
+    // Display modes and effects
+    int (*set_display_mode)(display_handle_t handle, display_mode_t mode);
+    int (*start_animation)(display_handle_t handle, animation_t *animation);
+    int (*stop_animation)(display_handle_t handle);
+    
+    // Display information
+    display_info_t (*get_display_info)(display_handle_t handle);
+    display_capabilities_t (*get_display_capabilities)(display_handle_t handle);
+} display_api_t;
+
+// Display configuration
+typedef struct {
+    resolution_t resolution;               // Display resolution
+    color_depth_t color_depth;             // Color depth
+    refresh_rate_t refresh_rate;           // Refresh rate
+    rotation_t rotation;                   // Display rotation
+    color_format_t format;                 // Color format
+    backlight_config_t backlight;          // Backlight configuration
+} display_config_t;
+
+// Display buffer
+typedef struct {
+    void *data;                            // Buffer data
+    size_t size;                           // Buffer size
+    resolution_t resolution;               // Buffer resolution
+    color_format_t format;                 // Color format
+    stride_t stride;                       // Buffer stride
+} display_buffer_t;
+
+// Display initialization example
+display_handle_t initialize_thermostat_display(void) {
+    display_api_t *display_api = get_display_api();
+    
+    display_config_t config = {
+        .resolution = {.width = 320, .height = 320},
+        .color_depth = COLOR_DEPTH_16BIT,
+        .refresh_rate = 60,
+        .rotation = ROTATION_0,
+        .format = COLOR_FORMAT_RGB565,
+        .backlight = {
+            .min_brightness = 40,
+            .max_brightness = 100,
+            .auto_brightness = true,
+            .ambient_light_sensor = true
+        }
+    };
+    
+    return display_api->open_display(&config);
+}
+```
+
+### Graphics Rendering
+High-level graphics rendering for UI elements and visual effects.
+
+```c
+// Graphics rendering API
+typedef struct {
+    // Drawing primitives
+    int (*draw_pixel)(display_handle_t handle, point_t *point, color_t color);
+    int (*draw_line)(display_handle_t handle, line_t *line, color_t color);
+    int (*draw_rectangle)(display_handle_t handle, rect_t *rect, color_t color);
+    int (*draw_circle)(display_handle_t handle, circle_t *circle, color_t color);
+    
+    // Text rendering
+    font_handle_t (*load_font)(const char *font_path, font_size_t size);
+    int (*draw_text)(display_handle_t handle, text_render_t *render);
+    text_metrics_t (*get_text_metrics)(font_handle_t font, const char *text);
+    
+    // Image rendering
+    image_handle_t (*load_image)(const char *image_path);
+    int (*draw_image)(display_handle_t handle, image_render_t *render);
+    int (*draw_scaled_image)(display_handle_t handle, scaled_image_t *render);
+    
+    // Compositing and effects
+    int (*set_compositing_mode)(display_handle_t handle, compositing_mode_t mode);
+    int (*apply_effect)(display_handle_t handle, effect_t *effect);
+    int (*create_layer)(display_handle_t handle, layer_config_t *config);
+} graphics_api_t;
+
+// Temperature display example
+void draw_temperature_display(display_handle_t display, float temperature) {
+    graphics_api_t *graphics = get_graphics_api();
+    
+    // Load font for temperature display
+    font_handle_t temp_font = graphics->load_font("/nestlabs/fonts/AkkuratNest-Bold.ttf", 
+                                                 FONT_SIZE_48PT);
+    
+    // Format temperature string
+    char temp_string[16];
+    snprintf(temp_string, sizeof(temp_string), "%.1f°", temperature);
+    
+    // Calculate text position (centered)
+    text_metrics_t metrics = graphics->get_text_metrics(temp_font, temp_string);
+    point_t text_position = {
+        .x = 160 - metrics.width / 2,
+        .y = 160 - metrics.height / 2
+    };
+    
+    // Render temperature text
+    text_render_t render = {
+        .font = temp_font,
+        .text = temp_string,
+        .position = text_position,
+        .color = {.r = 255, .g = 255, .b = 255},
+        .background = {.r = 0, .g = 0, .b = 0}
+    };
+    
+    graphics->draw_text(display, &render);
+}
+```
+
+### Animation System
+Smooth animations and transitions for UI elements.
+
+```c
+// Animation API
+typedef struct {
+    animation_handle_t (*create_animation)(animation_config_t *config);
+    int (*destroy_animation)(animation_handle_t handle);
+    int (*start_animation)(display_handle_t display, animation_handle_t animation);
+    int (*stop_animation)(animation_handle_t handle);
+    int (*pause_animation)(animation_handle_t handle);
+    int (*resume_animation)(animation_handle_t handle);
+    
+    // Animation state
+    animation_state_t (*get_animation_state)(animation_handle_t handle);
+    float (*get_animation_progress)(animation_handle_t handle);
+    int (*set_animation_progress)(animation_handle_t handle, float progress);
+} animation_api_t;
+
+// Animation configuration
+typedef struct {
+    animation_type_t type;                 // Animation type
+    duration_t duration;                   // Animation duration
+    easing_function_t easing;               // Easing function
+    loop_mode_t loop_mode;                 // Loop mode
+    keyframe_t *keyframes;                 // Animation keyframes
+    int keyframe_count;                    // Number of keyframes
+    completion_callback_t callback;        // Completion callback
+} animation_config_t;
+
+// Animation types
+typedef enum {
+    ANIMATION_TYPE_FADE,                   // Fade in/out
+    ANIMATION_TYPE_SLIDE,                  // Slide transition
+    ANIMATION_TYPE_SCALE,                  // Scale transformation
+    ANIMATION_TYPE_ROTATE,                 // Rotation
+    ANIMATION_TYPE_COLOR_TRANSITION,       // Color transition
+    ANIMATION_TYPE_CUSTOM                  // Custom animation
+} animation_type_t;
+
+// Temperature change animation example
+animation_handle_t create_temperature_change_animation(float from_temp, 
+                                                       float to_temp) {
+    animation_api_t *anim_api = get_animation_api();
+    
+    // Create keyframes for temperature change
+    keyframe_t keyframes[] = {
+        {.time = 0.0f, .value = from_temp},
+        {.time = 0.5f, .value = (from_temp + to_temp) / 2.0f},
+        {.time = 1.0f, .value = to_temp}
+    };
+    
+    animation_config_t config = {
+        .type = ANIMATION_TYPE_CUSTOM,
+        .duration = 2000,                   // 2 seconds
+        .easing = EASING_EASE_IN_OUT,
+        .loop_mode = LOOP_MODE_NONE,
+        .keyframes = keyframes,
+        .keyframe_count = 3,
+        .callback = temperature_animation_complete
+    };
+    
+    return anim_api->create_animation(&config);
+}
+```
+
+## Input API
+
+### Overview
+The Input API handles user input from the rotary encoder, touch interface, and buttons.
+
+```c
+// Input API structure
+typedef struct {
+    // Input device management
+    input_handle_t (*open_input)(input_type_t type, input_config_t *config);
+    int (*close_input)(input_handle_t handle);
+    int (*configure_input)(input_handle_t handle, input_config_t *config);
+    
+    // Event handling
+    input_event_t (*read_input_event)(input_handle_t handle);
+    int (*start_event_stream)(input_handle_t handle, event_callback_t callback);
+    int (*stop_event_stream)(input_handle_t handle);
+    
+    // Input device information
+    input_info_t (*get_input_info)(input_handle_t handle);
+    input_capabilities_t (*get_input_capabilities)(input_handle_t handle);
+    
+    // Calibration and configuration
+    int (*calibrate_input)(input_handle_t handle, calibration_data_t *data);
+    int (*set_input_sensitivity)(input_handle_t handle, sensitivity_t sensitivity);
+} input_api_t;
+
+// Input types
+typedef enum {
+    INPUT_TYPE_ROTARY_ENCODER,             // Rotary encoder
+    INPUT_TYPE_TOUCH_SCREEN,               // Touch screen
+    INPUT_TYPE_PUSH_BUTTON,                // Push button
+    INPUT_TYPE_GESTURE,                    // Gesture recognition
+    INPUT_TYPE_VOICE                       // Voice input
+} input_type_t;
+
+// Input event structure
+typedef struct {
+    input_type_t type;                     // Input type
+    event_type_t event_type;                // Event type
+    timestamp_t timestamp;                 // Event timestamp
+    union {
+        rotary_event_t rotary;             // Rotary encoder event
+        touch_event_t touch;               // Touch event
+        button_event_t button;             // Button event
+        gesture_event_t gesture;           // Gesture event
+        voice_event_t voice;               // Voice event
+    } data;
+} input_event_t;
+
+// Rotary encoder event
+typedef struct {
+    int delta;                             // Rotation delta
+    direction_t direction;                 // Rotation direction
+    bool button_pressed;                   // Button pressed
+    int position;                          // Current position
+} rotary_event_t;
+
+// Rotary encoder initialization example
+input_handle_t initialize_rotary_encoder(void) {
+    input_api_t *input_api = get_input_api();
+    
+    input_config_t config = {
+        .type = INPUT_TYPE_ROTARY_ENCODER,
+        .sampling_rate = 100,               // 100 Hz sampling
+        .debounce_time = 10,                // 10ms debounce
+        .sensitivity = SENSITIVITY_MEDIUM,
+        .button_enabled = true,
+        .auto_repeat = true,
+        .repeat_delay = 500,                // 500ms initial repeat
+        .repeat_interval = 100              // 100ms repeat interval
+    };
+    
+    return input_api->open_input(INPUT_TYPE_ROTARY_ENCODER, &config);
+}
+```
+
+### Touch Interface
+Advanced touch interface with gesture recognition and multi-touch support.
+
+```c
+// Touch interface API
+typedef struct {
+    // Touch handling
+    touch_handle_t (*open_touch)(touch_config_t *config);
+    int (*close_touch)(touch_handle_t handle);
+    touch_event_t (*read_touch_event)(touch_handle_t handle);
+    
+    // Gesture recognition
+    gesture_handle_t (*enable_gestures)(touch_handle_t handle, 
+                                       gesture_config_t *config);
+    gesture_event_t (*recognize_gesture)(gesture_handle_t handle);
+    
+    // Touch calibration
+    int (*calibrate_touch)(touch_handle_t handle, touch_calibration_t *calibration);
+    int (*save_touch_calibration)(touch_handle_t handle, const char *path);
+    int (*load_touch_calibration)(touch_handle_t handle, const char *path);
+    
+    // Multi-touch support
+    multi_touch_t (*read_multi_touch)(touch_handle_t handle);
+    int (*set_max_touch_points)(touch_handle_t handle, int max_points);
+} touch_api_t;
+
+// Touch event structure
+typedef struct {
+    touch_action_t action;                 // Touch action
+    point_t position;                      // Touch position
+    pressure_t pressure;                   // Touch pressure
+    size_t touch_size;                     // Touch size
+    timestamp_t timestamp;                 // Event timestamp
+    touch_id_t touch_id;                   // Touch point ID
+} touch_event_t;
+
+// Touch actions
+typedef enum {
+    TOUCH_ACTION_DOWN,                     // Touch down
+    TOUCH_ACTION_UP,                       // Touch up
+    TOUCH_ACTION_MOVE,                     // Touch move
+    TOUCH_ACTION_CANCEL                    // Touch cancel
+} touch_action_t;
+
+// Touch interface example
+void setup_touch_interface(void) {
+    touch_api_t *touch_api = get_touch_api();
+    
+    touch_config_t config = {
+        .max_touch_points = 2,
+        .gesture_enabled = true,
+        .pressure_sensing = true,
+        .filtering = FILTER_TYPE_MEDIAN,
+        .sensitivity = SENSITIVITY_HIGH
+    };
+    
+    touch_handle_t touch = touch_api->open_touch(&config);
+    
+    // Enable gesture recognition
+    gesture_config_t gesture_config = {
+        .tap_enabled = true,
+        .swipe_enabled = true,
+        .pinch_enabled = false,
+        .rotate_enabled = false,
+        .tap_threshold = 50,               // 50ms tap threshold
+        .swipe_threshold = 100              // 100 pixel swipe threshold
+    };
+    
+    touch_api->enable_gestures(touch, &gesture_config);
+}
+
+void handle_touch_events(touch_handle_t touch) {
+    touch_api_t *touch_api = get_touch_api();
+    
+    while (true) {
+        touch_event_t event = touch_api->read_touch_event(touch);
+        
+        switch (event.action) {
+            case TOUCH_ACTION_DOWN:
+                handle_touch_down(event.position);
+                break;
+                
+            case TOUCH_ACTION_UP:
+                handle_touch_up(event.position);
+                break;
+                
+            case TOUCH_ACTION_MOVE:
+                handle_touch_move(event.position);
+                break;
+        }
+    }
+}
+```
+
+## Power Management API
+
+### Overview
+The Power Management API controls power consumption, battery management, and power states.
+
+```c
+// Power management API structure
+typedef struct {
+    // Power state management
+    int (*set_power_state)(power_state_t state);
+    power_state_t (*get_power_state)(void);
+    int (*request_power_state_change)(power_state_t requested_state, 
+                                     state_change_callback_t callback);
+    
+    // Power consumption monitoring
+    power_metrics_t (*get_power_metrics)(void);
+    int (*start_power_monitoring)(monitoring_config_t *config);
+    int (*stop_power_monitoring)(void);
+    
+    // Battery management
+    battery_status_t (*get_battery_status)(void);
+    int (*set_battery_threshold)(battery_threshold_t threshold);
+    int (*enable_battery_saver)(bool enabled);
+    
+    // Power optimization
+    int (*optimize_power_consumption)(optimization_config_t *config);
+    power_optimization_result_t (*get_optimization_result)(void);
+} power_management_api_t;
+
+// Power states
+typedef enum {
+    POWER_STATE_ACTIVE,                    // Active power state
+    POWER_STATE_IDLE,                      // Idle power state
+    POWER_STATE_STANDBY,                   // Standby power state
+    POWER_STATE_SLEEP,                     // Sleep power state
+    POWER_STATE_DEEP_SLEEP,                // Deep sleep power state
+    POWER_STATE_HIBERNATE                  // Hibernate power state
+} power_state_t;
+
+// Power metrics
+typedef struct {
+    float current_consumption;             // Current consumption in mA
+    float voltage;                         // Voltage in V
+    float power_consumption;               // Power consumption in mW
+    energy_usage_t energy_usage;           // Energy usage statistics
+    temperature_t thermal_state;           // Thermal state
+    timestamp_t timestamp;                 // Metrics timestamp
+} power_metrics_t;
+
+// Power management example
+void setup_power_management(void) {
+    power_management_api_t *power_api = get_power_management_api();
+    
+    // Set initial power state
+    power_api->set_power_state(POWER_STATE_ACTIVE);
+    
+    // Configure battery thresholds
+    battery_threshold_t threshold = {
+        .low_battery_threshold = 20,       // 20% low battery
+        .critical_battery_threshold = 5,   // 5% critical battery
+        .shutdown_threshold = 2            // 2% shutdown threshold
+    };
+    
+    power_api->set_battery_threshold(threshold);
+    
+    // Start power monitoring
+    monitoring_config_t monitor_config = {
+        .sampling_interval = 1000,         // 1 second interval
+        .enable_history = true,
+        .history_size = 1000
+    };
+    
+    power_api->start_power_monitoring(&monitor_config);
+}
+```
+
+### Dynamic Power Optimization
+Intelligent power optimization based on system usage and environmental conditions.
+
+```c
+// Power optimization API
+typedef struct {
+    optimization_handle_t (*create_optimizer)(optimization_config_t *config);
+    int (*destroy_optimizer)(optimization_handle_t handle);
+    int (*start_optimization)(optimization_handle_t handle);
+    int (*stop_optimization)(optimization_handle_t handle);
+    
+    // Optimization strategies
+    int (*enable_cpu_scaling)(optimization_handle_t handle, bool enabled);
+    int (*enable_display_optimization)(optimization_handle_t handle, bool enabled);
+    int (*enable_network_optimization)(optimization_handle_t handle, bool enabled);
+    
+    // Optimization policies
+    int (*set_optimization_policy)(optimization_handle_t handle, 
+                                  optimization_policy_t policy);
+    optimization_result_t (*get_optimization_status)(optimization_handle_t handle);
+} power_optimization_api_t;
+
+// Optimization configuration
+typedef struct {
+    optimization_target_t target;          // Optimization target
+    strategy_mask_t strategies;             // Enabled strategies
+    performance_constraints_t constraints; // Performance constraints
+    adaptation_rate_t adaptation_rate;     // Adaptation rate
+    learning_enabled_t learning;           // Machine learning enabled
+} optimization_config_t;
+
+// Dynamic power optimization example
+optimization_handle_t setup_dynamic_power_optimization(void) {
+    power_optimization_api_t *opt_api = get_power_optimization_api();
+    
+    optimization_config_t config = {
+        .target = OPTIMIZATION_TARGET_POWER,
+        .strategies = STRATEGY_CPU_SCALING | STRATEGY_DISPLAY_OPTIMIZATION,
+        .constraints = {
+            .min_performance = 0.7,         // Minimum 70% performance
+            .max_response_time = 200        // Maximum 200ms response
+        },
+        .adaptation_rate = 0.1,             // 10% adaptation rate
+        .learning = true
+    };
+    
+    optimization_handle_t optimizer = opt_api->create_optimizer(&config);
+    opt_api->start_optimization(optimizer);
+    
+    return optimizer;
+}
+```
+
+## Related Documentation
+
+- [API Reference Overview](./overview.mdx)
+- [System APIs](./system-apis.mdx)
+- [Network APIs](./network-apis.mdx)
+- [Data APIs](./data-apis.mdx)

@@ -1,0 +1,385 @@
+---
+title: Scratch Partition
+description: 'Complete reference of /media/scratch'
+---
+
+# Scratch Partition (/media/scratch)
+
+**Device**: mtdblock14  
+**Size**: 92MB  
+**Usage**: 4% (3.4MB used)  
+**Mount**: Read-write JFFS2  
+**Purpose**: Temporary storage and upload staging
+
+## Overview
+
+The scratch partition is the largest writable partition, used for temporary files, upload staging, and bulk data operations. Contents can be safely cleared without affecting system operation.
+
+## Purpose
+
+### Primary Uses
+1. **Upload Staging** - Files queued for cloud upload
+2. **Temporary Storage** - Transient data and working files
+3. **Crash Dumps** - Large crash dumps before upload
+4. **Download Staging** - Firmware updates during download
+5. **Bulk Operations** - Large data processing
+
+### Characteristics
+- Largest partition (92MB)
+- Lowest usage (typically <10%)
+- Can be cleared safely
+- Not backed up
+- Contents not critical
+
+## File Listing
+
+```
+/media/scratch/
+└── dropbox.vfat    # Dropbox upload queue (VFAT filesystem image)
+```
+
+## Files
+
+### dropbox.vfat
+**Type**: VFAT filesystem image  
+**Size**: Variable (typically 1-10MB)  
+**Purpose**: Upload queue for dropbox service
+
+**Description**: A VFAT filesystem image used by the dropbox service to stage files for upload to Nest cloud services.
+
+**Format**: FAT filesystem in a file
+
+**Why VFAT?**:
+- Simple format for queue management
+- Easy to mount/unmount
+- Atomic operations
+- Corruption-resistant
+
+**Contents** (when mounted):
+- Compressed log files
+- Crash dumps
+- Metrics data
+- Diagnostic information
+- System snapshots
+
+**Lifecycle**:
+1. Dropbox service creates/mounts image
+2. Files staged for upload
+3. Files compressed and encrypted
+4. Uploaded to cloud
+5. Deleted after successful upload
+6. Image shrinks or is deleted when empty
+
+**Mounting** (for inspection):
+```bash
+# Create mount point
+mkdir -p /tmp/dropbox
+
+# Mount the VFAT image
+mount -o loop /media/scratch/dropbox.vfat /tmp/dropbox
+
+# List contents
+ls -lh /tmp/dropbox
+
+# Unmount when done
+umount /tmp/dropbox
+```
+
+**Typical Contents**:
+```
+/tmp/dropbox/
+├── messages.gz           # Compressed system log
+├── nlclient.gz          # Compressed application log
+├── crash_20190912.dump  # Crash dump
+├── metrics.json.gz      # Metrics data
+└── diagnostics.tar.gz   # System diagnostics
+```
+
+## Temporary Files
+
+The scratch partition is used for various temporary files during operation:
+
+### Firmware Updates
+During firmware updates:
+```
+/media/scratch/
+├── update.tar.gz        # Downloaded update package
+├── update.sig           # Update signature
+├── update_extracted/    # Extracted update files
+└── update.log           # Update log
+```
+
+**Cleanup**: Removed after update completes or fails
+
+### Crash Dumps
+Large crash dumps staged before upload:
+```
+/media/scratch/
+├── nlclient_crash_20190912_142345.dump
+├── nlclient_crash_20190912_142345.maps
+└── nlclient_crash_20190912_142345.log
+```
+
+**Cleanup**: Uploaded then deleted
+
+### Diagnostic Data
+System diagnostics collected for support:
+```
+/media/scratch/
+├── diagnostics_20190912.tar.gz
+├── system_snapshot.json
+└── hardware_info.txt
+```
+
+**Cleanup**: Uploaded then deleted
+
+### Working Files
+Temporary working files:
+```
+/media/scratch/
+├── temp_sensor_data.csv
+├── processing_buffer.bin
+└── work_file_12345.tmp
+```
+
+**Cleanup**: Deleted after operation completes
+
+## Space Management
+
+### Monitoring
+System monitors scratch partition usage:
+```bash
+df -h /media/scratch
+du -sh /media/scratch/*
+```
+
+### Automatic Cleanup
+Triggered when usage exceeds thresholds:
+
+**At 70% full**:
+- Delete uploaded files
+- Remove old temporary files
+- Compress large files
+
+**At 85% full**:
+- Delete all uploaded files
+- Remove all temporary files
+- Clear dropbox queue
+
+**At 95% full**:
+- Emergency cleanup
+- Delete all non-critical files
+- Alert system
+
+### Manual Cleanup
+Safe to manually clean:
+```bash
+# Remove all contents (safe)
+rm -rf /media/scratch/*
+
+# Remove specific files
+rm /media/scratch/dropbox.vfat
+rm /media/scratch/*.tmp
+rm /media/scratch/*.gz
+```
+
+**Note**: Dropbox service will recreate dropbox.vfat as needed
+
+## Dropbox Service
+
+### Upload Queue Management
+
+The dropbox service manages the upload queue:
+
+1. **Staging**: Files copied to dropbox.vfat
+2. **Compression**: Files compressed (gzip)
+3. **Encryption**: Files encrypted for security
+4. **Upload**: Files uploaded to cloud
+5. **Verification**: Upload success verified
+6. **Cleanup**: Files deleted after successful upload
+
+### Upload Priority
+
+Files uploaded in priority order:
+
+1. **Critical** - Crash dumps, critical errors (immediate)
+2. **High** - Important logs, diagnostics (within 1 hour)
+3. **Normal** - Regular logs, metrics (daily)
+4. **Low** - Historical data (when bandwidth available)
+
+### Upload Scheduling
+
+- **Immediate**: Crash dumps, critical errors
+- **Hourly**: High-priority logs
+- **Daily**: Regular logs and metrics
+- **Weekly**: Historical data, archives
+
+### Bandwidth Management
+
+- Uploads throttled to avoid impacting user experience
+- Larger uploads scheduled during low-usage periods
+- Can be paused by user or system
+
+## Use Cases
+
+### Firmware Updates
+
+**Process**:
+1. Download update to `/media/scratch/update.tar.gz`
+2. Verify signature
+3. Extract to `/media/scratch/update_extracted/`
+4. Install from extracted files
+5. Cleanup scratch partition
+
+**Space Required**: ~30-50MB during update
+
+### Crash Analysis
+
+**Process**:
+1. nlclient crashes
+2. Core dump written to `/media/scratch/`
+3. Memory maps captured
+4. Crash log generated
+5. All files staged in dropbox.vfat
+6. Uploaded to cloud for analysis
+7. Deleted after upload
+
+**Space Required**: ~10-20MB per crash
+
+### Log Upload
+
+**Process**:
+1. Logs copied from `/media/log/`
+2. Compressed with gzip
+3. Staged in dropbox.vfat
+4. Uploaded to cloud
+5. Deleted after upload
+
+**Space Required**: ~2-5MB per upload
+
+### Diagnostics Collection
+
+**Process**:
+1. System diagnostics collected
+2. Packaged into tarball
+3. Staged in dropbox.vfat
+4. Uploaded to cloud
+5. Deleted after upload
+
+**Space Required**: ~5-10MB
+
+## Performance Considerations
+
+### I/O Performance
+- JFFS2 optimized for flash
+- Wear leveling distributes writes
+- Compression saves space
+
+### Flash Wear
+- Scratch partition sees most writes
+- Wear leveling protects flash
+- Large partition size reduces wear per block
+
+### Space Efficiency
+- Compression reduces storage needs
+- Cleanup prevents partition fill
+- Large partition provides buffer
+
+## Troubleshooting
+
+### Scratch Partition Full
+
+**Symptoms**:
+- Upload failures
+- Update failures
+- System warnings
+
+**Solutions**:
+1. Check usage: `df -h /media/scratch`
+2. List large files: `du -h /media/scratch/* | sort -h`
+3. Manual cleanup: `rm -rf /media/scratch/*`
+4. Restart dropbox service
+
+### Dropbox Upload Failures
+
+**Symptoms**:
+- Files accumulating in dropbox.vfat
+- Scratch partition filling up
+- Upload errors in logs
+
+**Solutions**:
+1. Check network connectivity
+2. Check dropbox service status
+3. Check dropbox.vfat integrity
+4. Clear dropbox queue: `rm /media/scratch/dropbox.vfat`
+5. Restart dropbox service
+
+### Corrupted dropbox.vfat
+
+**Symptoms**:
+- Mount failures
+- Upload failures
+- I/O errors
+
+**Solutions**:
+1. Unmount if mounted
+2. Delete corrupted image: `rm /media/scratch/dropbox.vfat`
+3. Restart dropbox service (recreates image)
+
+### Update Failures
+
+**Symptoms**:
+- Update fails with space errors
+- Scratch partition full during update
+
+**Solutions**:
+1. Clear scratch partition before update
+2. Ensure at least 50MB free
+3. Retry update
+
+## Security Considerations
+
+### Sensitive Data
+
+Scratch partition may temporarily contain:
+- System logs (may include IP addresses, SSIDs)
+- Crash dumps (may include memory contents)
+- Diagnostic data (system information)
+
+**Protection**:
+- Files encrypted before upload
+- Partition cleared periodically
+- Access restricted to root
+
+### Data Retention
+
+- **Local**: Until uploaded or cleaned up
+- **In Transit**: Encrypted
+- **Cloud**: Per Nest privacy policy
+
+## Best Practices
+
+### For Users
+- Don't manually modify scratch partition
+- Allow system to manage space
+- Ensure network connectivity for uploads
+
+### For Developers
+- Use scratch for temporary files only
+- Clean up after operations
+- Check available space before large operations
+- Handle space exhaustion gracefully
+
+### For Debugging
+- Inspect dropbox.vfat for upload queue
+- Check scratch usage for space issues
+- Monitor upload logs for failures
+- Preserve crash dumps before cleanup
+
+## Related Documentation
+
+- [Dropbox Service](/software-components#dropbox) - Upload service details
+- [Log Partition](/reference/media-log) - Log files
+- [Firmware Updates](/firmware-updates/overview) - Update process
+- [Media Partitions Overview](/reference/media-overview) - Partition structure
+- [Troubleshooting](/troubleshooting/overview) - Debugging procedures

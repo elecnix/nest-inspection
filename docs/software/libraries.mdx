@@ -1,0 +1,383 @@
+---
+title: Software Libraries
+description: Core software libraries and frameworks used in the Nest thermostat
+---
+
+# Software Libraries
+
+The Nest Learning Thermostat utilizes a collection of specialized software libraries that provide essential functionality for graphics, networking, data processing, and system operations. These libraries form the foundation of the application software.
+
+## System Libraries
+
+### uClibc
+- **Purpose**: Lightweight C standard library
+- **Features**: Reduced footprint compared to glibc
+- **Size**: ~600KB compared to ~2MB for glibc
+- **Compatibility**: POSIX-compatible API
+- **Optimization**: Optimized for embedded systems
+
+### BusyBox
+- **Purpose**: Multi-call binary for Unix utilities
+- **Utilities**: Combines common Unix tools in single binary
+- **Size**: Significant space savings
+- **Features**: ls, cp, mv, cat, echo, shell, etc.
+- **Configuration**: Customizable utility selection
+
+### Systemd Libraries
+- **libsystemd**: Systemd integration library
+- **libudev**: Device management library
+- **libdbus**: D-Bus communication library
+- **Features**: Service management, device detection
+
+## Graphics Libraries
+
+### GTK+
+- **Version**: GTK+ 2.x or 3.x (embedded version)
+- **Purpose**: Cross-platform GUI toolkit
+- **Features**: Widget set, event handling, rendering
+- **Integration**: Custom Nest UI components
+- **Optimization**: Configured for embedded use
+
+### Cairo Graphics
+- **Purpose**: 2D graphics rendering library
+- **Features**: Vector graphics, anti-aliasing, transformations
+- **Backends**: Multiple rendering backends
+- **Integration**: Used by GTK+ for rendering
+- **Performance**: Hardware-accelerated rendering
+
+### Pango
+- **Purpose**: Text layout and rendering library
+- **Features**: Unicode text support, font handling
+- **Internationalization**: Multi-language text layout
+- **Integration**: Works with GTK+ and Cairo
+- **Fonts**: Custom font rendering support
+
+### Custom Graphics Libraries
+```c
+// Custom Nest graphics library example
+typedef struct {
+    int width, height;
+    uint16_t *buffer;
+    pixel_format_t format;
+} graphics_surface_t;
+
+// Graphics operations
+void graphics_init(graphics_surface_t *surface);
+void graphics_clear(graphics_surface_t *surface, color_t color);
+void graphics_draw_circle(graphics_surface_t *surface, int x, int y, int radius, color_t color);
+void graphics_draw_text(graphics_surface_t *surface, const char *text, int x, int y, font_t *font);
+void graphics_blit_surface(graphics_surface_t *dst, graphics_surface_t *src, rect_t *dst_rect, rect_t *src_rect);
+```
+
+## Networking Libraries
+
+### ConnMan Libraries
+- **libconnman**: Connection management API
+- **Features**: Network configuration, connectivity
+- **Integration**: Wi-Fi, Ethernet, cellular support
+- **D-Bus**: D-Bus API for network control
+
+### OpenSSL
+- **Purpose**: Cryptographic library
+- **Features**: TLS/SSL, encryption, certificates
+- **Security**: Secure communication protocols
+- **Integration**: Used by network services
+- **Optimization**: Configured for embedded use
+
+### Weave Libraries
+- **libweave**: Nest Weave protocol implementation
+- **Features**: Device-to-device communication
+- **Security**: End-to-end encryption
+- **Integration**: Mobile app connectivity
+- **Networking**: Mesh networking support
+
+## Data Processing Libraries
+
+### JSON-C
+- **Purpose**: JSON parsing and generation
+- **Features**: Lightweight JSON handling
+- **Integration**: Configuration and data exchange
+- **Performance**: Optimized for embedded systems
+- **Memory**: Efficient memory usage
+
+### SQLite
+- **Purpose**: Embedded SQL database engine
+- **Features**: SQL database, transaction support
+- **Storage**: Local data storage and caching
+- **Performance**: Optimized for embedded use
+- **Size**: Small footprint database
+
+### libxml2
+- **Purpose**: XML parsing library
+- **Features**: XML document processing
+- **Integration**: Configuration file parsing
+- **Validation**: XML schema validation
+- **Standards**: W3C XML standards compliance
+
+## Mathematics and Science Libraries
+
+### libm
+- **Purpose**: Mathematical functions library
+- **Features**: Trigonometric, logarithmic, exponential functions
+- **Precision**: Floating-point math operations
+- **Optimization**: Hardware-optimized math functions
+- **Standards**: IEEE 754 floating-point compliance
+
+### Control Algorithm Libraries
+```c
+// PID control library
+typedef struct {
+    float kp;              // Proportional gain
+    float ki;              // Integral gain
+    float kd;              // Derivative gain
+    float setpoint;        // Target setpoint
+    float integral;        // Integral accumulator
+    float prev_error;      // Previous error for derivative
+    float output_min;      // Minimum output limit
+    float output_max;      // Maximum output limit
+} pid_controller_t;
+
+float pid_update(pid_controller_t *pid, float current_value, float dt) {
+    float error = pid->setpoint - current_value;
+    
+    // Proportional term
+    float p_term = pid->kp * error;
+    
+    // Integral term
+    pid->integral += error * dt;
+    float i_term = pid->ki * pid->integral;
+    
+    // Derivative term
+    float d_term = pid->kd * (error - pid->prev_error) / dt;
+    pid->prev_error = error;
+    
+    // Calculate output
+    float output = p_term + i_term + d_term;
+    
+    // Apply limits
+    if (output > pid->output_max) output = pid->output_max;
+    if (output < pid->output_min) output = pid->output_min;
+    
+    return output;
+}
+```
+
+## Hardware Interface Libraries
+
+### libgpio
+- **Purpose**: GPIO pin control library
+- **Features**: Pin configuration, input/output control
+- **Integration**: Hardware abstraction layer
+- **Performance**: Low-latency GPIO operations
+- **Safety**: Pin protection and validation
+
+### libi2c
+- **Purpose**: I2C bus communication library
+- **Features**: I2C master/slave communication
+- **Devices**: Sensor and peripheral communication
+- **Error Handling**: Robust error handling
+- **Speed**: Configurable bus speeds
+
+### libspi
+- **Purpose**: SPI bus communication library
+- **Features**: SPI master communication
+- **Devices**: Display and peripheral communication
+- **Modes**: Multiple SPI modes support
+- **Performance**: High-speed data transfer
+
+### Hardware Abstraction Example
+```c
+// Hardware abstraction layer
+typedef struct {
+    int (*init)(void);
+    int (*read)(uint8_t reg, uint8_t *data, size_t len);
+    int (*write)(uint8_t reg, uint8_t *data, size_t len);
+    int (*deinit)(void);
+} hardware_interface_t;
+
+// Temperature sensor interface
+hardware_interface_t temp_sensor = {
+    .init = temp_sensor_init,
+    .read = temp_sensor_read,
+    .write = temp_sensor_write,
+    .deinit = temp_sensor_deinit
+};
+```
+
+## Utility Libraries
+
+### libconfig
+- **Purpose**: Configuration file parsing library
+- **Features**: Structured configuration files
+- **Format**: Human-readable configuration format
+- **Validation**: Configuration validation
+- **Performance**: Fast configuration loading
+
+### zlib
+- **Purpose**: Data compression library
+- **Features**: Lossless data compression
+- **Integration**: Log compression, data storage
+- **Performance**: Fast compression/decompression
+- **Memory**: Low memory footprint
+
+### libcurl
+- **Purpose**: HTTP client library
+- **Features**: HTTP/HTTPS communication
+- **Integration**: Cloud services communication
+- **Security**: TLS support, certificate handling
+- **Protocols**: Multiple protocol support
+
+## Audio Libraries
+
+### libasound
+- **Purpose**: ALSA sound system library
+- **Features**: Audio playback and recording
+- **Integration**: System sounds and alerts
+- **Codecs**: Multiple audio codec support
+- **Mixer**: Audio mixer control
+
+### Audio Processing Library
+```c
+// Audio processing for alerts and feedback
+typedef struct {
+    int sample_rate;
+    int channels;
+    int bit_depth;
+    uint8_t *audio_data;
+    size_t data_size;
+} audio_buffer_t;
+
+// Audio playback functions
+int audio_init(void);
+int audio_play_sound(audio_buffer_t *buffer);
+int audio_set_volume(int volume);
+int audio_stop_playback(void);
+void audio_cleanup(void);
+```
+
+## Machine Learning Libraries
+
+### Custom ML Library
+- **Purpose**: Machine learning algorithms
+- **Features**: Pattern recognition, prediction
+- **Algorithms**: Decision trees, neural networks
+- **Training**: On-device learning capabilities
+- **Optimization**: Embedded-optimized algorithms
+
+### Learning Algorithm Example
+```c
+// Simple pattern learning
+typedef struct {
+    float *features;
+    int feature_count;
+    float *weights;
+    int class_count;
+} pattern_classifier_t;
+
+int train_classifier(pattern_classifier_t *classifier, 
+                    float *training_data, 
+                    int *labels, 
+                    int sample_count) {
+    // Implement training algorithm (e.g., gradient descent)
+    for (int epoch = 0; epoch < MAX_EPOCHS; epoch++) {
+        for (int i = 0; i < sample_count; i++) {
+            float prediction = predict(classifier, training_data + i * classifier->feature_count);
+            float error = labels[i] - prediction;
+            update_weights(classifier, training_data + i * classifier->feature_count, error);
+        }
+    }
+    return 0;
+}
+```
+
+## Security Libraries
+
+### libcrypto
+- **Purpose**: Cryptographic functions
+- **Features**: Encryption, hashing, signatures
+- **Algorithms**: AES, RSA, SHA, etc.
+- **Integration**: Secure communication and storage
+- **Performance**: Hardware acceleration support
+
+### libssl
+- **Purpose**: SSL/TLS protocol implementation
+- **Features**: Secure network communication
+- **Certificates**: X.509 certificate handling
+- **Integration**: HTTPS and secure protocols
+- **Standards**: RFC compliance
+
+## Development Libraries
+
+### libgtest
+- **Purpose**: Google Test framework
+- **Features**: Unit testing framework
+- **Integration**: Automated testing
+- **Assertions**: Rich assertion macros
+- **Mocking**: Mock object support
+
+### libgmock
+- **Purpose**: Google Mock framework
+- **Features**: Mock object creation
+- **Integration**: Unit test mocking
+- **Behavior**: Mock behavior definition
+- **Verification**: Mock call verification
+
+## Library Optimization
+
+### Size Optimization
+- **Link-time Optimization**: LTO for reduced binary size
+- **Dead Code Elimination**: Remove unused code
+- **Symbol Stripping**: Strip debug symbols
+- **Compression**: Library compression techniques
+
+### Performance Optimization
+- **Compiler Optimizations**: -O2/-O3 optimization levels
+- **Profile-guided Optimization**: PGO for performance
+- **Hardware Acceleration**: Utilize hardware features
+- **Memory Optimization**: Efficient memory usage
+
+### Custom Configuration
+```bash
+# Library build configuration
+./configure --host=arm-linux-gnueabi \
+            --enable-static \
+            --disable-shared \
+            --with-pic \
+            --disable-debug \
+            --enable-optimizations
+```
+
+## Library Management
+
+### Package Management
+- **Opkg**: Lightweight package manager
+- **Dependencies**: Automatic dependency resolution
+- **Updates**: Library update management
+- **Versions**: Version control and compatibility
+
+### Build System
+- **BitBake**: OpenEmbedded build system
+- **Recipes**: Library build recipes
+- **Layers**: Organized build layers
+- **Cross-compilation**: ARM cross-compilation support
+
+## Quality Assurance
+
+### Library Testing
+- **Unit Tests**: Individual library testing
+- **Integration Tests**: Library integration testing
+- **Performance Tests**: Library performance benchmarking
+- **Memory Tests**: Memory leak detection
+
+### Library Standards
+- **API Standards**: Consistent API design
+- **Documentation**: Comprehensive library documentation
+- **Versioning**: Semantic versioning
+- **Compatibility**: Backward compatibility maintenance
+
+## Related Documentation
+
+- [Software Overview](./overview.mdx)
+- [System Services](./system-services.mdx)
+- [nlclient Application](./nlclient.mdx)
+- [Development Environment](../development/debugging.mdx)

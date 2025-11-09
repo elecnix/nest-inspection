@@ -1,0 +1,469 @@
+---
+title: Log Partition
+description: 'Complete reference of /media/log files'
+---
+
+# Log Partition (/media/log)
+
+**Device**: mtdblock13  
+**Size**: 20MB  
+**Usage**: 4% (892KB used)  
+**Mount**: Read-write JFFS2  
+**Purpose**: System and application logs
+
+## Overview
+
+The log partition stores system messages, application logs, and event logs. Logs are rotated when they reach size limits to prevent partition overflow.
+
+**For detailed analysis and interpretation of log contents**, see the [**Log Analysis Guide**](/troubleshooting/log-analysis), which explains what each log entry means and how to troubleshoot common issues.
+
+## File Listing
+
+```
+/media/log/
+├── messages          # System messages (current)
+├── messages#25760    # System messages (rotated)
+├── nlclient          # nlclient application log (current)
+├── nlclient#220924   # nlclient log (rotated)
+├── nlevent           # Nest event log (current)
+├── nlevent#180759    # Nest event log (rotated)
+├── nlhlevent         # HeatLink event log (current)
+└── nlhlevent#0       # HeatLink event log (rotated)
+```
+
+## Log Files
+
+### messages
+**Type**: Text log file  
+**Size**: Variable (rotates at ~1MB)  
+**Purpose**: System-wide messages and kernel logs
+
+**Description**: Standard Linux system log containing kernel messages, system service logs, and important system events.
+
+**Format**: Syslog format
+```
+Sep 12 14:23:45 nest kernel: [12345.678] Device initialized
+Sep 12 14:23:46 nest osm: Service nlclient started
+Sep 12 14:23:47 nest connmand: WiFi connected to Merlot
+```
+
+**Log Levels**:
+- `emerg` - System is unusable
+- `alert` - Action must be taken immediately
+- `crit` - Critical conditions
+- `err` - Error conditions
+- `warning` - Warning conditions
+- `notice` - Normal but significant
+- `info` - Informational
+- `debug` - Debug messages
+
+**Contains**:
+- Kernel messages (hardware, drivers)
+- System service logs (osm, watchdogd, etc.)
+- Network events (connmand, wpa_supplicant)
+- Hardware events (sensors, display)
+- Boot messages
+- Shutdown messages
+
+**Rotation**: When file reaches ~1MB, renamed to `messages#[number]`
+
+**Viewing**:
+```bash
+tail -f /media/log/messages
+cat /media/log/messages | grep error
+```
+
+### messages#25760
+**Type**: Rotated log file  
+**Purpose**: Previous system messages
+
+**Description**: Rotated copy of system messages. Number in filename is rotation counter or timestamp.
+
+**Retention**: Kept until space needed, then deleted
+
+### nlclient
+**Type**: Text log file  
+**Size**: Variable (rotates at ~5MB)  
+**Purpose**: Main thermostat application log
+
+**Description**: Detailed logging from the nlclient application, including thermostat logic, HVAC control, learning algorithms, and cloud communication.
+
+**Format**: Structured log format
+```
+2019-09-12 14:23:45.123 [INFO] [ThermostatController] Temperature: 72.5°F, Target: 72.0°F
+2019-09-12 14:23:46.456 [DEBUG] [ScheduleManager] Next transition at 18:00
+2019-09-12 14:23:47.789 [WARN] [HVACController] Stage 1 heating activated
+```
+
+**Log Categories**:
+- **ThermostatController** - Core thermostat logic
+- **ScheduleManager** - Schedule execution and learning
+- **HVACController** - HVAC system control
+- **SensorFusion** - Temperature sensor processing
+- **AutoAway** - Occupancy detection
+- **PredictionManager** - Time-to-temperature prediction
+- **EnergyStats** - Energy tracking
+- **WeaveClient** - Cloud communication
+- **UIManager** - User interface events
+- **NetworkManager** - Network status
+
+**Contains**:
+- Temperature readings
+- HVAC state changes
+- Schedule events
+- Learning updates
+- Auto-away events
+- Prediction calculations
+- Energy statistics
+- Cloud sync events
+- User interactions
+- Error conditions
+
+**Rotation**: When file reaches ~5MB, renamed to `nlclient#[number]`
+
+**Viewing**:
+```bash
+tail -f /media/log/nlclient
+grep -i error /media/log/nlclient
+grep "HVACController" /media/log/nlclient
+```
+
+### nlclient#220924
+**Type**: Rotated log file  
+**Purpose**: Previous nlclient log
+
+**Description**: Rotated copy of nlclient log. Useful for historical analysis and debugging issues that occurred in the past.
+
+**Retention**: Usually 1-2 rotated copies kept
+
+### nlevent
+**Type**: Text log file  
+**Size**: Variable (rotates at ~2MB)  
+**Purpose**: Nest event log
+
+**Description**: High-level event log for significant thermostat events, state changes, and user interactions.
+
+**Format**: Structured event format
+```
+2019-09-12 14:23:45 EVENT: HVAC_ON type=heating stage=1
+2019-09-12 14:25:30 EVENT: TEMP_TARGET_CHANGED from=70.0 to=72.0 by=user
+2019-09-12 15:30:00 EVENT: HVAC_OFF type=heating runtime=3900s
+```
+
+**Event Types**:
+- **HVAC_ON/OFF** - HVAC system activation/deactivation
+- **TEMP_TARGET_CHANGED** - Setpoint changes
+- **SCHEDULE_TRANSITION** - Schedule slot changes
+- **AUTO_AWAY_CHANGED** - Occupancy state changes
+- **LEARNING_EVENT** - Learning algorithm updates
+- **NETWORK_CONNECTED/DISCONNECTED** - Network status
+- **CLOUD_SYNC** - Cloud synchronization
+- **USER_INTERACTION** - User input events
+- **SYSTEM_UPDATE** - Firmware updates
+- **ERROR_CONDITION** - Error events
+
+**Contains**:
+- HVAC runtime events
+- User interactions
+- Schedule changes
+- Network events
+- System state changes
+- Error conditions
+
+**Rotation**: When file reaches ~2MB
+
+**Viewing**:
+```bash
+tail -f /media/log/nlevent
+grep "HVAC_ON" /media/log/nlevent
+grep "ERROR" /media/log/nlevent
+```
+
+### nlevent#180759
+**Type**: Rotated log file  
+**Purpose**: Previous event log
+
+**Description**: Rotated copy of event log for historical analysis.
+
+### nlhlevent
+**Type**: Text log file  
+**Size**: Variable (rotates at ~1MB)  
+**Purpose**: HeatLink event log
+
+**Description**: Event log specific to HeatLink accessory (boiler control). Only present if HeatLink is connected.
+
+**Format**: Similar to nlevent
+```
+2019-09-12 14:23:45 HEATLINK: BOILER_ON
+2019-09-12 15:30:00 HEATLINK: BOILER_OFF runtime=3900s
+```
+
+**Event Types**:
+- **BOILER_ON/OFF** - Boiler activation/deactivation
+- **HEATLINK_CONNECTED/DISCONNECTED** - Connection status
+- **FIRMWARE_UPDATE** - HeatLink firmware updates
+- **ERROR** - HeatLink errors
+
+**Contains**:
+- Boiler control events
+- HeatLink communication
+- Firmware updates
+- Error conditions
+
+**Rotation**: When file reaches ~1MB
+
+**Note**: May be empty or absent if HeatLink is not installed
+
+### nlhlevent#0
+**Type**: Rotated log file  
+**Purpose**: Previous HeatLink event log
+
+## Log Rotation
+
+### Rotation Triggers
+Logs are rotated when:
+1. File size exceeds threshold
+2. Partition usage exceeds 80%
+3. Manual rotation triggered
+
+### Rotation Process
+1. Current log renamed with suffix (e.g., `nlclient` → `nlclient#220924`)
+2. New empty log file created
+3. Old rotated logs deleted if space needed
+
+### Rotation Thresholds
+- `messages`: ~1MB
+- `nlclient`: ~5MB
+- `nlevent`: ~2MB
+- `nlhlevent`: ~1MB
+
+### Retention Policy
+- Keep at least 1 rotated copy
+- Delete oldest when partition >80% full
+- Upload to cloud before deletion
+
+## Log Management
+
+### Viewing Logs
+
+**Real-time monitoring**:
+```bash
+tail -f /media/log/messages
+tail -f /media/log/nlclient
+tail -f /media/log/nlevent
+```
+
+**Search for errors**:
+```bash
+grep -i error /media/log/messages
+grep -i warn /media/log/nlclient
+grep ERROR /media/log/nlevent
+```
+
+**View specific time range**:
+```bash
+grep "2019-09-12 14:" /media/log/nlclient
+```
+
+**Count log entries**:
+```bash
+wc -l /media/log/nlclient
+```
+
+### Log Analysis
+
+**HVAC runtime analysis**:
+```bash
+grep "HVAC_ON\|HVAC_OFF" /media/log/nlevent
+```
+
+**Temperature tracking**:
+```bash
+grep "Temperature:" /media/log/nlclient
+```
+
+**Network events**:
+```bash
+grep -i "network\|wifi\|connected" /media/log/messages
+```
+
+**Error summary**:
+```bash
+grep -i error /media/log/* | cut -d: -f1 | sort | uniq -c
+```
+
+### Log Cleanup
+
+**Manual cleanup** (if needed):
+```bash
+# Delete rotated logs
+rm /media/log/*#*
+
+# Truncate current logs (use with caution)
+> /media/log/messages
+> /media/log/nlclient
+```
+
+**Check partition usage**:
+```bash
+df -h /media/log
+du -h /media/log/*
+```
+
+## Log Upload
+
+### Dropbox Service
+Logs are periodically uploaded to Nest cloud via the dropbox service:
+
+1. Logs staged in `/media/scratch/dropbox.vfat`
+2. Compressed and encrypted
+3. Uploaded to cloud
+4. Deleted after successful upload
+
+### Upload Triggers
+- Scheduled uploads (daily)
+- Crash events (immediate)
+- High-priority errors (immediate)
+- Manual trigger via app
+
+### Upload Contents
+- Current and rotated logs
+- Crash dumps
+- System diagnostics
+- Metrics data
+
+## Troubleshooting
+
+### Log Partition Full
+
+**Symptoms**: 
+- Logs stop updating
+- System errors about disk space
+- Performance degradation
+
+**Solutions**:
+1. Check partition usage: `df -h /media/log`
+2. Delete rotated logs: `rm /media/log/*#*`
+3. Truncate large logs if safe
+4. Trigger log upload
+5. Investigate what's filling partition
+
+### Missing Logs
+
+**Symptoms**: Log files absent or empty
+
+**Causes**:
+- Logging disabled
+- Partition corruption
+- Service not running
+
+**Solutions**:
+1. Check if services are running
+2. Check partition mount status
+3. Restart logging services
+4. Check system messages for errors
+
+### Logs Not Rotating
+
+**Symptoms**: Single log file growing very large
+
+**Causes**:
+- Rotation service not running
+- Partition full (can't create new file)
+- Configuration error
+
+**Solutions**:
+1. Check available space
+2. Manually rotate logs
+3. Restart logging services
+
+## Log Levels
+
+### Setting Log Levels
+
+Log verbosity can be adjusted (typically via configuration):
+
+- **CRITICAL** - Only critical errors
+- **ERROR** - Errors and critical
+- **WARNING** - Warnings, errors, critical
+- **INFO** - Informational, warnings, errors, critical (default)
+- **DEBUG** - All messages including debug
+
+**Trade-offs**:
+- Higher verbosity = more detail, larger logs
+- Lower verbosity = less detail, smaller logs
+
+### Debug Logging
+
+Enable debug logging for troubleshooting:
+```bash
+# Typically requires configuration change and service restart
+# Exact method varies by service
+```
+
+**Warning**: Debug logging generates large amounts of data quickly
+
+## Log Format Details
+
+### Timestamp Format
+```
+YYYY-MM-DD HH:MM:SS.mmm
+2019-09-12 14:23:45.123
+```
+
+### Log Entry Structure
+```
+[Timestamp] [Level] [Component] Message
+2019-09-12 14:23:45.123 [INFO] [ThermostatController] Temperature: 72.5°F
+```
+
+### Common Components
+- `ThermostatController`
+- `ScheduleManager`
+- `HVACController`
+- `SensorFusion`
+- `AutoAway`
+- `PredictionManager`
+- `WeaveClient`
+- `NetworkManager`
+- `UIManager`
+
+## Performance Considerations
+
+### Logging Overhead
+- Minimal CPU impact
+- I/O impact during writes
+- Flash wear from frequent writes
+
+### Optimization
+- Logs buffered in memory
+- Periodic flush to disk
+- Rotation reduces file sizes
+- Compression before upload
+
+## Security and Privacy
+
+### Sensitive Information
+Logs may contain:
+- IP addresses
+- Network SSIDs (not passwords)
+- Temperature data
+- Usage patterns
+- Device identifiers
+
+### Access Control
+- Logs readable only by root
+- Uploaded logs encrypted
+- Cloud storage secured
+
+### Data Retention
+- Local: Until rotated/deleted
+- Cloud: Per Nest privacy policy
+
+## Related Documentation
+
+- [**Log Analysis Guide**](/troubleshooting/log-analysis) - Comprehensive guide to interpreting log contents
+- [System Monitoring](/system-management/monitoring) - Monitoring tools
+- [Troubleshooting](/troubleshooting/overview) - Using logs for debugging
+- [Media Partitions Overview](/reference/media-overview) - Partition structure
+- [Dropbox Service](/software-components#dropbox) - Log upload service

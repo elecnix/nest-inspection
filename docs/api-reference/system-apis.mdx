@@ -1,0 +1,564 @@
+---
+title: System APIs
+description: Core system APIs for process management, memory control, and system operations
+---
+
+# System APIs
+
+The Nest Learning Thermostat System APIs provide comprehensive access to core system functionality including process management, memory control, filesystem operations, and system monitoring. This document details all system APIs with their functions, parameters, and usage examples.
+
+## Process Control API
+
+### Overview
+The Process Control API manages system processes, threads, and execution scheduling.
+
+```c
+// Process control API structure
+typedef struct {
+    // Process creation and management
+    process_id_t (*create_process)(process_config_t *config);
+    int (*terminate_process)(process_id_t pid);
+    int (*suspend_process)(process_id_t pid);
+    int (*resume_process)(process_id_t pid);
+    
+    // Process information and monitoring
+    process_status_t (*get_process_status)(process_id_t pid);
+    process_info_t (*get_process_info)(process_id_t pid);
+    process_list_t (*enumerate_processes)(void);
+    
+    // Process priority and scheduling
+    int (*set_process_priority)(process_id_t pid, priority_t priority);
+    priority_t (*get_process_priority)(process_id_t pid);
+    int (*set_cpu_affinity)(process_id_t pid, cpu_set_t *affinity);
+    
+    // Thread management
+    thread_id_t (*create_thread)(thread_config_t *config);
+    int (*terminate_thread)(thread_id_t tid);
+    thread_info_t (*get_thread_info)(thread_id_t tid);
+} process_control_api_t;
+
+// Process configuration
+typedef struct {
+    char executable_path[256];             // Executable path
+    char arguments[1024];                  // Command line arguments
+    char working_directory[256];           // Working directory
+    environment_t *environment;            // Environment variables
+    priority_t priority;                   // Process priority
+    cpu_set_t *cpu_affinity;               // CPU affinity
+    resource_limits_t *limits;             // Resource limits
+    security_context_t *security;          // Security context
+} process_config_t;
+
+// Process creation example
+process_id_t create_thermostat_process(void) {
+    process_config_t config = {
+        .executable_path = "/nestlabs/bin/nlclient",
+        .arguments = "--display --touch",
+        .working_directory = "/nestlabs",
+        .priority = PRIORITY_NORMAL,
+        .cpu_affinity = NULL,
+        .limits = NULL,
+        .security = NULL
+    };
+    
+    process_control_api_t *api = get_process_control_api();
+    return api->create_process(&config);
+}
+```
+
+### Process Monitoring
+Real-time monitoring of process execution and resource usage.
+
+```c
+// Process monitoring API
+typedef struct {
+    monitoring_handle_t (*start_monitoring)(process_id_t pid, 
+                                           monitoring_config_t *config);
+    int (*stop_monitoring)(monitoring_handle_t handle);
+    process_metrics_t (*get_process_metrics)(monitoring_handle_t handle);
+    int (*set_monitoring_callback)(monitoring_handle_t handle, 
+                                  monitoring_callback_t callback);
+} process_monitoring_api_t;
+
+// Process metrics
+typedef struct {
+    cpu_usage_t cpu_usage;                 // CPU usage percentage
+    memory_usage_t memory_usage;           // Memory usage
+    io_statistics_t io_stats;              // I/O statistics
+    network_statistics_t network_stats;    // Network statistics
+    thread_count_t thread_count;           // Thread count
+    file_descriptor_count_t fd_count;      // File descriptor count
+    uptime_t uptime;                       // Process uptime
+    timestamp_t timestamp;                 // Metrics timestamp
+} process_metrics_t;
+
+// Example process monitoring
+void monitor_thermostat_process(process_id_t pid) {
+    process_monitoring_api_t *monitor = get_process_monitoring_api();
+    
+    monitoring_config_t config = {
+        .sampling_interval = 1000,         // 1 second interval
+        .metrics_flags = METRICS_CPU | METRICS_MEMORY | METRICS_IO,
+        .buffer_size = 1000
+    };
+    
+    monitoring_handle_t handle = monitor->start_monitoring(pid, &config);
+    
+    // Set callback for metrics updates
+    monitor->set_monitoring_callback(handle, process_metrics_callback);
+}
+
+void process_metrics_callback(process_metrics_t *metrics, void *user_data) {
+    printf("Process CPU usage: %.2f%%\n", metrics->cpu_usage);
+    printf("Process memory usage: %zu KB\n", metrics->memory_usage.resident);
+    printf("Process uptime: %lu seconds\n", metrics->uptime);
+}
+```
+
+## Memory Management API
+
+### Overview
+The Memory Management API provides memory allocation, deallocation, and monitoring functions.
+
+```c
+// Memory management API structure
+typedef struct {
+    // Memory allocation and deallocation
+    void* (*allocate_memory)(size_t size, allocation_flags_t flags);
+    int (*free_memory)(void* ptr);
+    void* (*reallocate_memory)(void* ptr, size_t new_size);
+    
+    // Memory information and statistics
+    memory_info_t (*get_memory_info)(void);
+    memory_stats_t (*get_memory_statistics)(void);
+    zone_info_t (*get_memory_zone_info)(memory_zone_t zone);
+    
+    // Memory protection and control
+    int (*set_memory_protection)(void* ptr, size_t size, protection_t protection);
+    int (*lock_memory)(void* ptr, size_t size);
+    int (*unlock_memory)(void* ptr, size_t size);
+    
+    // Memory debugging and analysis
+    int (*enable_memory_debugging)(debug_config_t *config);
+    memory_leak_report_t (*detect_memory_leaks)(void);
+    fragmentation_info_t (*get_fragmentation_info)(void);
+} memory_management_api_t;
+
+// Memory allocation flags
+typedef enum {
+    ALLOC_FLAG_NORMAL = 0x00,              // Normal allocation
+    ALLOC_FLAG_ZEROED = 0x01,               // Zero-initialized memory
+    ALLOC_FLAG_ALIGNED = 0x02,              // Aligned allocation
+    ALLOC_FLAG_NON_CACHED = 0x04,           // Non-cached memory
+    ALLOC_FLAG_CONTIGUOUS = 0x08,           // Physically contiguous
+    ALLOC_FLAG_SECURE = 0x10                // Secure allocation
+} allocation_flags_t;
+
+// Memory allocation example
+void* allocate_thermostat_buffer(size_t size) {
+    memory_management_api_t *api = get_memory_management_api();
+    
+    allocation_flags_t flags = ALLOC_FLAG_ALIGNED | ALLOC_FLAG_ZEROED;
+    void* buffer = api->allocate_memory(size, flags);
+    
+    if (buffer) {
+        // Set memory protection
+        api->set_memory_protection(buffer, size, 
+                                 PROTECTION_READ | PROTECTION_WRITE);
+    }
+    
+    return buffer;
+}
+```
+
+### Memory Pool Management
+Efficient memory pool management for frequently allocated objects.
+
+```c
+// Memory pool API
+typedef struct {
+    pool_handle_t (*create_pool)(pool_config_t *config);
+    int (*destroy_pool)(pool_handle_t handle);
+    void* (*pool_allocate)(pool_handle_t handle);
+    int (*pool_free)(pool_handle_t handle, void* ptr);
+    pool_stats_t (*get_pool_stats)(pool_handle_t handle);
+} memory_pool_api_t;
+
+// Memory pool configuration
+typedef struct {
+    size_t block_size;                     // Block size
+    size_t block_count;                    // Number of blocks
+    size_t alignment;                      // Alignment requirement
+    pool_type_t type;                      // Pool type
+    growth_policy_t growth_policy;         // Growth policy
+    cleanup_policy_t cleanup_policy;       // Cleanup policy
+} pool_config_t;
+
+// Example memory pool usage
+pool_handle_t create_sensor_data_pool(void) {
+    memory_pool_api_t *pool_api = get_memory_pool_api();
+    
+    pool_config_t config = {
+        .block_size = sizeof(sensor_data_t),
+        .block_count = 100,
+        .alignment = 8,
+        .type = POOL_TYPE_FIXED,
+        .growth_policy = GROWTH_POLICY_NONE,
+        .cleanup_policy = CLEANUP_POLICY_IMMEDIATE
+    };
+    
+    return pool_api->create_pool(&config);
+}
+
+sensor_data_t* allocate_sensor_data(pool_handle_t pool) {
+    memory_pool_api_t *pool_api = get_memory_pool_api();
+    return (sensor_data_t*)pool_api->pool_allocate(pool);
+}
+```
+
+## Filesystem API
+
+### Overview
+The Filesystem API provides file and directory operations, path manipulation, and filesystem monitoring.
+
+```c
+// Filesystem API structure
+typedef struct {
+    // File operations
+    file_handle_t (*open_file)(const char* path, open_flags_t flags);
+    int (*close_file)(file_handle_t handle);
+    ssize_t (*read_file)(file_handle_t handle, void* buffer, size_t size);
+    ssize_t (*write_file)(file_handle_t handle, const void* buffer, size_t size);
+    off_t (*seek_file)(file_handle_t handle, off_t offset, seek_origin_t origin);
+    
+    // File information and attributes
+    file_info_t (*get_file_info)(const char* path);
+    int (*set_file_attributes)(const char* path, file_attributes_t *attr);
+    int (*change_file_permissions)(const char* path, permissions_t permissions);
+    
+    // Directory operations
+    dir_handle_t (*open_directory)(const char* path);
+    int (*close_directory)(dir_handle_t handle);
+    dir_entry_t (*read_directory)(dir_handle_t handle);
+    int (*create_directory)(const char* path, permissions_t permissions);
+    int (*remove_directory)(const char* path);
+    
+    // Path manipulation
+    int (*canonicalize_path)(const char* path, char* resolved, size_t size);
+    int (*get_absolute_path)(const char* path, char* absolute, size_t size);
+    int (*get_relative_path)(const char* from, const char* to, char* relative, size_t size);
+} filesystem_api_t;
+
+// File open flags
+typedef enum {
+    OPEN_FLAG_READ = 0x01,                  // Read access
+    OPEN_FLAG_WRITE = 0x02,                 // Write access
+    OPEN_FLAG_CREATE = 0x04,                // Create if not exists
+    OPEN_FLAG_APPEND = 0x08,                // Append mode
+    OPEN_FLAG_TRUNCATE = 0x10,              // Truncate if exists
+    OPEN_FLAG_EXCLUSIVE = 0x20,             // Exclusive creation
+    OPEN_FLAG_NON_BLOCKING = 0x40,          // Non-blocking mode
+    OPEN_FLAG_SYNC = 0x80                   // Synchronous writes
+} open_flags_t;
+
+// File operations example
+int write_thermostat_config(const char* path, thermostat_config_t *config) {
+    filesystem_api_t *fs_api = get_filesystem_api();
+    
+    // Open file for writing
+    file_handle_t handle = fs_api->open_file(path, 
+                                           OPEN_FLAG_WRITE | OPEN_FLAG_CREATE);
+    
+    if (handle == INVALID_FILE_HANDLE) {
+        return -1;
+    }
+    
+    // Write configuration
+    ssize_t written = fs_api->write_file(handle, config, sizeof(*config));
+    
+    // Close file
+    fs_api->close_file(handle);
+    
+    return (written == sizeof(*config)) ? 0 : -1;
+}
+```
+
+### Filesystem Monitoring
+Real-time monitoring of filesystem changes and events.
+
+```c
+// Filesystem monitoring API
+typedef struct {
+    monitor_handle_t (*start_monitoring)(const char* path, 
+                                        monitor_config_t *config);
+    int (*stop_monitoring)(monitor_handle_t handle);
+    fs_event_t (*get_next_event)(monitor_handle_t handle);
+    int (*set_event_callback)(monitor_handle_t handle, 
+                             event_callback_t callback);
+} filesystem_monitoring_api_t;
+
+// Filesystem events
+typedef enum {
+    FS_EVENT_FILE_CREATED,                 // File created
+    FS_EVENT_FILE_MODIFIED,                // File modified
+    FS_EVENT_FILE_DELETED,                 // File deleted
+    FS_EVENT_DIRECTORY_CREATED,            // Directory created
+    FS_EVENT_DIRECTORY_DELETED,            // Directory deleted
+    FS_EVENT_PERMISSION_CHANGED,           // Permissions changed
+    FS_EVENT_ATTRIBUTE_CHANGED             // Attributes changed
+} filesystem_event_type_t;
+
+// Filesystem event structure
+typedef struct {
+    filesystem_event_type_t type;          // Event type
+    char path[512];                        // File/directory path
+    timestamp_t timestamp;                 // Event timestamp
+    event_attributes_t attributes;         // Event attributes
+} fs_event_t;
+
+// Example filesystem monitoring
+void monitor_config_directory(const char* config_path) {
+    filesystem_monitoring_api_t *monitor = get_filesystem_monitoring_api();
+    
+    monitor_config_t config = {
+        .event_mask = FS_EVENT_FILE_MODIFIED | FS_EVENT_FILE_CREATED,
+        .recursive = true,
+        .buffer_size = 1024
+    };
+    
+    monitor_handle_t handle = monitor->start_monitoring(config_path, &config);
+    monitor->set_event_callback(handle, config_file_changed_callback);
+}
+
+void config_file_changed_callback(fs_event_t *event, void *user_data) {
+    switch (event->type) {
+        case FS_EVENT_FILE_MODIFIED:
+            printf("Configuration file modified: %s\n", event->path);
+            reload_configuration(event->path);
+            break;
+            
+        case FS_EVENT_FILE_CREATED:
+            printf("New configuration file: %s\n", event->path);
+            break;
+    }
+}
+```
+
+## System Monitoring API
+
+### Overview
+The System Monitoring API provides real-time monitoring of system resources and performance metrics.
+
+```c
+// System monitoring API structure
+typedef struct {
+    // System metrics collection
+    metrics_handle_t (*start_metrics_collection)(metrics_config_t *config);
+    int (*stop_metrics_collection)(metrics_handle_t handle);
+    system_metrics_t (*get_system_metrics)(metrics_handle_t handle);
+    
+    // Resource monitoring
+    cpu_metrics_t (*get_cpu_metrics)(void);
+    memory_metrics_t (*get_memory_metrics)(void);
+    disk_metrics_t (*get_disk_metrics)(void);
+    network_metrics_t (*get_network_metrics)(void);
+    
+    // Performance counters
+    counter_handle_t (*create_counter)(counter_config_t *config);
+    int (*increment_counter)(counter_handle_t handle);
+    counter_value_t (*get_counter_value)(counter_handle_t handle);
+    
+    // Alerts and thresholds
+    alert_handle_t (*create_alert)(alert_config_t *config);
+    int (*set_threshold)(alert_handle_t handle, threshold_t *threshold);
+    alert_status_t (*get_alert_status)(alert_handle_t handle);
+} system_monitoring_api_t;
+
+// System metrics structure
+typedef struct {
+    cpu_metrics_t cpu;                     // CPU metrics
+    memory_metrics_t memory;               // Memory metrics
+    disk_metrics_t disk;                   // Disk metrics
+    network_metrics_t network;             // Network metrics
+    thermal_metrics_t thermal;             // Thermal metrics
+    power_metrics_t power;                 // Power metrics
+    timestamp_t timestamp;                 // Metrics timestamp
+} system_metrics_t;
+
+// CPU metrics
+typedef struct {
+    float usage_percentage;                 // Overall CPU usage
+    float usage_per_core[MAX_CORES];       // Per-core usage
+    uint64_t context_switches;             // Context switches
+    uint64_t interrupts;                   // Interrupts
+    float load_average[3];                 // 1, 5, 15 minute load averages
+    cpu_frequency_t frequency;             // CPU frequency
+} cpu_metrics_t;
+
+// Example system monitoring
+void monitor_system_resources(void) {
+    system_monitoring_api_t *monitor = get_system_monitoring_api();
+    
+    metrics_config_t config = {
+        .sampling_interval = 5000,         // 5 second interval
+        .metrics_mask = METRICS_CPU | METRICS_MEMORY | METRICS_THERMAL,
+        .buffer_size = 100
+    };
+    
+    metrics_handle_t handle = monitor->start_metrics_collection(&config);
+    
+    while (true) {
+        system_metrics_t metrics = monitor->get_system_metrics(handle);
+        
+        printf("CPU usage: %.2f%%\n", metrics.cpu.usage_percentage);
+        printf("Memory usage: %.2f%%\n", metrics.memory.usage_percentage);
+        printf("Temperature: %.1f°C\n", metrics.thermal.temperature);
+        
+        sleep(5);
+    }
+}
+```
+
+### Performance Counters
+Custom performance counters for tracking application-specific metrics.
+
+```c
+// Performance counter API
+typedef struct {
+    counter_handle_t (*create_counter)(const char* name, counter_type_t type);
+    int (*destroy_counter)(counter_handle_t handle);
+    int (*increment_counter)(counter_handle_t handle);
+    int (*add_to_counter)(counter_handle_t handle, counter_value_t value);
+    counter_value_t (*get_counter_value)(counter_handle_t handle);
+    int (*reset_counter)(counter_handle_t handle);
+} performance_counter_api_t;
+
+// Counter types
+typedef enum {
+    COUNTER_TYPE_INTEGER,                  // Integer counter
+    COUNTER_TYPE_FLOAT,                    // Float counter
+    COUNTER_TYPE_RATE,                     // Rate counter
+    COUNTER_TYPE_HISTOGRAM                 // Histogram counter
+} counter_type_t;
+
+// Example performance counters
+void setup_thermostat_counters(void) {
+    performance_counter_api_t *counter_api = get_performance_counter_api();
+    
+    // Create counters for thermostat operations
+    counter_handle_t temp_readings = counter_api->create_counter(
+        "temperature_readings", COUNTER_TYPE_INTEGER);
+    counter_handle_t hvac_cycles = counter_api->create_counter(
+        "hvac_cycles", COUNTER_TYPE_INTEGER);
+    counter_handle_t response_time = counter_api->create_counter(
+        "response_time", COUNTER_TYPE_HISTOGRAM);
+    
+    // Store counter handles for later use
+    store_thermostat_counter(TEMP_READINGS_COUNTER, temp_readings);
+    store_thermostat_counter(HVAC_CYCLES_COUNTER, hvac_cycles);
+    store_thermostat_counter(RESPONSE_TIME_COUNTER, response_time);
+}
+
+void record_temperature_reading(void) {
+    performance_counter_api_t *counter_api = get_performance_counter_api();
+    counter_handle_t counter = get_thermostat_counter(TEMP_READINGS_COUNTER);
+    counter_api->increment_counter(counter);
+}
+```
+
+## System Configuration API
+
+### Overview
+The System Configuration API manages system-wide configuration settings and parameters.
+
+```c
+// System configuration API structure
+typedef struct {
+    config_handle_t (*open_config)(const char* config_name, access_mode_t mode);
+    int (*close_config)(config_handle_t handle);
+    
+    // Configuration value access
+    int (*get_config_value)(config_handle_t handle, const char* key, 
+                          config_value_t *value);
+    int (*set_config_value)(config_handle_t handle, const char* key, 
+                          config_value_t *value);
+    int (*delete_config_value)(config_handle_t handle, const char* key);
+    
+    // Configuration sections
+    config_section_t (*get_config_section)(config_handle_t handle, 
+                                          const char* section_name);
+    int (*create_config_section)(config_handle_t handle, 
+                                const char* section_name);
+    int (*delete_config_section)(config_handle_t handle, 
+                                const char* section_name);
+    
+    // Configuration persistence
+    int (*save_config)(config_handle_t handle);
+    int (*reload_config)(config_handle_t handle);
+    int (*backup_config)(config_handle_t handle, const char* backup_path);
+} system_configuration_api_t;
+
+// Configuration value types
+typedef enum {
+    CONFIG_TYPE_STRING,                    // String value
+    CONFIG_TYPE_INTEGER,                   // Integer value
+    CONFIG_TYPE_FLOAT,                     // Float value
+    CONFIG_TYPE_BOOLEAN,                   // Boolean value
+    CONFIG_TYPE_BINARY                     // Binary data
+} config_value_type_t;
+
+// Configuration value structure
+typedef struct {
+    config_value_type_t type;              // Value type
+    union {
+        char string_value[256];            // String value
+        int64_t integer_value;             // Integer value
+        double float_value;                // Float value
+        bool boolean_value;                // Boolean value
+        struct {
+            void* data;                    // Binary data
+            size_t size;                   // Data size
+        } binary_value;
+    } value;
+} config_value_t;
+
+// Example configuration usage
+void configure_thermostat_system(void) {
+    system_configuration_api_t *config_api = get_system_configuration_api();
+    
+    // Open system configuration
+    config_handle_t handle = config_api->open_config("thermostat_system", 
+                                                   ACCESS_MODE_READ_WRITE);
+    
+    // Set configuration values
+    config_value_t temp_range = {
+        .type = CONFIG_TYPE_STRING,
+        .value.string_value = "16-30"
+    };
+    config_api->set_config_value(handle, "temperature_range", &temp_range);
+    
+    config_value_t update_interval = {
+        .type = CONFIG_TYPE_INTEGER,
+        .value.integer_value = 30
+    };
+    config_api->set_config_value(handle, "update_interval_seconds", 
+                                &update_interval);
+    
+    config_value_t eco_mode = {
+        .type = CONFIG_TYPE_BOOLEAN,
+        .value.boolean_value = true
+    };
+    config_api->set_config_value(handle, "eco_mode_enabled", &eco_mode);
+    
+    // Save configuration
+    config_api->save_config(handle);
+    config_api->close_config(handle);
+}
+```
+
+## Related Documentation
+
+- [API Reference Overview](./overview.mdx)
+- [Hardware APIs](./hardware-apis.mdx)
+- [Network APIs](./network-apis.mdx)
+- [Data APIs](./data-apis.mdx)

@@ -1,0 +1,214 @@
+---
+title: System Config Partition
+description: 'Complete reference of /media/system-config files'
+---
+
+# System Config Partition (/media/system-config)
+
+**Device**: mtdblock10  
+**Size**: 4MB  
+**Usage**: 11% (460KB used)  
+**Mount**: Read-write JFFS2  
+**Purpose**: System-level configuration that persists across updates
+
+## Directory Structure
+
+```
+/media/system-config/
+├── ssh/
+│   ├── ssh_host_dsa_key      # DSA private host key
+│   ├── ssh_host_dsa_key.pub  # DSA public host key
+│   ├── ssh_host_rsa_key      # RSA private host key
+│   └── ssh_host_rsa_key.pub  # RSA public host key
+├── tiwlan.ini.cks            # WiFi configuration checksum
+├── wl1271-nvs.bin            # WiFi calibration (WL1271 chip)
+├── wl12xx-nvs.bin            # WiFi calibration (WL12xx chip)
+└── wl12xx-nvs.bin.backup     # WiFi calibration backup
+```
+
+## Files
+
+### SSH Host Keys (/media/system-config/ssh/)
+
+#### ssh_host_rsa_key
+**Type**: Private key (PEM format)  
+**Size**: ~1.7KB  
+**Purpose**: RSA host key for SSH server identity
+
+**Description**: The private RSA key that identifies this specific Nest device to SSH clients. Generated during manufacturing or first boot.
+
+**Security**: 
+- Permissions: 600 (rw-------)
+- Owner: root:root
+- Should never be shared or exposed
+
+**Usage**: Automatically used by SSH server (dropbear or openssh)
+
+#### ssh_host_rsa_key.pub
+**Type**: Public key (OpenSSH format)  
+**Size**: ~400 bytes  
+**Purpose**: RSA public key for SSH server
+
+**Description**: The public counterpart to the RSA private key. Presented to SSH clients during connection.
+
+**Format**:
+```
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ... root@nest
+```
+
+**Security**: 
+- Permissions: 644 (rw-r--r--)
+- Safe to share
+
+#### ssh_host_dsa_key
+**Type**: Private key (PEM format)  
+**Size**: ~668 bytes  
+**Purpose**: DSA host key for SSH server identity
+
+**Description**: The private DSA key (legacy algorithm) for SSH server identity. Less commonly used than RSA.
+
+**Security**: 
+- Permissions: 600 (rw-------)
+- Owner: root:root
+- DSA is deprecated in modern SSH
+
+#### ssh_host_dsa_key.pub
+**Type**: Public key (OpenSSH format)  
+**Size**: ~600 bytes  
+**Purpose**: DSA public key for SSH server
+
+**Format**:
+```
+ssh-dss AAAAB3NzaC1kc3MAAACBAP... root@nest
+```
+
+**Note**: DSA keys are deprecated and may not be accepted by modern SSH clients.
+
+### WiFi Calibration Files
+
+#### wl12xx-nvs.bin
+**Type**: Binary calibration data  
+**Size**: ~912 bytes  
+**Purpose**: WiFi radio calibration for WL12xx chipset
+
+**Description**: Non-volatile storage (NVS) data containing WiFi radio calibration parameters. Includes:
+- Transmit power calibration
+- Frequency offset correction
+- Regulatory domain settings
+- MAC address
+- Crystal frequency calibration
+
+**Format**: Proprietary binary format specific to Texas Instruments WL12xx WiFi chipset
+
+**Importance**: 
+- Critical for WiFi operation
+- Hardware-specific (unique per device)
+- Cannot be regenerated without calibration equipment
+- Loss results in degraded WiFi performance
+
+**Modification**: Should only be modified by calibration tools during manufacturing
+
+#### wl12xx-nvs.bin.backup
+**Type**: Binary calibration data (backup)  
+**Size**: ~912 bytes  
+**Purpose**: Backup copy of WiFi calibration
+
+**Description**: Identical backup of wl12xx-nvs.bin for recovery purposes.
+
+**Usage**: Restored if primary calibration file becomes corrupted
+
+#### wl1271-nvs.bin
+**Type**: Binary calibration data  
+**Size**: ~912 bytes  
+**Purpose**: WiFi radio calibration for WL1271 chipset variant
+
+**Description**: Calibration data for WL1271 variant of the WiFi chipset. May be a symlink or copy of wl12xx-nvs.bin.
+
+**Note**: WL1271 is part of the WL12xx family
+
+#### tiwlan.ini.cks
+**Type**: Checksum file  
+**Size**: ~32 bytes  
+**Purpose**: Checksum for WiFi configuration
+
+**Description**: Contains checksum or hash of WiFi configuration to detect corruption.
+
+**Format**: Text file with hexadecimal checksum
+
+**Usage**: Verified during boot to ensure WiFi configuration integrity
+
+## Characteristics
+
+### Persistence
+- **Survives**: Firmware updates, factory reset (partial)
+- **Cleared by**: Full factory reset with system config wipe (rare)
+
+### Backup
+- SSH keys: Not backed up (device-specific)
+- WiFi calibration: Backed up during updates (critical)
+
+### Modification
+- **SSH keys**: Generated once, never modified
+- **WiFi calibration**: Set during manufacturing, rarely modified
+
+### Recovery
+If system-config is corrupted:
+1. SSH keys regenerated (device identity changes)
+2. WiFi calibration restored from backup
+3. If backup unavailable, WiFi may not function properly
+
+## Security Considerations
+
+<Warning>
+  The SSH host keys in this partition uniquely identify the device. If these keys are compromised or exposed, the device's SSH identity is compromised.
+</Warning>
+
+**Best Practices**:
+- Never share SSH private keys
+- Regenerate keys if device is compromised
+- Backup WiFi calibration before modifications
+
+## Troubleshooting
+
+### SSH Connection Issues
+
+**Problem**: SSH fingerprint changed  
+**Cause**: SSH host keys regenerated  
+**Solution**: Remove old fingerprint from `~/.ssh/known_hosts`
+
+### WiFi Performance Issues
+
+**Problem**: Weak WiFi signal or connection drops  
+**Cause**: Corrupted WiFi calibration  
+**Solution**: Restore from wl12xx-nvs.bin.backup
+
+### Missing Files
+
+**Problem**: System-config files missing after update  
+**Cause**: Update failure or corruption  
+**Solution**: System will regenerate SSH keys; WiFi calibration may need restoration
+
+## File Operations
+
+### Viewing SSH Public Keys
+```bash
+cat /media/system-config/ssh/ssh_host_rsa_key.pub
+cat /media/system-config/ssh/ssh_host_dsa_key.pub
+```
+
+### Backing Up WiFi Calibration
+```bash
+cp /media/system-config/wl12xx-nvs.bin /media/scratch/wl12xx-nvs.bin.backup
+```
+
+### Checking File Integrity
+```bash
+ls -lh /media/system-config/
+md5sum /media/system-config/wl12xx-nvs.bin
+```
+
+## Related Documentation
+
+- [SSH Access Guide](/development/ssh-access) - Connecting via SSH
+- [Network Configuration](/software/network/overview) - WiFi setup
+- [Media Partitions Overview](/reference/media-overview) - Partition structure

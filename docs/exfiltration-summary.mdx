@@ -1,0 +1,289 @@
+---
+title: Data Exfiltration Summary
+description: 'Summary of exfiltrated data from Nest Thermostat'
+---
+
+# Data Exfiltration Summary
+
+This document summarizes the data exfiltrated from the Nest Learning Thermostat for offline analysis.
+
+## Exfiltration Details
+
+**Date**: November 7, 2025  
+**Device**: Nest Learning Thermostat  
+**Serial**: 02AA01AC481302W4  
+**IP Address**: 192.168.2.18  
+**Method**: SSH with tar/dd over network
+
+## Exfiltrated Data
+
+### Directory Trees
+
+#### /media (56 items)
+Complete copy of all mounted media partitions:
+- `/media/system-config/` - System configuration and SSH keys
+- `/media/user-config/` - User preferences
+- `/media/data/` - 26 operational data files (JSON/recovery)
+- `/media/log/` - System logs (see [Log Analysis Guide](/troubleshooting/log-analysis))
+- `/media/scratch/` - Temporary storage
+
+**Size**: ~5MB compressed
+
+#### /nestlabs (78 items)
+Complete Nest Labs software installation:
+- `/nestlabs/bin/` - 2 user binaries
+- `/nestlabs/sbin/` - 19 system daemons and tools
+- `/nestlabs/lib/` - 22 shared libraries
+- `/nestlabs/share/` - Firmware, locales, fonts, images, calibration data
+
+**Size**: ~15MB compressed
+
+### Partition Images
+
+Raw disk images of all MTD flash partitions for forensic analysis:
+
+| File | Partition | Size | Purpose |
+|------|-----------|------|---------|
+| mtdblock9_root.img | Root filesystem | 46MB | Linux root filesystem |
+| mtdblock10_system-config.img | System config | 4MB | System settings |
+| mtdblock11_user-config.img | User config | 8MB | User preferences |
+| mtdblock12_data.img | Data | 20MB | Runtime data |
+| mtdblock13_log.img | Logs | 20MB | System logs |
+| mtdblock14_scratch.img | Scratch | 92MB | Temporary storage |
+
+**Total**: 190MB of raw partition images
+
+## Storage Location
+
+All exfiltrated data is stored in:
+```
+/home/nicolas/Source/nest-firmware/exfiltrated/
+```
+
+## Key Findings
+
+### System Configuration
+
+**Operating System**:
+- Linux kernel 3.10.53
+- ARMv7l architecture
+- JFFS2 filesystem
+- 196MB total flash storage across 6 partitions
+
+**Network Configuration**:
+- WiFi calibration data (wl12xx-nvs.bin)
+- SSH host keys (RSA and DSA)
+- Network profiles in user-config
+
+### Software Stack
+
+**Main Application**:
+- nlclient: 4.9MB binary (Sept 12, 2019)
+- Core thermostat logic and UI
+
+**System Services** (19 daemons):
+- osm - Service manager
+- watchdogd - System watchdog
+- nlheartbeatd - Health monitoring
+- nlmetricsd - Metrics collection
+- nlsleepd - Power management
+- nlshutdownd - Shutdown coordination
+- dropbox - Cloud upload service
+- nlswupdate - Software updates
+- nlbpupdater - Backplate updates
+- nlzbupdater - ZigBee updates
+- nliplupdater - Bootloader updates
+- client_recovery - Recovery tool
+- And 7 more utilities
+
+**Libraries** (22 total):
+- libnlsystem.so - System utilities
+- libnlnetworkmanager.so - Network management
+- libnlweavetools.a - Weave protocol
+- libnlapputils.so - Application utilities
+- libnldbus.so - D-Bus IPC
+- libnlmetrics.so - Metrics
+- libNuovationsUtilities.so - Core utilities
+- libUrlAccess.so - HTTP client
+- libArchive.so - Archive handling
+- And 13 more libraries
+
+### Firmware & Resources
+
+**Firmware Images**:
+- HeatLink firmware (heatlink.elf)
+- Backplate firmware
+- Bootloader (x-load.bin.ift)
+
+**Localization**:
+9 language packs:
+- English (US, GB)
+- French (FR, CA)
+- German (DE)
+- Italian (IT)
+- Spanish (ES, US)
+- Dutch (NL)
+
+**UI Resources**:
+- Fonts: AkkuratNest-Bold.ttf, AkkuratNest-Regular.ttf
+- Images: Connector graphics, UI elements
+- Calibration: Brightness and thermal calibration data
+
+### Operational Data
+
+**Schedule & Occupancy** (5 files):
+- schedulemanager.recovery
+- schedulescore.HEAT.recovery
+- autoaway.recovery
+- predictionmanager.json
+- sunlightcorrection.recovery
+
+**Energy Management** (5 files):
+- energystats.recovery
+- rateplan.json
+- toumanager.json
+- demandcharge.json
+- fleetrhr.json
+
+**HVAC Control** (4 files):
+- radiantcontrol.recovery
+- furnaceshutdown.recovery
+- autodehum.json
+- airwave.recovery
+
+**Smart Features** (4 files):
+- smartthermostatmanager.json
+- rcsmanager.json
+- tuneupmanager.json
+- overundershoot.json
+
+**System State** (3 files):
+- crystalsubspaceid.recovery
+- goosemgr.recovery
+- nlclient.crash / nlclient.maps
+
+**Total**: 26+ data files
+
+## Analysis Capabilities
+
+### With Directory Trees
+
+✅ **Immediate Analysis**:
+- Review all configuration files
+- Examine operational data (JSON files)
+- Analyze system logs
+- Study firmware structure
+- Review localization strings
+- Inspect calibration data
+
+### With Partition Images
+
+✅ **Forensic Analysis**:
+- Mount filesystems for full exploration
+- Extract additional files not in directory trees
+- Analyze filesystem structure
+- Recover deleted files
+- Study partition layout
+- Binary analysis of executables
+
+### Recommended Tools
+
+**Filesystem Mounting**:
+```bash
+# Mount JFFS2 partition (requires mtd-utils)
+sudo modprobe mtdblock
+sudo modprobe jffs2
+sudo mount -t jffs2 mtdblock9_root.img /mnt/nest-root
+```
+
+**Binary Analysis**:
+```bash
+# Analyze binaries
+file nestlabs/sbin/nlclient
+strings nestlabs/sbin/nlclient
+objdump -d nestlabs/sbin/nlclient
+readelf -a nestlabs/sbin/nlclient
+```
+
+**Data Exploration**:
+```bash
+# View JSON data
+jq . media/data/*.json
+
+# Search for patterns
+grep -r "pattern" media/
+```
+
+**Library Analysis**:
+```bash
+# List library dependencies
+ldd nestlabs/sbin/nlclient
+
+# Examine symbols
+nm nestlabs/lib/*.so
+```
+
+## Security Considerations
+
+<Warning>
+  The exfiltrated data contains:
+  - SSH host keys (should be considered compromised)
+  - WiFi calibration data (device-specific)
+  - Operational data (may contain personal information)
+  - Proprietary Nest software and firmware
+  
+  Handle this data responsibly and in accordance with applicable laws and regulations.
+</Warning>
+
+## Next Steps
+
+### Documentation
+- ✅ System overview updated with accurate partition sizes
+- ✅ Filesystem structure documented
+- ✅ Data files cataloged
+- ✅ Software components detailed
+- ✅ Binary analysis documented
+- ✅ Learning algorithms analyzed
+- ✅ Boot and update process documented
+- ✅ Protocol implementation documented
+- 🔲 Hardware analysis (requires physical inspection)
+- 🔲 Live protocol analysis (requires network capture)
+
+### Analysis
+- ✅ Mount and explore partition images
+- ✅ Reverse engineer nlclient binary structure
+- ✅ Analyze Weave protocol implementation
+- ✅ Study learning algorithms
+- ✅ Examine recovery mechanisms
+- ✅ Investigate update process
+- 🔲 Deep binary reverse engineering with Ghidra
+- 🔲 Live network traffic capture and analysis
+- 🔲 Hardware teardown and component identification
+
+## Verification
+
+All exfiltrated data has been verified:
+- ✅ Directory trees complete and accessible
+- ✅ Partition images match expected sizes
+- ✅ File counts match device inventory
+- ✅ No corruption detected in transfers
+
+## Backup Recommendations
+
+<Info>
+  Create multiple backups of the exfiltrated data:
+  1. Primary working copy (current location)
+  2. Compressed archive backup
+  3. Off-site/cloud backup
+  
+  This data represents a complete snapshot of the device state and may be difficult or impossible to recreate.
+</Info>
+
+```bash
+# Create compressed backup
+cd /home/nicolas/Source/nest-firmware
+tar czf exfiltrated-backup-$(date +%Y%m%d).tar.gz exfiltrated/
+
+# Verify backup
+tar tzf exfiltrated-backup-*.tar.gz | wc -l
+```

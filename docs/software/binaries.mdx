@@ -1,0 +1,339 @@
+---
+title: Software Binaries
+description: Executable binaries and programs in the Nest thermostat firmware
+---
+
+# Software Binaries
+
+The Nest Learning Thermostat firmware contains numerous executable binaries that provide system functionality, user interfaces, and specialized services. This document catalogs the key binaries and their purposes.
+
+## System Binaries
+
+### Essential System Programs
+- **/bin/sh**: POSIX shell interpreter
+- **/bin/bash**: Enhanced Bourne shell
+- **/bin/busybox**: Multi-call binary for Unix utilities
+- **/bin/systemctl**: Systemd service manager
+- **/bin/journalctl**: Systemd journal viewer
+- **/bin/dbus-send**: D-Bus message sending utility
+- **/bin/dbus-monitor**: D-Bus message monitoring tool
+
+### Core Utilities
+```bash
+# BusyBox applets (examples)
+/bin/ls           # List directory contents
+/bin/cp           # Copy files
+/bin/mv           # Move/rename files
+/bin/rm           # Remove files
+/bin/cat          # Concatenate files
+/bin/echo         # Display messages
+/bin/sleep        # Delay execution
+/bin/kill         # Send signals to processes
+/bin/ps           # Process status
+/bin/top          # Process viewer
+```
+
+## Nest-Specific Binaries
+
+### nlclient
+- **Path**: `/nestlabs/bin/nlclient`
+- **Size**: ~4.9MB
+- **Purpose**: Main user interface application
+- **Dependencies**: GTK+, D-Bus, hardware libraries
+- **Features**: Touch interface, temperature display, settings
+
+#### nlclient Command Line Options
+```bash
+# nlclient usage
+/nestlabs/bin/nlclient [options]
+
+Options:
+  --display=<device>     Display device (default: /dev/fb0)
+  --touch=<device>       Touch device (default: /dev/input/event0)
+  --config=<path>        Configuration directory
+  --log-level=<level>    Logging level (debug,info,warn,error)
+  --debug-mode           Enable debug mode
+  --no-animations        Disable UI animations
+```
+
+### thermostat-manager
+- **Path**: `/nestlabs/bin/thermostat-manager`
+- **Size**: ~2.1MB
+- **Purpose**: Core thermostat control logic
+- **Features**: Temperature control, learning algorithms
+- **Interface**: D-Bus API for control services
+
+### sensor-service
+- **Path**: `/nestlabs/bin/sensor-service`
+- **Size**: ~800KB
+- **Purpose**: Hardware sensor management
+- **Sensors**: Temperature, humidity, motion, light
+- **Features**: Calibration, filtering, data aggregation
+
+### network-service
+- **Path**: `/nestlabs/bin/network-service`
+- **Size**: ~1.2MB
+- **Purpose**: Network connectivity management
+- **Features**: Wi-Fi, Weave, cloud connectivity
+- **Integration**: ConnMan integration
+
+### update-service
+- **Path**: `/nestlabs/bin/update-service`
+- **Size**: ~1.5MB
+- **Purpose**: Over-the-air update management
+- **Features**: Update download, verification, installation
+- **Security**: Signed update verification
+
+## Hardware Interface Binaries
+
+### gpio-tool
+- **Path**: `/nestlabs/bin/gpio-tool`
+- **Purpose**: GPIO pin configuration and testing
+- **Usage**: Hardware debugging and configuration
+
+```bash
+# gpio-tool examples
+gpio-tool --list                    # List GPIO pins
+gpio-tool --set <pin> <value>      # Set GPIO pin value
+gpio-tool --get <pin>              # Get GPIO pin value
+gpio-tool --direction <pin> <dir>  # Set pin direction
+```
+
+### i2c-tool
+- **Path**: `/nestlabs/bin/i2c-tool`
+- **Purpose**: I2C bus communication and debugging
+- **Features**: I2C device scanning, read/write operations
+
+```bash
+# i2c-tool examples
+i2c-tool --scan                    # Scan I2C bus
+i2c-tool --read <bus> <addr> <reg> # Read from I2C device
+i2c-tool --write <bus> <addr> <reg> <data> # Write to I2C device
+```
+
+### spi-tool
+- **Path**: `/nestlabs/bin/spi-tool`
+- **Purpose**: SPI bus communication and testing
+- **Features**: SPI device communication, diagnostics
+
+## Diagnostic and Debugging Binaries
+
+### nest-diagnostics
+- **Path**: `/nestlabs/bin/nest-diagnostics`
+- **Purpose**: System diagnostic and health checking
+- **Features**: Hardware tests, system validation
+
+```bash
+# nest-diagnostics output example
+=== Nest Thermostat Diagnostics ===
+Hardware Version: 4.0
+Software Version: 5.9.3
+Uptime: 2 days, 14 hours, 32 minutes
+
+Hardware Tests:
+✓ Display Controller
+✓ Touch Controller
+✓ Temperature Sensor
+✓ Humidity Sensor
+✓ Motion Sensor
+✓ Wi-Fi Module
+✓ Zigbee Radio
+
+System Status:
+✓ All services running
+✓ Network connected
+✓ Storage healthy
+✓ Battery: 85%
+```
+
+### log-collector
+- **Path**: `/nestlabs/bin/log-collector`
+- **Purpose**: System log collection and export
+- **Features**: Log aggregation, compression, export
+
+### stress-test
+- **Path**: `/nestlabs/bin/stress-test`
+- **Purpose**: System stress testing and validation
+- **Features**: CPU, memory, I/O stress testing
+
+## Configuration and Setup Binaries
+
+### setup-wizard
+- **Path**: `/nestlabs/bin/setup-wizard`
+- **Purpose**: Initial device setup and configuration
+- **Features**: Wi-Fi setup, system configuration
+
+### calibration-tool
+- **Path**: `/nestlabs/bin/calibration-tool`
+- **Purpose**: Sensor calibration and adjustment
+- **Features**: Temperature, humidity, touch calibration
+
+### config-manager
+- **Path**: `/nestlabs/bin/config-manager`
+- **Purpose**: Configuration file management
+- **Features**: Configuration backup, restore, validation
+
+## Network and Connectivity Binaries
+
+### weave-client
+- **Path**: `/nestlabs/bin/weave-client`
+- **Purpose**: Weave protocol client implementation
+- **Features**: Device discovery, secure communication
+
+### wifi-scanner
+- **Path**: `/nestlabs/bin/wifi-scanner`
+- **Purpose**: Wi-Fi network scanning and analysis
+- **Features**: Network discovery, signal strength analysis
+
+### zigbee-tool
+- **Path**: `/nestlabs/bin/zigbee-tool`
+- **Purpose**: Zigbee network management and debugging
+- **Features**: Network topology, device management
+
+## Security and Authentication Binaries
+
+### cert-manager
+- **Path**: `/nestlabs/bin/cert-manager`
+- **Purpose**: Certificate management and validation
+- **Features**: Certificate generation, renewal, validation
+
+### crypto-tool
+- **Path**: `/nestlabs/bin/crypto-tool`
+- **Purpose**: Cryptographic operations and utilities
+- **Features**: Encryption, decryption, hashing
+
+### secure-boot-tool
+- **Path**: `/nestlabs/bin/secure-boot-tool`
+- **Purpose**: Secure boot validation and management
+- **Features**: Signature verification, key management
+
+## Performance and Monitoring Binaries
+
+### performance-monitor
+- **Path**: `/nestlabs/bin/performance-monitor`
+- **Purpose**: System performance monitoring
+- **Features**: CPU, memory, network usage tracking
+
+### power-monitor
+- **Path**: `/nestlabs/bin/power-monitor`
+- **Purpose**: Power consumption monitoring
+- **Features**: Battery status, power usage analysis
+
+### thermal-monitor
+- **Path**: `/nestlabs/bin/thermal-monitor`
+- **Purpose**: Temperature monitoring and thermal management
+- **Features**: Component temperature tracking, thermal throttling
+
+## Development and Testing Binaries
+
+### test-runner
+- **Path**: `/nestlabs/bin/test-runner`
+- **Purpose**: Automated test execution
+- **Features**: Unit tests, integration tests, system tests
+
+### mock-server
+- **Path**: `/nestlabs/bin/mock-server`
+- **Purpose**: Mock service for testing
+- **Features**: Service simulation, test data generation
+
+### benchmark-tool
+- **Path**: `/nestlabs/bin/benchmark-tool`
+- **Purpose**: Performance benchmarking
+- **Features**: System performance measurement and comparison
+
+## Binary Sizes and Resources
+
+### Size Distribution
+| Binary | Size | Memory Usage | Purpose |
+|--------|------|--------------|---------|
+| nlclient | 4.9MB | ~50MB | Main UI application |
+| thermostat-manager | 2.1MB | ~20MB | Control logic |
+| sensor-service | 800KB | ~10MB | Sensor management |
+| network-service | 1.2MB | ~15MB | Network management |
+| update-service | 1.5MB | ~25MB | Update management |
+
+### Resource Requirements
+- **Total Storage**: ~50MB for all binaries
+- **Runtime Memory**: ~150MB total usage
+- **Shared Libraries**: ~30MB shared library space
+- **Configuration**: ~5MB configuration files
+
+## Binary Security
+
+### Code Signing
+- **Signature**: All binaries digitally signed
+- **Verification**: Runtime signature verification
+- **Integrity**: Binary integrity protection
+- **Anti-tampering**: Tamper detection mechanisms
+
+### Execution Protection
+- **NX Bit**: Non-executable memory protection
+- **ASLR**: Address space layout randomization
+- **Stack Protection**: Stack canaries and protection
+- **SELinux**: Mandatory access control
+
+## Binary Management
+
+### Package Management
+- **Opkg**: Package installation and removal
+- **Dependencies**: Automatic dependency management
+- **Updates**: Binary update management
+- **Versions**: Version control and rollback
+
+### Lifecycle Management
+```bash
+# Binary lifecycle commands
+opkg install nest-thermostat-ui    # Install UI package
+opkg remove nest-thermostat-ui     # Remove UI package
+opkg upgrade nest-thermostat-ui    # Upgrade UI package
+opkg list-installed                # List installed packages
+```
+
+## Debugging and Development
+
+### Debug Binaries
+- **Debug Symbols**: Separate debug symbol packages
+- **GDB Integration**: GNU debugger support
+- **Core Dumps**: Core dump generation and analysis
+- **Profiling**: Performance profiling support
+
+### Development Tools
+- **Cross-compiler**: ARM cross-compilation toolchain
+- **Build System**: BitBake and OpenEmbedded
+- **Version Control**: Git-based source control
+- **CI/CD**: Automated build and deployment
+
+## Binary Optimization
+
+### Size Optimization
+- **Stripping**: Remove debug symbols and unused sections
+- **Compression**: Binary compression techniques
+- **Link-time Optimization**: LTO for size reduction
+- **Dead Code Elimination**: Remove unused code paths
+
+### Performance Optimization
+- **Compiler Flags**: Optimization flags (-O2, -O3)
+- **Profile-guided Optimization**: PGO for performance
+- **Hardware Optimization**: Utilize hardware features
+- **Memory Optimization**: Efficient memory usage patterns
+
+## Quality Assurance
+
+### Binary Testing
+- **Unit Tests**: Component-level testing
+- **Integration Tests**: System integration testing
+- **Regression Tests**: Automated regression testing
+- **Performance Tests**: Performance benchmarking
+
+### Binary Verification
+- **Checksums**: MD5/SHA checksums for integrity
+- **Signatures**: Digital signature verification
+- **Compliance**: Regulatory compliance verification
+- **Compatibility**: Hardware compatibility testing
+
+## Related Documentation
+
+- [Software Overview](./overview.mdx)
+- [System Services](./system-services.mdx)
+- [Libraries](./libraries.mdx)
+- [Development Environment](../development/debugging.mdx)

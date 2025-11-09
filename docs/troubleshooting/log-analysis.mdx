@@ -1,0 +1,773 @@
+---
+title: Log Analysis Guide
+description: 'Comprehensive guide to analyzing Nest 2nd generation log files'
+---
+
+# Log Analysis Guide
+
+This guide explains what information is found in Nest 2nd generation thermostat log files and how to interpret them for troubleshooting and understanding system behavior.
+
+## Log File Overview
+
+The Nest thermostat maintains three primary log files in `/media/log/`:
+
+| Log File | Purpose | Key Information |
+|----------|---------|-----------------|
+| **messages** | System-wide logs | Kernel events, system services, power management, network connectivity |
+| **nlclient** | Application logs | Thermostat logic, HVAC control, scheduling, cloud sync |
+| **nlevent** | Event logs | Structured events, state changes, metrics |
+
+## System Messages Log (`messages`)
+
+### Log Format
+
+Each entry follows this structure:
+```
+YYYY-MM-DD HH:MM:SS.microseconds [SERIAL_NUMBER] facility.level process[pid]: message
+```
+
+Example:
+```
+2025-11-08 01:13:50.741729 02AA01AC481302W4 user.crit nlscpm-shutdown-manager[297]: shutdown-manager: batteryLevel @ 3.822
+```
+
+### Key Components Logged
+
+#### 1. Power Management (nlscpm)
+
+**What it shows**: Battery levels, power states, sleep/wake cycles
+
+**Example entries**:
+```
+user.crit nlscpm[278]: nlscpm: State Change: ACTIVE->WAIT_SLEEP_ACK, r=COUNT_ZERO, c=0, l=686
+user.crit nlscpm[278]: nlscpm: State Change: WAIT_SLEEP->SLEEP, r=SLEEP_TIMER, c=0, l=1362
+user.crit nlscpm[278]: nlscpm: Wake up happened! (begin time = 14611, end time = 15149)
+user.crit nlscpm[278]: nlscpm: elptime wake 14003412 cur 95.22% avg 97.34%
+```
+
+**What this means**:
+- The thermostat enters sleep mode when inactive to save battery
+- State transitions show: ACTIVE → WAIT_SLEEP_ACK → START_SLEEP_TIMER → WAIT_SLEEP → SLEEP
+- Wake events triggered by timers, network activity, or user interaction
+- "elptime" (elapsed time) shows sleep duration in seconds
+- Battery percentage indicates how efficiently sleep is working
+
+**Related docs**: [Sleep Management](/software/system/sleep-management), [Power System](/hardware/overview#power-system)
+
+#### 2. Battery Monitoring
+
+**What it shows**: Battery voltage levels throughout operation
+
+**Example entries**:
+```
+user.crit nlscpm-shutdown-manager[297]: shutdown-manager: batteryLevel @ 3.822
+user.crit nlscpm-shutdown-manager[297]: shutdown-manager: batteryLevel @ 3.804
+```
+
+**What this means**:
+- Battery voltage in volts (typically 3.6-4.2V range)
+- Monitored during wake/sleep transitions
+- Low battery triggers charging from HVAC system
+- Critical for maintaining thermostat operation when not USB-powered
+
+**Related docs**: [Hardware Overview](/hardware/overview#power-system)
+
+#### 3. WiFi Statistics
+
+**What it shows**: WiFi connection quality and performance metrics
+
+**Example entries**:
+```
+user.crit nlscpm[278]: nlscpm: WiFi stat miss bcn 5430, rxed bcn 135178, tsf_out_of_sync 0, awake bcns 1374, mcast rx 12662, tot rx 15916, tot tx 4693 aes decrypt fail 67
+user.crit nlscpm[278]: nlscpm: WiFi stat2 rt 48, rssi -56, retx 194, notx 17
+```
+
+**What this means**:
+- **miss bcn**: Missed beacon frames (indicates connection issues if high)
+- **rxed bcn**: Received beacon frames (total successful)
+- **rssi**: Signal strength in dBm (-30 excellent, -90 poor)
+- **retx**: Retransmission count (high = poor connection)
+- **aes decrypt fail**: WiFi encryption errors
+- **mcast rx**: Multicast packets received
+- **tot rx/tx**: Total packets received/transmitted
+
+**Troubleshooting**:
+- High missed beacons (>10% of received) = weak signal or interference
+- RSSI below -70 dBm = consider relocating router/thermostat
+- High retransmissions = network congestion
+
+**Related docs**: [WiFi Connectivity](/software/network/wifi)
+
+#### 4. System Suspend/Resume
+
+**What it shows**: Deep sleep transitions and timing
+
+**Example entries**:
+```
+user.info kernel: PM: Syncing filesystems ... done.
+user.warn kernel: Freezing user space processes ... (elapsed 0.02 seconds) done.
+user.debug kernel: PM: Entering mem sleep
+user.info kernel: PM: suspend of devices complete after 107.910 msecs
+user.info kernel: Successfully put all powerdomains to target state
+user.info kernel: PM: early resume of devices complete after 0.915 msecs
+user.warn kernel: Restarting tasks ... done.
+```
+
+**What this means**:
+- Linux kernel power management entering suspend-to-RAM state
+- Filesystem sync ensures data safety
+- Process freezing stops all activity
+- Device suspend powers down peripherals
+- Resume time indicates wake-up speed (typically <200ms)
+
+**Related docs**: [Linux System Architecture](/architecture/linux-system)
+
+#### 5. Network Management (connmand)
+
+**What it shows**: Network connection state, DHCP, DNS, NTP
+
+**Example entries**:
+```
+daemon.info connmand[374]: DHCP: g_rttimeout_dispatch: fd=19, source=0xca3a8, user_data=(nil)
+daemon.info connmand[374]: ntp: recheck rearm
+daemon.info connmand[374]: wlan0 {add} address 2001:4958:406c:c201:599e:f212:2294:b588/64
+daemon.info connmand[374]: DNS: server_create_socket index 2 server 2001:4958:732::1 proto 17
+```
+
+**What this means**:
+- DHCP lease renewals and network configuration
+- IPv4 and IPv6 address assignment
+- DNS server configuration
+- NTP (Network Time Protocol) for clock synchronization
+- Connection state transitions
+
+**Related docs**: [Connection Manager](/software/network/connman), [Network Overview](/software/network/overview)
+
+#### 6. Watchdog Timer
+
+**What it shows**: System health monitoring
+
+**Example entries**:
+```
+user.notice watchdogd: done.
+user.notice watchdogd: Updating watchdog...
+user.notice watchdogd: Waiting for 30 seconds...
+```
+
+**What this means**:
+- Watchdog daemon pets hardware watchdog every 30 seconds
+- Prevents system lockup by forcing reboot if watchdog not updated
+- Regular "done" messages indicate healthy system operation
+- Missing watchdog updates = system crash or hang
+
+**Related docs**: [Watchdog System](/software/system/watchdog)
+
+#### 7. 6LoWPAN/Thread (wpantund)
+
+**What it shows**: Thread/Zigbee network state for Nest Protect integration
+
+**Example entries**:
+```
+daemon.notice wpantund[398]: [NCP->] RESET (Reason 6, "SOFTWARE")
+daemon.notice wpantund[398]: State change: "offline:deep-sleep" -> "uninitialized"
+daemon.notice wpantund[398]: NCP is running "ConnectIP/2.0.4b301 s4 m7 (Alpha); Sep 23 2015 16:39:22"
+daemon.notice wpantund[398]: State change: "offline" -> "offline:deep-sleep"
+```
+
+**What this means**:
+- NCP (Network Co-Processor) manages Thread/6LoWPAN radio
+- Deep sleep mode when not needed (power saving)
+- Reset events on wake from sleep
+- Firmware version tracking
+
+**Related docs**: [6LoWPAN/Thread](/software/network/lowpan), [Zigbee](/hardware/zigbee)
+
+## Application Log (`nlclient`)
+
+### Log Format
+
+Thread-based logging with categorized components:
+```
+YYYY-MM-DD HH:MM:SS.microseconds SERIAL_NUMBER nlclient[pid:thread] (level) component: message
+```
+
+Example:
+```
+2025-11-08 02:04:50.849094 02AA01AC481302W4 nlclient[470:netman] (2) connman: updating 20 and removing 0 services to 20 existing services
+```
+
+### Log Levels
+
+- **(1)** - Critical errors
+- **(2)** - Important events
+- **(3)** - Informational
+- **(4)** - Debug/verbose
+
+### Key Components
+
+#### 1. Network Manager (netman)
+
+**What it shows**: WiFi network discovery, signal strength, connection state
+
+**Example entries**:
+```
+nlclient[470:netman] (2) connman: updating 20 and removing 0 services to 20 existing services
+nlclient[470:netman] (2) : signaling properties changed for service "Gigabell" rssi -58
+nlclient[470:netman] (2) : signaling state "online" changed
+```
+
+**What this means**:
+- Network scan results (available WiFi networks)
+- Signal strength (RSSI) updates for connected network
+- Connection state transitions (connecting, online, offline)
+- Network recovery events
+
+**Related docs**: [Connection Manager](/software/network/connman)
+
+#### 2. Thermostat Controller (contro)
+
+**What it shows**: Core thermostat logic, temperature control, HVAC decisions
+
+**Example entries**:
+```
+nlclient[470:contro] (2) controller: Time Changed by 1762567430
+nlclient[470:contro] (2) thermostat: shifting time variables by (1762567430)
+nlclient[470:contro] (2) thermostat: cycle time timeout shifted to (240) -- from (300) to (1762567730)
+nlclient[470:contro] (2) thermostat: RethinkState bypassed: aSensorStateValidity (0), aHVACControlLockedOut (1)
+nlclient[470:contro] (2) boiler pid: Shifted mLastBoilerSetPointUpdate by (1762567430)
+```
+
+**What this means**:
+- Time synchronization events (from NTP)
+- HVAC cycle timing adjustments
+- Thermostat state machine decisions
+- Temperature setpoint processing
+- Boiler control logic (for EU HeatLink systems)
+
+**Related docs**: [Thermostat Logic](/software/thermostat/overview), [HVAC Control](/software/thermostat/overview#hvac-control)
+
+#### 3. Schedule Manager
+
+**What it shows**: Auto-Schedule, scheduled temperature changes
+
+**Example entries**:
+```
+nlclient[470:contro] (2) Smart Thermostat Manager: next day timeout set to 1762577700
+nlclient[470:contro] (2) Smart Thermostat Manager: sent next temperature schedule timeout request for 1762602300
+nlclient[470:contro] (2) Smart Thermostat Manager: scheduled set point change to: 23.119
+nlclient[470:contro] (2) Smart Thermostat Manager: Set next midnight timer request at 1762567497
+```
+
+**What this means**:
+- Next scheduled temperature change time (Unix timestamp)
+- Target temperature for next schedule slot
+- Daily schedule rollover at midnight
+- Auto-Schedule learning updates
+
+**Related docs**: [Schedule Manager](/software/thermostat/schedule-manager), [Auto-Schedule Feature](/user-interface#schedule)
+
+#### 4. Energy Statistics
+
+**What it shows**: Historical energy data retrieval
+
+**Example entries**:
+```
+nlclient[470:client] (3) nlEnergyView: got energy stats for day (-15)
+nlclient[470:client] (3) nlEnergyView: got energy stats for day (-16)
+```
+
+**What this means**:
+- Loading historical energy usage data
+- Negative numbers indicate days in the past
+- Used for Energy History display
+- Tracks HVAC runtime and estimated cost
+
+**Related docs**: [Energy Statistics](/software/thermostat/energy-stats), [Energy History UI](/user-interface#energy)
+
+#### 5. Cloud Communication (czcomms)
+
+**What it shows**: Communication with Nest cloud services
+
+**Example entries**:
+```
+nlclient[470:client] (3) czcomms: ReadyToSleep - nopoll delta 2 vs. max 50
+nlclient[470:fetchs] (3) fetch service: timeout for ID 1 at 1762567434 seconds (max=40)
+nlclient[470:fetchs] (3) fetch service: id: 1, url="https://frontdoor.nest.com/entry", errtext="Timeout was reached"
+nlclient[470:client] (3) nlNetDestMgr: suspending https://frontdoor.nest.com (errs=1)
+nlclient[470:client] (3) nlNetDestMgr: url 'https://frontdoor.nest.com/entry' had 1 errors - will resume in 30s
+```
+
+**What this means**:
+- HTTP requests to Nest cloud (frontdoor.nest.com, squeakydoor.nest.com)
+- Connection timeouts and retry logic
+- Exponential backoff for failed connections
+- Sleep readiness based on pending cloud communication
+- Network destination manager suspends failing endpoints temporarily
+
+**Troubleshooting**:
+- Timeouts indicate network connectivity issues
+- Check internet connection if persistent
+- Temporary failures are normal and auto-recover
+
+**Related docs**: [Weave Protocol](/software/network/weave-protocol), [Cloud Sync](/software/thermostat/overview#cloud-sync)
+
+#### 6. Sleep Management (sleepm)
+
+**What it shows**: Sleep/wake coordination, resource management
+
+**Example entries**:
+```
+nlclient[470:sleepm] (4) sleepman: heartbeat reply
+nlclient[470:sleepm] (2) sleepman: feature czcomms requests wake because of nlWakeupReasonCommsUpdate
+nlclient[470:sleepm] (2) sleepman: 3 Features blocking sleep: czcomms BackplateController AttemptToSleepClient
+```
+
+**What this means**:
+- Heartbeat mechanism ensures system responsiveness
+- Features can block sleep (cloud sync, UI activity, backplate comms)
+- Wake reasons tracked (user interaction, timer, cloud update)
+- Coordinates with system power manager (nlscpm)
+
+**Related docs**: [Sleep Management](/software/system/sleep-management)
+
+#### 7. Building Characteristics & Prediction
+
+**What it shows**: Time-to-temperature learning algorithm
+
+**Example entries**:
+```
+nlclient[470:contro] (2) buildingcharacteristics: shifting time variables by (1762567430)
+nlclient[470:contro] (4) sunlightcorrection: failed to find current ALS from history object
+nlclient[470:contro] (2) nlCrystalModel: Too few datapoints to construct new data set. Need 20, received 0
+nlclient[470:contro] (2) nlCrystalModel: Updating last history processed time from 1750899110 to 1762581897
+```
+
+**What this means**:
+- Building thermal characteristics learning
+- "Crystal Model" predicts time-to-temperature
+- Requires historical data points (temperature, HVAC runtime)
+- Sunlight correction uses ambient light sensor
+- Empty after factory reset or firmware update
+
+**Related docs**: [Prediction Manager](/software/thermostat/prediction-manager), [Sunlight Correction](/software/thermostat/sunlight-correction)
+
+#### 8. Network Watchdog & Recovery
+
+**What it shows**: Network health monitoring and automatic recovery
+
+**Example entries**:
+```
+nlclient[470:client] (2) network watchdog: internal network reset requested 
+nlclient[470:client] (3) network resetter: Requested reset: tech='wifi' reason='Watchdog Timeout' checkup=0
+nlclient[470:client] (2) client: should reset network? 0, reason: startup view
+nlclient[470:client] (2) network resetter: Aborted reset 'wifi'
+nlclient[470:client] (2) network recoverer: service "Gigabell" transitioned to state online, reporting recovery success
+```
+
+**What this means**:
+- Monitors network connectivity
+- Triggers resets if cloud unreachable
+- Can abort if reset not appropriate (e.g., during UI interaction)
+- Tracks recovery success
+- Prevents unnecessary resets during bootup
+
+**Related docs**: [Network Management](/software/network/overview)
+
+#### 9. Backplate Communication
+
+**What it shows**: Communication with HVAC backplate
+
+**Example entries**:
+```
+nlclient[470:client] (2) nlMatteoLayer: waiting on backplate and sensor report
+```
+
+**What this means**:
+- "Matteo" is the backplate communication protocol
+- Requests temperature sensor readings
+- Monitors wire voltage levels
+- Controls HVAC relay states
+
+**Related docs**: [UI-Backplate Communication](/architecture/ui-backplate-communication), [Backplate Hardware](/hardware/backplate)
+
+#### 10. Update Delays
+
+**What it shows**: Prevents frequent cloud updates after user changes
+
+**Example entries**:
+```
+nlclient[470:client] (4) nlCZBucket: target temp set by controller - enqueuing update delay request (shared)
+nlclient[470:client] (3) client: UPDATE delay enabled for 23 secs (max:120)
+nlclient[470:client] (2) client globals: UPDATE delay enabled
+```
+
+**What this means**:
+- Batches cloud updates to reduce network traffic
+- Gives user time to finalize changes before syncing
+- Typically 20-30 second delay
+- Maximum 120 seconds
+- Saves battery and reduces cloud load
+
+**Related docs**: [Cloud Sync Optimization](/software/network/weave-protocol)
+
+## Event Log (`nlevent`)
+
+### Log Format
+
+Structured event logging with schema definitions:
+```
+YYYY-MM-DDTHH:MM:SS %EventType { "fields": [...schema...] }
+YYYY-MM-DDTHH:MM:SS EventType field1 field2 field3...
+```
+
+### Key Event Types
+
+#### 1. CurrentState
+
+**What it shows**: Complete thermostat state snapshot
+
+**Example**:
+```
+%CurrentState { "fields": [{"name":"SerialNumber","type":"string"},{"name":"MacAddress","type":"string"},...]}
+CurrentState "02AA01AC481302W4" "18b43029c8f7" "structure.d7682330-e682-11e3-8b1e-22000b340158" "5.9.4-5" "unknown" "H2A2K5" -300 0 1 1 23.119 32.000 false 6 1 1721883183 -14400...
+```
+
+**Fields include**:
+- Serial number and MAC address
+- Structure ID (cloud grouping)
+- Firmware version
+- Backplate model
+- Zip code and timezone
+- Current temperature and setpoint
+- Schedule mode and HVAC system capabilities
+- Away mode state
+- Safety temperatures
+- Leaf mode (energy saving)
+- Time synchronization status
+
+**What this means**: Periodic state snapshots for debugging and audit trail
+
+**Related docs**: [Thermostat Data Model](/api-reference/data-formats)
+
+#### 2. TimeChanged & TimeShift
+
+**What it shows**: Clock synchronization events
+
+**Example**:
+```
+%TimeChanged { "fields": [{"name":"TimeBeforeChange","type":"timestamp"},{"name":"TimeAfterChange","type":"timestamp"}]}
+TimeChanged 1970-01-01T00:01:00 2025-11-08T02:04:50
+TimeShift 1762567430
+```
+
+**What this means**:
+- NTP clock synchronization completed
+- Large time shift from default (1970 = no prior sync)
+- Shift value in seconds
+- All timers and schedules adjusted
+
+**Related docs**: [System Time Management](/software/network/overview#ntp)
+
+#### 3. WakeUp
+
+**What it shows**: Why the thermostat woke from sleep
+
+**Example**:
+```
+%WakeUp { "fields": [{"name":"Type","type":"string"},{"name":"Active","type":"boolean"},{"name":"TotalActive","type":"integer"}]}
+WakeUp nlWakeupReasonLongTimerExpired true 0
+WakeUp nlWakeupReasonCommsUpdate true 0
+```
+
+**Wake reasons**:
+- **nlWakeupReasonLongTimerExpired**: Scheduled wake for timer event
+- **nlWakeupReasonCommsUpdate**: Cloud data to send/receive
+- **nlWakeupReasonLogUploading**: Log upload scheduled
+- **nlWakeupReasonUserInteraction**: User touched thermostat
+- **nlWakeupReasonMotion**: PIR sensor detected motion
+
+**Related docs**: [Sleep Management](/software/system/sleep-management), [Farsight](/user-interface#farsight)
+
+#### 4. LongTimerExp
+
+**What it shows**: Scheduled timer events
+
+**Example**:
+```
+%LongTimerExp { "fields": [{"name":"Type","type":"string"}]}
+LongTimerExp nlLongTimerNetworkCheckup
+LongTimerExp nlLongTimerCrystalAddData
+LongTimerExp nlLongTimerNextSchedule
+LongTimerExp nlLongTimerNextMidnight
+```
+
+**Timer types**:
+- **nlLongTimerNetworkCheckup**: Verify cloud connectivity
+- **nlLongTimerCrystalAddData**: Record data point for prediction model
+- **nlLongTimerNextSchedule**: Execute schedule change
+- **nlLongTimerNextMidnight**: Daily rollover
+- **nlLongTimerMinimumCycleTime**: Minimum HVAC off-time
+- **nlLongTimerUpdateDelay**: Cloud update batch timer
+
+**Related docs**: [System Timers](/software/system/overview)
+
+#### 5. Webworker
+
+**What it shows**: HTTP requests to cloud services
+
+**Example**:
+```
+%Webworker { "fields": [{"name":"URL","type":"string"},{"name":"IP_Address","type":"string"},{"name":"HTTPResp","type":"integer"},...]}
+Webworker "https://frontdoor.nest.com/entry" "35.186.162.24" 302 0 366 619 599
+Webworker "https://squeakydoor.nest.com/entry" "44.221.23.39" 200 0 1168 621 1067
+Webworker "https://weather.nest.com/weather/v1?query=ipv4" "3.208.82.107" 200 0 4940 124 474
+Webworker "https://logsink.devices.nest.com/upload" "35.190.54.210" 200 0 273 6662 424
+```
+
+**Fields**:
+- **URL**: Endpoint called
+- **IP_Address**: Resolved IP
+- **HTTPResp**: HTTP status code (200=success, 302=redirect, 0=timeout)
+- **NlError**: Nest error code (-16=timeout)
+- **DownloadSize**: Bytes received
+- **UploadSize**: Bytes sent
+- **ReqMS**: Request time in milliseconds
+
+**Cloud endpoints**:
+- **frontdoor.nest.com**: Authentication and session
+- **squeakydoor.nest.com**: Device API (state sync, commands)
+- **weather.nest.com**: Weather data for prediction
+- **logsink.devices.nest.com**: Log upload service
+
+**Related docs**: [Weave Protocol](/software/network/weave-protocol), [Cloud Services](/software/network/overview#cloud)
+
+#### 6. NewSetPoint
+
+**What it shows**: Temperature setpoint changes
+
+**Example**:
+```
+%NewSetPoint { "fields": [{"name":"SetPointType","type":"integer"},{"name":"Temperature","type":"decimal"},...]}
+NewSetPoint 1 1 23.119 32.000 1 4 72000 false 6 1721883183 -14400 -
+```
+
+**Fields**:
+- **SetPointType**: 1=heat, 2=cool, 3=range
+- **ScheduleMode**: 1=schedule, 0=manual hold
+- **Temperature**: Target temp in Celsius
+- **TouchedWhere**: 1=local, 2=app, 3=voice
+- **DayOfWeek**: 0=Sunday...6=Saturday
+- **TimeOfDay**: Seconds since midnight
+- **TouchedBy**: User ID or system (6=schedule)
+
+**Related docs**: [Schedule Manager](/software/thermostat/schedule-manager), [User Interface](/user-interface)
+
+#### 7. OccupancyCharacteristics & OccupancySummary
+
+**What it shows**: Auto-Away learning data
+
+**Example**:
+```
+%OccupancyCharacteristics { "fields": [...]}
+OccupancyCharacteristics "WeekdayPIR" 18000 28800 79200 61200 false
+OccupancySummary "WeekdayPIR" 28 "[0.146,0.160,0.135,...]"
+```
+
+**Fields**:
+- **Identity**: WeekdayPIR, WeekendPIR, WeekdayRemotePIR, WeekendRemotePIR
+- **WakeupTime/BedTime**: Typical times in seconds since midnight
+- **HomeAllDay**: True if home all day pattern detected
+- **data**: 288 values (5-minute intervals over 24 hours) showing occupancy probability
+
+**What this means**:
+- PIR sensor detects motion over weeks
+- Learns weekday vs weekend patterns
+- Remote sensors (Nest Protect) also tracked
+- Used for Auto-Away feature
+
+**Related docs**: [Auto-Away](/software/thermostat/auto-away), [Learning Algorithms](/reference/learning-algorithms)
+
+#### 8. ClockSynchronization
+
+**What it shows**: NTP sync status
+
+**Example**:
+```
+%ClockSynchronization { "fields": [{"name": "synchronization","type":"string"}]}
+ClockSynchronization "synchronized"
+```
+
+**States**:
+- **unsynchronized**: No NTP sync yet (after boot)
+- **synchronized**: Clock accurate via NTP
+- **stale**: Last sync too long ago
+
+**Related docs**: [Network Time](/software/network/overview#ntp)
+
+## Common Troubleshooting Scenarios
+
+### 1. WiFi Connection Issues
+
+**Symptoms in logs**:
+```
+nlscpm: WiFi stat miss bcn 5430, rxed bcn 135178
+nlscpm: WiFi stat2 rt 48, rssi -70, retx 250, notx 30
+nlclient: network watchdog: internal network reset requested
+nlclient: nlNetDestMgr: suspending https://frontdoor.nest.com (errs=5)
+```
+
+**Diagnosis**:
+- High missed beacons (>5% of received)
+- Low RSSI (<-65 dBm)
+- High retransmissions
+- Frequent network resets
+- Cloud timeouts
+
+**Solution**:
+- Improve WiFi signal strength
+- Check for interference (2.4GHz congestion)
+- Verify router settings (WPA2, DHCP)
+
+**Related docs**: [WiFi Troubleshooting](/troubleshooting/common-issues#wifi)
+
+### 2. Battery Drain
+
+**Symptoms in logs**:
+```
+shutdown-manager: batteryLevel @ 3.650
+shutdown-manager: batteryLevel @ 3.580
+shutdown-manager: batteryLevel @ 3.520
+nlscpm: elptime wake 14003412 cur 85.22% avg 87.34%
+```
+
+**Diagnosis**:
+- Battery voltage dropping rapidly
+- Low sleep efficiency (<95%)
+- Frequent wake events
+
+**Solution**:
+- Check C-wire connection (provides continuous power)
+- Reduce network polling
+- Investigate wake reasons
+
+**Related docs**: [Power Issues](/troubleshooting/common-issues#power)
+
+### 3. Schedule Not Following
+
+**Symptoms in logs**:
+```
+nlclient: thermostat: RethinkState bypassed: aSensorStateValidity (0), aHVACControlLockedOut (1)
+nlclient: Smart Thermostat Manager: next day timeout set to 1762577700
+CurrentState ... false 6 1 1721883183 -14400 - 4 72000 true false false
+```
+
+**Diagnosis**:
+- HVAC control locked out
+- Schedule mode active but not executing
+- Recent user override (TouchedBy=user)
+
+**Solution**:
+- Check for manual temperature hold
+- Verify schedule is enabled in settings
+- Review wiring issues if HVAC locked out
+
+**Related docs**: [Schedule Troubleshooting](/troubleshooting/common-issues#schedule)
+
+### 4. Cloud Sync Failures
+
+**Symptoms in logs**:
+```
+fetch service: timeout for ID 1 at 1762567434 seconds (max=40)
+fetch service: url="https://frontdoor.nest.com/entry", errtext="Timeout was reached"
+nlNetDestMgr: suspending https://frontdoor.nest.com (errs=10)
+Webworker "https://frontdoor.nest.com/entry" "" 0 -16 0 0 40000
+```
+
+**Diagnosis**:
+- Repeated timeouts to frontdoor/squeakydoor
+- Error count accumulating
+- Endpoint suspended (temporary backoff)
+- Empty IP address (DNS failure)
+
+**Solution**:
+- Check internet connectivity
+- Verify DNS resolution
+- Check firewall/proxy settings
+- Confirm Nest cloud services operational
+
+**Related docs**: [Network Troubleshooting](/troubleshooting/common-issues#network)
+
+### 5. Learning Model Reset
+
+**Symptoms in logs**:
+```
+nlCrystalModel: Too few datapoints to construct new data set. Need 20, received 0
+buildingcharacteristics: shifting time variables by (1762567430)
+sunlightcorrection: failed to find current ALS from history object
+```
+
+**Diagnosis**:
+- No prediction data available
+- Recent time shift or firmware update
+- Historical data cleared
+
+**Solution**:
+- Wait 1-2 weeks for model to rebuild
+- Ensure HVAC runs regularly
+- Verify temperature sensor readings
+
+**Related docs**: [Learning Algorithms](/reference/learning-algorithms), [Prediction Manager](/software/thermostat/prediction-manager)
+
+## Log Analysis Tools
+
+### Using grep
+
+**Find all errors**:
+```bash
+grep -i error /media/log/messages
+grep "(1)" /media/log/nlclient  # Critical level
+```
+
+**Track WiFi signal**:
+```bash
+grep "rssi" /media/log/messages | tail -20
+```
+
+**Monitor cloud requests**:
+```bash
+grep "Webworker" /media/log/nlevent
+```
+
+**Check sleep efficiency**:
+```bash
+grep "elptime" /media/log/messages
+```
+
+### Time Range Analysis
+
+**Last hour of activity**:
+```bash
+awk -v t="$(date -u -d '1 hour ago' '+%Y-%m-%d %H')" '$0 ~ t' /media/log/nlclient
+```
+
+**Boot sequence**:
+```bash
+grep "2025-11-08 02:04:5[0-9]" /media/log/messages | head -100
+```
+
+### Event Correlation
+
+**Match wake events with reasons**:
+```bash
+grep -A 5 "Wake up happened" /media/log/messages
+grep "WakeUp" /media/log/nlevent
+```
+
+## Related Documentation
+
+- [Log Partition Reference](/reference/media-log) - Detailed log file format
+- [System Monitoring](/software/system/monitoring) - Real-time monitoring tools
+- [Common Issues](/troubleshooting/common-issues) - Troubleshooting guide
+- [Network Connectivity](/software/network/overview) - Network architecture
+- [Sleep Management](/software/system/sleep-management) - Power management
+- [Thermostat Logic](/software/thermostat/overview) - Control algorithms

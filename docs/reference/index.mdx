@@ -1,0 +1,281 @@
+---
+title: Filesystem Reference
+description: 'Complete file-by-file reference of the Nest Thermostat filesystem'
+---
+
+# Filesystem Reference
+
+Complete documentation of every directory and file in the Nest Learning Thermostat filesystem, based on data exfiltrated from a live device.
+
+## Overview
+
+The Nest Thermostat uses a Linux-based filesystem with 6 MTD flash partitions totaling 196MB of storage. This reference documents the complete structure, file-by-file.
+
+## Quick Navigation
+
+<CardGroup cols={2}>
+  <Card
+    title="Root Filesystem"
+    icon="folder-tree"
+    href="/reference/filesystem-root"
+  >
+    Standard Linux directories and system structure
+  </Card>
+  <Card
+    title="Nest Labs Software"
+    icon="code"
+    href="/reference/nestlabs"
+  >
+    Proprietary Nest software, libraries, and resources
+  </Card>
+  <Card
+    title="Media Partitions"
+    icon="hard-drive"
+    href="/reference/media-overview"
+  >
+    Writable partitions for configuration and data
+  </Card>
+  <Card
+    title="System Config"
+    icon="gear"
+    href="/reference/media-system-config"
+  >
+    SSH keys and WiFi calibration
+  </Card>
+  <Card
+    title="User Config"
+    icon="user"
+    href="/reference/media-user-config"
+  >
+    User preferences and network settings
+  </Card>
+  <Card
+    title="Data Partition"
+    icon="database"
+    href="/reference/media-data"
+  >
+    Operational data and runtime state (29 files)
+  </Card>
+  <Card
+    title="Log Partition"
+    icon="file-lines"
+    href="/reference/media-log"
+  >
+    System and application logs
+  </Card>
+  <Card
+    title="Scratch Partition"
+    icon="box"
+    href="/reference/media-scratch"
+  >
+    Temporary storage and upload staging
+  </Card>
+</CardGroup>
+
+## Filesystem Structure
+
+```
+/                           # Root filesystem (46MB, read-only)
+├── bin/                    # Standard Linux binaries
+├── sbin/                   # System binaries
+├── lib/                    # System libraries
+├── usr/                    # User programs
+├── etc/                    # System configuration
+│   └── nestlabs/          # Nest-specific configs
+├── var/                    # Variable data (tmpfs)
+├── tmp/                    # Temporary files (tmpfs)
+├── dev/                    # Device files
+├── proc/                   # Process information
+├── sys/                    # System information
+├── nestlabs/              # Nest Labs software → 105+ files
+│   ├── bin/               # User binaries (2 files)
+│   ├── sbin/              # System daemons (19 files)
+│   ├── lib/               # Shared libraries (24 files)
+│   └── share/             # Resources (60+ files)
+└── media/                 # Mounted partitions → 52+ files
+    ├── system-config/     # System settings (7 files)
+    ├── user-config/       # User preferences (5 files)
+    ├── data/              # Operational data (29 files)
+    ├── log/               # System logs (8 files)
+    └── scratch/           # Temporary storage (1+ files)
+```
+
+## Storage Summary
+
+| Location | Files | Size | Type | Purpose |
+|----------|-------|------|------|---------|
+| Root (/) | 1000+ | 46MB | Read-only | Linux system |
+| /nestlabs | 105+ | 25MB | Read-only | Nest software |
+| /media/system-config | 7 | 4MB | Writable | System settings |
+| /media/user-config | 5 | 8MB | Writable | User preferences |
+| /media/data | 29 | 20MB | Writable | Runtime data |
+| /media/log | 8 | 20MB | Writable | Logs |
+| /media/scratch | 1+ | 92MB | Writable | Temporary |
+| **Total** | **1150+** | **196MB** | | |
+
+## Documentation Sections
+
+### Root Filesystem
+[Complete Reference →](/reference/filesystem-root)
+
+Standard Linux filesystem hierarchy with Nest-specific additions:
+- `/bin`, `/sbin`, `/lib` - Standard Linux binaries and libraries
+- `/etc/nestlabs/` - Nest configuration files
+- `/dev` - Device files (MTD partitions, sensors, display)
+- `/proc`, `/sys` - Kernel interfaces
+- Tmpfs mounts for `/var`, `/tmp`
+
+### Nest Labs Directory
+[Complete Reference →](/reference/nestlabs)
+
+All Nest-proprietary software (105+ files):
+- **2 binaries** - wirelessregcal, zb-loader
+- **19 daemons** - nlclient, osm, watchdogd, updaters, etc.
+- **24 libraries** - System, network, Weave protocol, utilities
+- **60+ resources** - Firmware, fonts, locales, images, calibration
+
+### Media Partitions
+[Overview →](/reference/media-overview)
+
+Writable JFFS2 partitions (144MB total):
+
+#### System Config (4MB)
+[Complete Reference →](/reference/media-system-config)
+- SSH host keys (RSA, DSA)
+- WiFi calibration data (WL12xx chipset)
+- System-level settings
+
+#### User Config (8MB)
+[Complete Reference →](/reference/media-user-config)
+- User settings (XML)
+- Network profiles (ConnMan)
+- Timezone configuration
+
+#### Data Partition (20MB)
+[Complete Reference →](/reference/media-data)
+
+29 operational files:
+- **Schedule**: schedulemanager, schedulescore (HEAT/COOL/RANGE)
+- **Occupancy**: autoaway, sensorhistory
+- **Energy**: energystats, rateplan, toumanager, demandcharge
+- **Prediction**: predictionmanager, sunlightcorrection
+- **HVAC**: radiantcontrol, furnaceshutdown, autodehum, airwave
+- **Smart**: smartthermostatmanager, rcsmanager, tuneupmanager
+- **System**: crystalsubspaceid, goosemgr, drmanager
+- **Debug**: nlclient.crash, nlclient.maps
+
+#### Log Partition (20MB)
+[Complete Reference →](/reference/media-log)
+- System messages
+- nlclient application log
+- Event logs (nlevent, nlhlevent)
+- Rotated logs
+
+#### Scratch Partition (92MB)
+[Complete Reference →](/reference/media-scratch)
+- dropbox.vfat (upload queue)
+- Temporary files
+- Firmware update staging
+- Crash dumps
+
+## File Formats
+
+### Binary Recovery Files (.recovery)
+- Atomic writes with checksums
+- Power-loss protection
+- Used for critical state
+- Examples: schedulemanager, autoaway, energystats
+
+### JSON Files (.json)
+- Human-readable configuration
+- Standard JSON format
+- Used for non-critical settings
+- Examples: rateplan, smartthermostatmanager
+
+### XML Files (.xml, .config)
+- Configuration files
+- User settings
+- Example: settings.config
+
+### Binary Calibration (.bin)
+- Hardware calibration data
+- Device-specific
+- Examples: wl12xx-nvs.bin
+
+### Property Lists (.plist)
+- Apple-style configuration
+- Firmware metadata
+- Examples: nlbpfirmware.plist
+
+### Log Files
+- Text format
+- Syslog-style or structured
+- Rotated when size limits reached
+
+## Data Persistence
+
+### Critical Data
+- Stored in `.recovery` files
+- Atomic writes, checksums
+- Backed up to cloud
+- Examples: schedules, auto-away, energy stats
+
+### Configuration
+- Stored in JSON/XML
+- Can be regenerated
+- Backed up to cloud
+- Examples: rate plans, user settings
+
+### Logs
+- Text files
+- Rotated and uploaded
+- Can be deleted
+- Examples: messages, nlclient
+
+### Temporary
+- Scratch partition
+- Not backed up
+- Can be cleared
+- Examples: dropbox queue, crash dumps
+
+## Use Cases
+
+### Development
+- Understand system architecture
+- Locate configuration files
+- Debug issues
+- Modify behavior
+
+### Troubleshooting
+- Find log files
+- Check configuration
+- Analyze crashes
+- Diagnose problems
+
+### Research
+- Study thermostat algorithms
+- Analyze data formats
+- Reverse engineer protocols
+- Understand learning mechanisms
+
+### Backup & Recovery
+- Identify critical files
+- Create backups
+- Restore from corruption
+- Factory reset procedures
+
+## Related Documentation
+
+- [System Overview](/system-overview) - High-level architecture
+- [Filesystem Structure](/filesystem-structure) - Partition layout
+- [Software Components](/software-components) - Binary documentation
+- [Data Files Reference](/data-files) - Data file field descriptions
+- [Exfiltration Summary](/exfiltration-summary) - How this data was obtained
+
+## Data Source
+
+This reference is based on complete filesystem data exfiltrated from a live Nest Learning Thermostat (Serial: 02AA01AC481302W4) on November 7, 2025. All file listings, sizes, and descriptions are verified against actual device data.
+
+<Info>
+  This is a living document. As new files or configurations are discovered, this reference will be updated.
+</Info>

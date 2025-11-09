@@ -1,0 +1,415 @@
+---
+title: Learning Algorithms
+description: 'Analysis of Nest Learning Thermostat machine learning and prediction algorithms'
+---
+
+# Learning Algorithms
+
+This document analyzes the machine learning and prediction algorithms used by the Nest Learning Thermostat based on operational data files and binary analysis.
+
+## Overview
+
+The Nest Learning Thermostat employs multiple interconnected learning systems:
+
+1. **Prediction Manager** - HVAC system thermal modeling
+2. **Auto-Away** - Occupancy detection and prediction
+3. **Schedule Manager** - Temperature schedule learning
+4. **Smart Thermostat Manager** - Intelligent setpoint management
+5. **Energy Stats** - Energy usage tracking and optimization
+6. **Sunlight Correction** - Solar gain compensation
+
+## Prediction Manager
+
+**Data File**: `predictionmanager.json` (3.0 KB)
+
+### Thermal Model Architecture
+
+The Nest uses a **state-space model** to predict home thermal behavior. The model is implemented as a discrete-time linear system:
+
+```
+x(k+1) = A*x(k) + B*u(k)
+y(k) = C*x(k)
+```
+
+Where:
+- `x(k)` = State vector (internal temperatures, thermal masses)
+- `u(k)` = Input vector (HVAC stages, weather, solar)
+- `y(k)` = Output (measured temperature)
+
+### Model Parameters
+
+**Model Order**: 5 (5 internal states)
+
+**State Variables** (inferred from matrix dimensions):
+1. Indoor air temperature
+2. Wall/ceiling thermal mass
+3. Floor thermal mass
+4. Furniture/contents thermal mass
+5. HVAC system dynamics
+
+**Input Variables** (10 inputs from Matrix B):
+1. Stage 1 Heat
+2. Stage 2 Heat (unused in this system)
+3. Stage 3 Heat (unused)
+4. Stage 1 Cool
+5. Stage 2 Cool (unused)
+6. Stage 3 Cool (unused)
+7. Stage 1 Alt Heat (unused)
+8. Stage 2 Alt Heat (unused)
+9. Stage Aux Heat (unused)
+10. Outdoor weather temperature
+
+### Training Data
+
+From the extracted data:
+- **Data Points**: 11,486 samples
+- **Training Period**: ~205 days (from timestamps)
+- **Heat Cycles**: 58,796 stage 1 heating events
+- **Cool Cycles**: 43,749 stage 1 cooling events
+- **Weather Samples**: 1,653,433 weather data points
+
+### Model Performance
+
+**Fit Quality**:
+- **Normalized Squared Error**: 0.208 per sample
+- **Percentage Error**: 4.61% per sample
+- **Last Fit**: Unix timestamp 1750996835
+
+This indicates the model predicts temperature within ~4.6% error on average.
+
+### System Matrices
+
+The model uses learned matrices (actual values from device):
+
+**Matrix A** (5×5 state transition):
+```
+ 0.9997  -0.0159   0.0061   0.0004   0.0005
+-0.0006   0.8446  -0.0084  -0.1326   0.0442
+-0.0045  -0.8764   0.5970   0.2063  -0.0386
+-0.0082  -1.9939  -0.6327   0.3189   0.2301
+-0.0121  -2.8140  -0.9071  -1.1598   0.0191
+```
+
+**Matrix B** (5×10 input mapping):
+```
+ 0.0014   0   0  -0.0032   0   0   0   0   0   0.0004
+-0.0037   0   0   0.0089   0   0   0   0   0  -0.0042
+ 0.0251   0   0  -0.0517   0   0   0   0   0  -0.0367
+-0.0040   0   0   0.0017   0   0   0   0   0  -0.0851
+-0.0009   0   0   0.0015   0   0   0   0   0  -0.3703
+```
+
+**Matrix C** (1×5 output):
+```
+-20.2666  -0.7421   1.0178  -0.4865   0.1615
+```
+
+**Matrix K** (5×1 Kalman gain):
+```
+-0.2007
+ 0.5229
+-1.7465
+ 0.1085
+-0.0127
+```
+
+### Model Types
+
+The system maintains three models:
+
+1. **OnOffModel** - For single-stage HVAC (currently active)
+2. **ModulationModel** - For modulating systems (not fitted)
+3. **AutoTuneModel** - For PID controller tuning (not fitted)
+
+## Auto-Away System
+
+**Data File**: `autoaway.recovery` (69 KB)
+
+### Occupancy Detection
+
+The Auto-Away system uses **PIR (Passive Infrared) motion sensors** to detect occupancy.
+
+**Detection Method**:
+- 288 time bins per day (5-minute intervals)
+- Separate tracking for weekdays vs. weekends
+- 28-day rolling window for pattern learning
+
+### Occupancy Data Structure
+
+```
+Version: 10
+TimeOfLastActivity: 1762564102 (Nov 7, 2025)
+TimeOfLastScheduledArrival: 1494276775 (May 8, 2017)
+UserSeenToday: 0 (false)
+```
+
+### Occupancy Bins
+
+Each 5-minute bin tracks:
+- **Count**: Number of days in the sample (28)
+- **Sum**: Total PIR activations across all days
+
+Example bins (weekend PIR data):
+- Bin 0 (00:00-00:05): Sum=513,441 → Avg 18,337 per day (high activity)
+- Bin 15 (01:15-01:20): Sum=160,411 → Avg 5,729 per day (low activity)
+- Bin 21 (01:45-01:50): Sum=98,995 → Avg 3,535 per day (lowest)
+
+### Learning Algorithm
+
+1. **Pattern Recognition**: Identifies typical occupancy patterns
+2. **Scheduled Arrival**: Learns when users typically return home
+3. **Away Detection**: Triggers when no activity detected for threshold period
+4. **Home Detection**: Triggers on PIR activity or manual interaction
+
+## Schedule Manager
+
+**Data Files**:
+- `schedulemanager.recovery` (14 KB)
+- `schedulescore.HEAT.recovery` (128 KB)
+- `schedulescore.COOL.recovery` (128 KB)
+- `schedulescore.RANGE.recovery` (256 KB)
+
+### Schedule Learning
+
+The thermostat learns temperature preferences by:
+
+1. **Tracking Manual Adjustments**: Records all user temperature changes
+2. **Time-of-Day Analysis**: Associates temperatures with time of day
+3. **Day-of-Week Patterns**: Differentiates weekday vs. weekend schedules
+4. **Occupancy Correlation**: Links schedule to occupancy patterns
+
+### Schedule Scoring
+
+Each schedule mode (HEAT/COOL/RANGE) maintains a separate scoring system:
+- **128 KB for single-mode schedules** (HEAT/COOL)
+- **256 KB for dual-mode schedule** (RANGE)
+
+The scoring system likely uses:
+- Frequency of setpoint at each time
+- Recency weighting (recent changes weighted higher)
+- Consistency scoring (stable patterns score higher)
+
+## Smart Thermostat Manager
+
+**Data File**: `smartthermostatmanager.json` (1.1 KB)
+
+### Intelligent Features
+
+```json
+{
+  "version": 9,
+  "next_learning_epoch": 1762578038,
+  "last_bacteria_cycle_epoch": 1523494590,
+  "last_heat_setpoint": {
+    "type": "HEAT",
+    "time": 46229,
+    "entry_type": "setpoint",
+    "touched_by": 1,
+    "touched_at": 1747241442,
+    "touched_tzo": -14400,
+    "temp": 19.62935
+  }
+}
+```
+
+### Learning Epochs
+
+- **Next Learning Epoch**: Scheduled time for next learning cycle
+- **Bacteria Cycle**: Legionella prevention (hot water heating)
+
+### Setpoint Tracking
+
+Tracks last setpoints for each mode:
+- **HEAT**: Last heating setpoint
+- **COOL**: Last cooling setpoint
+- **RANGE**: Last range (heat/cool) setpoint
+- **EMERGENCY**: Emergency heat setpoint
+- **DR**: Demand response setpoint
+
+Each setpoint records:
+- Temperature value
+- Time of day
+- Who set it (user=1, schedule=2, auto-away=6, etc.)
+- Timestamp and timezone offset
+
+## Energy Statistics
+
+**Data File**: `energystats.recovery` (21 KB)
+
+Tracks energy usage for:
+- Heating runtime
+- Cooling runtime
+- Fan runtime
+- Auxiliary heat usage
+
+Used for:
+- Energy history display
+- Efficiency recommendations
+- HVAC system health monitoring
+
+## Sunlight Correction
+
+**Data File**: `sunlightcorrection.recovery` (20 KB)
+
+### Solar Gain Compensation
+
+The thermostat compensates for solar heating by:
+
+1. **Temperature Differential Detection**: Compares thermostat temp to actual air temp
+2. **Time-of-Day Correlation**: Associates differential with sun position
+3. **Seasonal Adjustment**: Adapts to changing sun angles
+4. **Directional Learning**: Learns which windows receive sun
+
+This prevents over-cooling when the thermostat is in direct sunlight.
+
+## Sensor History
+
+**Data File**: `sensorhistory.recovery` (1.8 MB)
+
+### Historical Data Storage
+
+Maintains detailed history of:
+- Indoor temperature readings
+- Outdoor temperature (from weather service)
+- Humidity levels
+- HVAC state changes
+- User interactions
+
+**Storage**: 1.8 MB suggests months of 5-minute interval data.
+
+## Over/Under Shoot Correction
+
+**Data File**: `overundershoot.json` (3.6 KB)
+
+### HVAC Timing Optimization
+
+Learns to stop heating/cooling before reaching setpoint to account for:
+- **Thermal Inertia**: System continues heating/cooling after shutoff
+- **Air Circulation**: Hot/cold air continues circulating
+- **Sensor Location**: Compensates for sensor placement
+
+This prevents temperature overshoot and improves comfort.
+
+## Radiant Control
+
+**Data File**: `radiantcontrol.recovery` (2.2 KB)
+
+### Radiant Heating Optimization
+
+Special algorithms for radiant floor heating:
+- **Slow Response**: Accounts for slow thermal response
+- **Anticipatory Heating**: Starts heating hours in advance
+- **Temperature Smoothing**: Maintains steady temperature
+
+## Furnace Shutdown
+
+**Data File**: `furnaceshutdown.recovery` (1.5 KB)
+
+### Short-Cycle Prevention
+
+Prevents furnace short-cycling by:
+- Enforcing minimum off-time between cycles
+- Tracking cycle frequency
+- Adaptive timing based on outdoor temperature
+
+## Time-of-Use Manager
+
+**Data File**: `toumanager.json` (2.9 KB)
+
+### Energy Cost Optimization
+
+For utility time-of-use rates:
+- Pre-cooling before peak rates
+- Reduced cooling during peak rates
+- Temperature setback strategies
+- Cost vs. comfort optimization
+
+## RCS Manager (Remote Climate Sensors)
+
+**Data File**: `rcsmanager.json` (617 bytes)
+
+Manages remote temperature sensors for:
+- Multi-room averaging
+- Room-specific comfort
+- Sensor weighting algorithms
+
+## Learning Process
+
+### Initial Learning Period
+
+1. **Week 1**: Basic pattern observation
+2. **Week 2**: Initial schedule suggestions
+3. **Week 3-4**: Schedule refinement
+4. **Ongoing**: Continuous adaptation
+
+### Learning Indicators
+
+From binary strings:
+- `learning_completed` - Learning phase finished
+- `pre_emergency_learning_mode` - Emergency mode learning
+- `autoaway_previous_learning` - Auto-away pattern learning
+
+### Cloud Integration
+
+Schedule learning can be:
+- **Local**: On-device learning
+- **Cloud-Assisted**: Uses cloud ML for better predictions
+- **Synchronized**: Shared across multiple thermostats
+
+## Algorithm Performance
+
+### Strengths
+
+1. **Adaptive**: Continuously learns from user behavior
+2. **Multi-Modal**: Combines multiple data sources
+3. **Predictive**: Anticipates needs before user action
+4. **Energy-Aware**: Optimizes for efficiency
+
+### Limitations
+
+1. **Training Period**: Requires weeks to learn patterns
+2. **Pattern Changes**: Slow to adapt to lifestyle changes
+3. **Occupancy Assumptions**: May misinterpret occupancy
+4. **Weather Dependency**: Requires accurate weather data
+
+## Technical Implementation
+
+### Data Persistence
+
+- **JSON Format**: Human-readable configuration
+- **Recovery Format**: Binary serialized state (faster)
+- **Atomic Updates**: Prevents corruption on power loss
+- **Backup/Restore**: Supports factory reset recovery
+
+### Update Frequency
+
+- **Prediction Model**: Refit weekly or after significant changes
+- **Occupancy Bins**: Updated every 5 minutes
+- **Schedule Scoring**: Updated on every user interaction
+- **Energy Stats**: Updated on every HVAC state change
+
+## Research Opportunities
+
+### Reverse Engineering
+
+- [ ] Extract exact prediction algorithm from binary
+- [ ] Reconstruct schedule scoring function
+- [ ] Analyze occupancy detection thresholds
+- [ ] Study cloud ML integration
+
+### Improvements
+
+- [ ] Faster adaptation to pattern changes
+- [ ] Multi-occupant learning
+- [ ] Integration with calendar/location data
+- [ ] Advanced weather prediction
+
+### Privacy Considerations
+
+The data files reveal:
+- Detailed occupancy patterns
+- Daily routines and schedules
+- Home thermal characteristics
+- Energy usage patterns
+
+This data should be protected and not shared without consent.

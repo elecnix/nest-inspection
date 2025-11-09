@@ -1,0 +1,229 @@
+---
+title: Filesystem Structure
+description: 'Detailed filesystem layout and partition structure'
+---
+
+# Filesystem Structure
+
+The Nest Learning Thermostat uses a sophisticated multi-partition MTD (Memory Technology Device) flash storage layout.
+
+## Partition Layout
+
+The device uses 6 primary MTD block partitions:
+
+| Partition | Device | Size | Mount Point | Usage | Typical Usage |
+|-----------|--------|------|-------------|-------|---------------|
+| Root | mtdblock9 | 46MB | / | Root filesystem | 58% |
+| System Config | mtdblock10 | 4MB | /media/system-config | System settings | 11% |
+| User Config | mtdblock11 | 8MB | /media/user-config | User preferences | 7% |
+| Data | mtdblock12 | 20MB | /media/data | Runtime data | 6% |
+| Log | mtdblock13 | 20MB | /media/log | System logs | 4% |
+| Scratch | mtdblock14 | 92MB | /media/scratch | Temporary storage | 4% |
+
+**Total Storage**: 196MB
+
+## Directory Structure
+
+### Root Filesystem (/)
+
+Standard Linux filesystem hierarchy with Nest-specific additions:
+
+```
+/
+├── bin/          # Standard Linux binaries
+├── sbin/         # System binaries
+├── lib/          # System libraries
+├── etc/          # Configuration files
+│   └── nestlabs/ # Nest-specific configs
+├── usr/          # User programs
+├── var/          # Variable data (tmpfs)
+├── tmp/          # Temporary files (tmpfs)
+├── dev/          # Device files (devtmpfs)
+├── proc/         # Process information
+├── sys/          # System information
+├── nestlabs/     # Nest Labs software (see below)
+└── media/        # Mounted partitions (see below)
+```
+
+### Nest Labs Software (/nestlabs)
+
+Proprietary Nest software and resources:
+
+```
+/nestlabs/
+├── bin/                    # User-level binaries
+│   ├── wirelessregcal     # Wireless calibration tool
+│   └── zb-loader          # ZigBee loader
+├── sbin/                   # System daemons (19 binaries)
+│   ├── nlclient           # Main thermostat app (4.9MB)
+│   ├── osm                # Open Service Manager
+│   ├── watchdogd          # Watchdog daemon
+│   ├── nlheartbeatd       # Heartbeat monitor
+│   ├── nlmetricsd         # Metrics collector
+│   ├── nlsleepd           # Sleep manager
+│   ├── nlshutdownd        # Shutdown manager
+│   ├── dropbox            # Upload service
+│   ├── nlswupdate         # Software updater
+│   ├── nlbpupdater        # Backplate updater
+│   ├── nlzbupdater        # ZigBee updater
+│   ├── nliplupdater       # IPL updater
+│   ├── client_recovery    # Recovery tool
+│   └── ...                # Additional utilities
+├── lib/                    # Shared libraries (22 libraries)
+│   ├── libnlsystem.so
+│   ├── libnlnetworkmanager.so
+│   ├── libnlweavetools.a
+│   ├── libnlapputils.so
+│   ├── libnldbus.so
+│   ├── libnlmetrics.so
+│   ├── libVersion.so
+│   ├── libNuovationsUtilities.so
+│   ├── libUrlAccess.so
+│   └── libArchive.so
+└── share/                  # Resources and data
+    ├── heatlink/          # HeatLink firmware
+    │   └── data/firmware/production/heatlink.elf
+    ├── bp/                # Backplate firmware
+    │   └── data/firmware/
+    ├── fw/                # Bootloader firmware
+    │   └── x-loader/x-load.bin.ift
+    ├── client/            # Client resources
+    │   ├── brightness/    # Display calibration
+    │   ├── calibration/   # Thermal calibration
+    │   └── locales/       # Translations (9 languages)
+    │       ├── en_US.lproj/
+    │       ├── en_GB.lproj/
+    │       ├── fr_FR.lproj/
+    │       ├── fr_CA.lproj/
+    │       ├── de_DE.lproj/
+    │       ├── it_IT.lproj/
+    │       ├── es_ES.lproj/
+    │       ├── es_US.lproj/
+    │       └── nl_NL.lproj/
+    ├── fonts/             # UI fonts
+    │   ├── AkkuratNest-Bold.ttf
+    │   └── AkkuratNest-Regular.ttf
+    └── images/            # UI graphics
+```
+
+### Media Partitions (/media)
+
+Writable partitions for configuration and data:
+
+#### System Config (/media/system-config)
+
+System-level configuration that persists across updates:
+
+```
+/media/system-config/
+├── ssh/                   # SSH host keys
+│   ├── ssh_host_rsa_key
+│   ├── ssh_host_rsa_key.pub
+│   ├── ssh_host_dsa_key
+│   └── ssh_host_dsa_key.pub
+├── wl12xx-nvs.bin        # WiFi calibration data
+├── wl12xx-nvs.bin.backup # WiFi calibration backup
+├── wl1271-nvs.bin        # WiFi calibration (alternate)
+└── tiwlan.ini.cks        # WiFi configuration checksum
+```
+
+#### User Config (/media/user-config)
+
+User preferences and network settings:
+
+```
+/media/user-config/
+└── (User-specific configuration files)
+```
+
+#### Data (/media/data)
+
+Runtime operational data (26+ files):
+
+```
+/media/data/
+├── schedulemanager.recovery      # Schedule state
+├── schedulescore.HEAT.recovery   # Heating schedule scores
+├── autoaway.recovery             # Auto-away state
+├── energystats.recovery          # Energy usage statistics
+├── predictionmanager.json        # Prediction models
+├── sunlightcorrection.recovery   # Sunlight correction data
+├── radiantcontrol.recovery       # Radiant heating control
+├── furnaceshutdown.recovery      # Furnace shutdown state
+├── rateplan.json                 # Energy rate plan
+├── demandcharge.json             # Demand charge settings
+├── toumanager.json               # Time-of-use manager
+├── rcsmanager.json               # Remote control system
+├── smartthermostatmanager.json   # Smart features
+├── tuneupmanager.json            # System tuning
+├── overundershoot.json           # Temperature control tuning
+├── autodehum.json                # Auto-dehumidification
+├── airwave.recovery              # Airwave feature state
+├── crystalsubspaceid.recovery    # Device identity
+├── goosemgr.recovery             # Goose manager state
+├── fleetrhr.json                 # Fleet runtime history
+├── nlclient.crash                # Crash dumps
+└── nlclient.maps                 # Memory maps
+```
+
+**File Types:**
+- `.json` - JSON-formatted configuration/state
+- `.recovery` - Binary recovery format for critical state
+- `.crash` / `.maps` - Debugging information
+
+#### Log (/media/log)
+
+System and application logs:
+
+```
+/media/log/
+├── messages              # System messages
+├── nlclient              # Main application log
+└── (Additional log files)
+```
+
+#### Scratch (/media/scratch)
+
+Temporary storage and upload staging:
+
+```
+/media/scratch/
+└── (Temporary files, dropbox uploads)
+```
+
+## Filesystem Types
+
+- **Root (/)**: Read-only JFFS2 (Journaling Flash File System 2)
+- **Media partitions**: JFFS2 with write support
+- **Tmpfs**: RAM-based temporary filesystems (/tmp, /var/run, /var/lock)
+- **Devtmpfs**: Device file management (/dev)
+
+## Storage Management
+
+### Read-Only Root
+The root filesystem is mounted read-only to prevent corruption and enable reliable recovery. All writable data is stored on separate partitions.
+
+### Wear Leveling
+JFFS2 provides wear leveling for flash memory, distributing writes evenly across the flash to extend device lifetime.
+
+### Recovery System
+Multiple recovery mechanisms protect against corruption:
+- Recovery files (.recovery) store critical state
+- Backup configurations enable rollback
+- Watchdog monitors system health
+- Multi-tier recovery system (see Recovery documentation)
+
+## Data Persistence
+
+### Critical State
+Stored in `.recovery` files using a binary format designed for reliability and atomic updates.
+
+### Configuration
+JSON files store less critical configuration that can be regenerated or reset.
+
+### Logs
+Rotated and managed to prevent partition overflow while maintaining debugging capability.
+
+<Info>
+  The partition layout provides separation of concerns, enabling safe updates, reliable recovery, and efficient storage management on resource-constrained embedded hardware.
+</Info>

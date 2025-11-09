@@ -1,0 +1,150 @@
+---
+title: Quick Start
+description: 'Get started with Nest Thermostat development and exploration'
+---
+
+# Quick Start Guide
+
+Get up and running with Nest Thermostat development and documentation in minutes.
+
+## Documentation Development
+
+### Prerequisites
+- Node.js 18+ and npm
+
+### Local Development
+
+```bash
+cd docs
+npm install
+npm run dev
+```
+
+This will start the Mintlify development server at `http://localhost:3000`.
+
+### Building
+
+```bash
+npm run build
+```
+
+### Preview
+
+```bash
+npm run preview
+```
+
+## Device Access
+
+### Prerequisites
+
+- Network access to the Nest Thermostat device
+- SSH client installed on your system
+- Basic understanding of Linux systems
+
+## Connecting to the Device
+
+### SSH Access
+
+```bash
+ssh root@192.168.2.18
+```
+
+**Default Credentials:**
+- Username: `root`
+- Password: `gtvh4ckr`
+
+<Warning>
+  This is a live device. Exercise caution when making modifications as they may affect thermostat operation.
+</Warning>
+
+## First Steps
+
+### 1. Verify System Status
+
+```bash
+# Check running processes
+ps aux
+
+# View system information
+uname -a
+
+# Check disk usage
+df -h
+```
+
+### 2. Explore Key Directories
+
+```bash
+# Nest Labs software
+ls -la /nestlabs
+
+# Configuration files
+ls -la /etc/nestlabs
+
+# Thermostat data
+ls -la /media/data
+
+# System logs
+ls -la /media/log
+```
+
+### 3. Monitor System Activity
+
+```bash
+# View system logs
+tail -f /media/log/messages
+
+# Monitor nlclient activity
+tail -f /media/log/nlclient
+```
+
+## Contributing
+
+When adding new documentation:
+
+1. Create the `.mdx` file in the appropriate directory
+2. Update `mint.json` navigation if adding new pages
+3. Follow the existing structure and formatting
+4. Use Mintlify components (Card, Accordion, Tabs, etc.) for rich content
+
+## Documentation Guidelines
+
+- Use clear, concise language
+- Include code examples where relevant
+- Add warnings for potentially dangerous operations
+- Cross-reference related documentation
+- Keep technical accuracy as the top priority
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="System Overview"
+    icon="diagram-project"
+    href="/system-overview"
+  >
+    Understand the complete system architecture
+  </Card>
+  <Card
+    title="File System Structure"
+    icon="folder-tree"
+    href="/architecture/filesystem-structure"
+  >
+    Learn about the directory organization
+  </Card>
+  <Card
+    title="Software Components"
+    icon="gears"
+    href="/software/overview"
+  >
+    Explore the software stack
+  </Card>
+  <Card
+    title="Development Guide"
+    icon="code"
+    href="/development/debugging"
+  >
+    Start developing and debugging
+  </Card>
+</CardGroup>

@@ -1,0 +1,170 @@
+---
+title: Root Filesystem (/)
+description: 'Complete reference of the root filesystem structure'
+---
+
+# Root Filesystem (/)
+
+The root filesystem is mounted read-only from mtdblock9 (46MB partition, 58% used).
+
+## Directory Structure
+
+```
+/
+├── bin/          # Standard Linux binaries
+├── sbin/         # System binaries
+├── lib/          # System libraries
+├── usr/          # User programs and data
+├── etc/          # System configuration
+├── var/          # Variable data (tmpfs)
+├── tmp/          # Temporary files (tmpfs)
+├── dev/          # Device files (devtmpfs)
+├── proc/         # Process information (procfs)
+├── sys/          # System information (sysfs)
+├── nestlabs/     # Nest Labs software → See [Nest Labs Directory](/reference/nestlabs)
+└── media/        # Mounted partitions → See [Media Partitions](/reference/media)
+```
+
+## Standard Linux Directories
+
+### /bin
+Standard Linux command-line utilities:
+- Shell commands (sh, bash)
+- File utilities (ls, cp, mv, rm, cat, etc.)
+- Text processing (grep, sed, awk)
+- Network tools (ping, netstat)
+
+### /sbin
+System administration binaries:
+- init - System initialization
+- mount/umount - Filesystem mounting
+- ifconfig - Network configuration
+- iptables - Firewall configuration
+- Standard system utilities
+
+### /lib
+System shared libraries:
+- libc.so - C standard library
+- libm.so - Math library
+- libpthread.so - Threading library
+- ld-linux.so - Dynamic linker
+- Kernel modules in /lib/modules/
+
+### /usr
+User programs and data:
+- /usr/bin/ - User command binaries
+- /usr/sbin/ - System administration binaries
+- /usr/lib/ - User libraries
+- /usr/share/ - Architecture-independent data
+
+### /etc
+System-wide configuration files:
+
+#### /etc/nestlabs/
+Nest-specific configuration:
+- Service configuration files
+- Application settings
+- System parameters
+
+**Key Files**:
+- Configuration for nlclient
+- Network service settings
+- Update policies
+- Recovery parameters
+
+### /var (tmpfs)
+Variable data stored in RAM:
+- /var/run/ - Runtime data (PIDs, sockets)
+- /var/lock/ - Lock files
+- /var/log/ → Symlink to /media/log/
+
+### /tmp (tmpfs)
+Temporary files stored in RAM:
+- Cleared on reboot
+- Used for transient data
+- Session files
+
+### /dev (devtmpfs)
+Device files:
+
+**Block Devices**:
+- /dev/mtdblock0-14 - MTD flash partitions
+- /dev/mmcblk0 - SD card (if present)
+
+**Character Devices**:
+- /dev/ttyS0-3 - Serial ports
+- /dev/i2c-* - I2C buses
+- /dev/spidev* - SPI devices
+- /dev/fb0 - Framebuffer (display)
+- /dev/input/* - Input devices
+- /dev/rtc0 - Real-time clock
+
+**Special Devices**:
+- /dev/null - Null device
+- /dev/zero - Zero device
+- /dev/random, /dev/urandom - Random number generators
+- /dev/watchdog - Hardware watchdog
+
+### /proc (procfs)
+Process and kernel information:
+- /proc/[pid]/ - Process information
+- /proc/cpuinfo - CPU information
+- /proc/meminfo - Memory information
+- /proc/mounts - Mounted filesystems
+- /proc/net/ - Network statistics
+- /proc/sys/ - Kernel parameters
+
+### /sys (sysfs)
+Kernel and device information:
+- /sys/class/ - Device classes
+- /sys/devices/ - Device hierarchy
+- /sys/bus/ - Bus types
+- /sys/module/ - Loaded modules
+
+## Filesystem Mounts
+
+```bash
+# Typical mount output
+rootfs on / type rootfs (ro)
+/dev/root on / type jffs2 (ro)
+devtmpfs on /dev type devtmpfs (rw)
+tmpfs on /tmp type tmpfs (rw)
+tmpfs on /var/lock type tmpfs (rw)
+tmpfs on /var/run type tmpfs (rw)
+devshm on /dev/shm type tmpfs (rw)
+/dev/mtdblock10 on /media/system-config type jffs2 (rw)
+/dev/mtdblock11 on /media/user-config type jffs2 (rw)
+/dev/mtdblock12 on /media/data type jffs2 (rw)
+/dev/mtdblock13 on /media/log type jffs2 (rw)
+/dev/mtdblock14 on /media/scratch type jffs2 (rw)
+```
+
+## Read-Only Root
+
+The root filesystem is mounted read-only for several reasons:
+
+1. **Reliability**: Prevents corruption from unexpected power loss
+2. **Recovery**: Enables reliable fallback to known-good state
+3. **Security**: Prevents unauthorized modifications
+4. **Wear Leveling**: Reduces write cycles to flash memory
+
+All writable data is stored on separate partitions under `/media/`.
+
+## Boot Process
+
+1. **Bootloader** (x-loader) loads from flash
+2. **U-Boot** initializes hardware and loads kernel
+3. **Kernel** mounts root filesystem from mtdblock9
+4. **Init** starts system services
+5. **OSM** (Open Service Manager) orchestrates service startup
+6. **nlclient** starts as main application
+
+<Info>
+  The root filesystem contains the core Linux system and Nest software. All configuration and data are stored on separate writable partitions to enable safe updates and recovery.
+</Info>
+
+## See Also
+
+- [Nest Labs Directory](/reference/nestlabs) - Nest-specific software
+- [Media Partitions](/reference/media) - Writable data partitions
+- [System Overview](/system-overview) - High-level architecture
